@@ -1,0 +1,23 @@
+Alignment of Detector Data in the CRF Coordinate System
+
+before alignment check for noisy and dead channels
+
+angles are given as slopes ( angle = tan(theta) )
+
+0. start coarse alignment with simultanious adjusting X, Y, Z and angleZ from inital iteration
+1. finetune agian the values after second iteration
+2. if slopes and means for intial values are near zero ( Y and Z order of 10 to 50 microns, angleZ 10e-5) finetune angleX and angleY
+3. after each iteration check (and if necessary adjust) Y, Z and angleZ
+
+largest error on X (very depending on efficiency and CRF hitdistribution)
+
+X       : add           mean of normalized X distribution ( dethits->projectX / CRFhits->projectX )
+Y       : subtract      residual mean
+Z       : add           slope deltaYvsMDTslope
+angleX  : add           slope deltaZvsMDT_Y
+angleY  : subtract      slope deltaZvsScinX
+angleZ  : subtract      slope deltaYvsScinX
+
+
+alternative X :
+stripdifference of stereo layers as function of scinX => fit with [1](x-[0]) => [0] = X

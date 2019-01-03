@@ -1,0 +1,5 @@
+properties_tandemNov18.txt
+corrections_tandemNov18.txt
+detectorname  #xstrips #ystrips pitch xlength  ylength  #divisionsX #divisionsY  positionX  positionY positionZ angleX angleY  angleZ     layer   flip   uTPCtime  cluTime    driftVelocity  CCCfactor
+T3             256         0    0.4     100.    100.       10           10          0.           0.      50.      0.     0.      0.          2       0       0.        0.         0.047         0.25
+GEM            256       256    0.4     100.    100.       10           10          0.           0.       0.      0.     0.      0.         -1       0       0.        0.         0.047         0.25

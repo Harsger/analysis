@@ -1,0 +1,6 @@
+detectorname  minCharge  maxCharge  stripGap  stripChi2reject  minSize  maxSize  minClusterCharge  ntimebins   resolutionX  resolutionY  
+eta              10        3000         2         1000             1       20         100              21          0.6         100.      
+Tmm1             10        3000         2         1000             1       20         100              21          0.2           0.2     
+Tmm2             10        3000         2         1000             1       20         100              21          0.2           0.2     
+Tmm3             10        3000         2         1000             1       20         100              21          0.2           0.2     
+Tmm4             10        3000         2         1000             1       20         100              21          0.2           0.2     

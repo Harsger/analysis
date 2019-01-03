@@ -1,0 +1,7 @@
+FitMacroName:                            fit_user_function.C
+fBinly:                                  1
+fBinuy:                                  1000
+fBinlx:                                  1
+fBinux:                                  290
+fXtitle:                                 charge averaged clustertime [25 ns]
+fYtitle:                                 leading cluster charge [ADC channel]

@@ -1,0 +1,9 @@
+properties_SM2-M1_H8jun18_run209.txt
+corrections_SM2-M1_H8jun18_run209.txt
+mask_SM2-M1_H8jun18_run209.txt
+detectorname  #xstrips #ystrips pitch xlength  ylength  #divisionsX #divisionsY  positionX  positionY positionZ angleX angleY  angleZ     layer   flip   uTPCtime  cluTime    driftVelocity    CCCfactor
+eta            3072         0   0.425   100.    100.       40           40        477.35       0.      -356.8    0.     0.524   0.          5       0       0.        0.         0.047           0.3
+Tmm1            360       360   0.25    100.    100.       40           40          0.         0.        -2.3    0.     0.      0.         -1       0       0.        0.         0.047           0.
+Tmm2            360       360   0.25    100.    100.       40           40         -0.50       0.65      39.4    0.     0.      0.         -2       2       0.        0.         0.047           0.
+Tmm3            360       360   0.25    100.    100.       40           40         -7.74      -3.06     599.1    0.     0.      0.         -3       0       0.        0.         0.047           0.
+Tmm4            360       360   0.25    100.    100.       40           40         -8.14      -2.11     642.4    0.     0.      0.         -4       2       0.        0.         0.047           0.

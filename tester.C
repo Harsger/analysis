@@ -1,0 +1,2283 @@
+#include <TROOT.h>
+#include <TFile.h>
+#include <TString.h>
+#include <TMath.h>
+#include <TBranch.h>
+#include <TTree.h>
+#include <TF1.h>
+#include <TF2.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TGraphErrors.h>
+#include <TPad.h>
+#include <TApplication.h>  
+#include <TKey.h>
+#include <TRandom3.h>
+
+#include <vector>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <cmath>
+
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+
+using namespace cv;
+using namespace std;
+
+vector< vector<string> > getInput(string filename);
+
+void printFile(string filename){
+    vector< vector<string> > input = getInput(filename);
+    cout << " # rows " << input.size() << endl;
+    for(unsigned int r=0; r<input.size(); r++){
+        cout << " # columns " << input.at(r).size();
+        for(unsigned int c=0; c<input.at(r).size(); c++){
+            cout << "\t" << input.at(r).at(c);
+        }
+        cout << endl;
+    }
+}
+
+vector< vector<string> > getInput(string filename){
+    vector< vector<string> > input;
+    if(filename.compare("")==0) return input;
+    ifstream ifile(filename.c_str());
+    if(!(ifile)) return input;
+    string line = "";
+    string word = "";
+    vector<string> dummy;
+    while(getline(ifile, line)){
+        stringstream sline(line);
+        while(!(sline.eof())){ 
+            sline >> skipws >> word;
+            if(word!="")dummy.push_back(word);
+        }
+        if(dummy.size()>0) input.push_back(dummy);
+        dummy.clear();
+    }
+    ifile.close();
+    return input;
+}
+
+vector<double> fitDoubleGaussian(TH1I * hist, bool bugger){
+  
+    bool debug = bugger;
+    
+    vector<double> result;
+    
+    unsigned int maxBin = hist->GetMaximumBin();
+
+    double mean = hist->GetMean();
+    double maximum = hist->GetBinContent(maxBin);
+    double deviation = hist->GetRMS();
+    
+    double maxValue = 0.5 * ( hist->GetXaxis()->GetBinLowEdge(maxBin) + hist->GetXaxis()->GetBinUpEdge(maxBin) );
+    
+    double fitrange = 3.;
+//     double integralRange = 100.;
+    double integralRange = fitrange;
+
+    double weight[2];
+    double center[2];
+    double sigma[2];
+    double weightErr[2];
+    double centerErr[2];
+    double sigmaErr[2];
+    double chisquare;
+    double ndf;
+
+    TF1 * simpleGaussian = new TF1("simpleGaussian","gaus",maxValue-fitrange,maxValue+fitrange);
+
+    simpleGaussian->SetParameters(maximum,mean,deviation);
+
+    //  simpleGaussian->SetParLimits(0,0.,1.1*maximum);
+    //  simpleGaussian->SetParLimits(1,mean-deviation,mean+deviation);
+    //  simpleGaussian->SetParLimits(2,0.,1.1*deviation);
+        
+    hist->Fit(simpleGaussian,"RQB");
+    hist->Fit(simpleGaussian,"RQB");
+    hist->Fit(simpleGaussian,"RQ");
+
+    TF1 * doubleGaussian = new TF1("doubleGaussian","gaus(0)+gaus(3)",maxValue-fitrange,maxValue+fitrange); 
+
+//     doubleGaussian->SetParameters(0.9*maximum,mean,0.8*deviation,0.1*maximum,mean,10.*deviation);
+    doubleGaussian->SetParameters(1.,mean,1.,1.,mean,1.);
+
+    //  doubleGaussian->SetParLimits(0,0.,maximum);
+    //  doubleGaussian->SetParLimits(1,mean-deviation,mean+deviation);
+    //  doubleGaussian->SetParLimits(2,0.,deviation);
+    //  doubleGaussian->SetParLimits(3,0.,0.5*maximum);
+    //  doubleGaussian->SetParLimits(4,mean-deviation,mean+deviation);
+    //  doubleGaussian->SetParLimits(5,0.,100.*deviation);
+        
+    hist->Fit(doubleGaussian,"RQB");
+    hist->Fit(doubleGaussian,"RQB");
+    hist->Fit(doubleGaussian,"RQ");
+
+    bool useSimpleGaussian = false;
+
+    if(bugger) cout << endl << " simple : " << simpleGaussian->GetChisquare() << " / " << simpleGaussian->GetNDF() << " \t double : " << doubleGaussian->GetChisquare() << " / " << doubleGaussian->GetNDF() << endl << endl;
+
+//     if( abs( 1. - simpleGaussian->GetChisquare() / simpleGaussian->GetNDF() ) < abs( 1. - doubleGaussian->GetChisquare() / doubleGaussian->GetNDF() ) ){
+    if( false ){
+        
+        hist->Fit(simpleGaussian,"RQ0");
+        
+        useSimpleGaussian = true;
+
+        double integral = simpleGaussian->Integral( maxValue-integralRange, maxValue+integralRange);
+        
+//         weight[0] = 0.5 * simpleGaussian->GetParameter(0);
+//         weight[1] = 0.5 * simpleGaussian->GetParameter(0);
+        weight[0] = 0.5 * integral;
+        weight[1] = 0.5 * integral;
+        center[0] = simpleGaussian->GetParameter(1);
+        center[1] = simpleGaussian->GetParameter(1);
+        sigma[0] = simpleGaussian->GetParameter(2);
+        sigma[1] = simpleGaussian->GetParameter(2);
+        weightErr[0] = 0.5 * simpleGaussian->GetParError(0);
+        weightErr[1] = 0.5 * simpleGaussian->GetParError(0);
+        centerErr[0] = simpleGaussian->GetParError(1);
+        centerErr[1] = simpleGaussian->GetParError(1);
+        sigmaErr[0] = simpleGaussian->GetParError(2);
+        sigmaErr[1] = simpleGaussian->GetParError(2);
+        chisquare = simpleGaussian->GetChisquare();
+        ndf = simpleGaussian->GetNDF();
+        
+    }
+    else{
+
+        TF1 * singleGaus = new TF1("singleGaus","gaus",maxValue-fitrange,maxValue+fitrange);
+        singleGaus->SetParameters( doubleGaussian->GetParameter(0), doubleGaussian->GetParameter(1), doubleGaussian->GetParameter(2));
+        double integral0 = singleGaus->Integral( maxValue-integralRange, maxValue+integralRange);
+        singleGaus->SetParameters( doubleGaussian->GetParameter(3), doubleGaussian->GetParameter(4), doubleGaussian->GetParameter(5));
+        double integral1 = singleGaus->Integral( maxValue-integralRange, maxValue+integralRange);
+        
+        unsigned int first = 0;
+        unsigned int second = 1;
+        
+        if( abs( doubleGaussian->GetParameter(2) ) < abs( doubleGaussian->GetParameter(5) ) && integral0 > integral1 ){
+            first = 0;
+            second = 1;
+        }
+        else if( abs( doubleGaussian->GetParameter(2) ) > abs( doubleGaussian->GetParameter(5) ) && integral0 < integral1 ){
+            first = 1;
+            second = 0;
+        }
+        else{
+            if(debug) cout << " WARNING : narrowest gaussian is not most filled gaussian for " << hist->GetName() << " => using most filled for first gaussian " << endl;
+            if( integral0 > integral1 ){
+                first = 0;
+                second = 1;
+            }
+            else if( integral0 < integral1 ){
+                first = 1;
+                second = 0;
+            }
+            else{
+                if(debug) cout << " same integral ? " << endl;
+                if( abs( doubleGaussian->GetParameter(2) ) < abs( doubleGaussian->GetParameter(5) ) ){
+                    first = 0;
+                    second = 1;
+                }
+                else if( abs( doubleGaussian->GetParameter(2) ) > abs( doubleGaussian->GetParameter(5) ) ){
+                    first = 1;
+                    second = 0;
+                }
+            }
+        }
+            
+        weight[first] = integral0;
+        weight[second] = integral1;
+//         weight[first] = doubleGaussian->GetParameter(0);
+//         weight[second] = doubleGaussian->GetParameter(3);
+        center[first] = doubleGaussian->GetParameter(1);
+        center[second] = doubleGaussian->GetParameter(4);
+        sigma[first] = doubleGaussian->GetParameter(2);
+        sigma[second] = doubleGaussian->GetParameter(5);
+        weightErr[first] = doubleGaussian->GetParError(0);
+        weightErr[second] = doubleGaussian->GetParError(3);
+        centerErr[first] = doubleGaussian->GetParError(1);
+        centerErr[second] = doubleGaussian->GetParError(4);
+        sigmaErr[first] = doubleGaussian->GetParError(2);
+        sigmaErr[second] = doubleGaussian->GetParError(5);
+        
+        chisquare = doubleGaussian->GetChisquare();
+        ndf = doubleGaussian->GetNDF();
+        
+    }
+
+    if(bugger){
+        if(useSimpleGaussian) hist->Fit(simpleGaussian,"R");
+        else hist->Fit(doubleGaussian,"R");
+//         hist->Write();
+        hist->Draw();
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
+    }
+
+    result.push_back(weight[0]);
+    result.push_back(center[0]);
+    result.push_back(abs(sigma[0]));
+    result.push_back(weight[1]);
+    result.push_back(center[1]);
+    result.push_back(abs(sigma[1]));
+
+    result.push_back(weightErr[0]);
+    result.push_back(centerErr[0]);
+    result.push_back(sigmaErr[0]);
+    result.push_back(weightErr[1]);
+    result.push_back(centerErr[1]);
+    result.push_back(sigmaErr[1]);
+
+    result.push_back(chisquare);
+    result.push_back(ndf);
+
+    simpleGaussian->Delete();
+    doubleGaussian->Delete();
+
+    //     if(useSimpleGaussian) cout << "simple" << endl;
+
+    return result;
+}
+
+void effiPerPart(){
+    
+    TFile * outfile = new TFile("effiResults.root","RECREATE");
+    
+//     const unsigned int ndetectors = 4;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+//     
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/SM2-M0_voltageScan/sm2_m0_";
+//     TString datePhrase = "V_20171204_";
+// //     TString endPhrase = "_lC_RMScut5_noise_r06_allCluster_properties.root";
+//     TString endPhrase = "_lRn_r09_aC_properties.root";
+//     
+//     const unsigned int measurements = 6;
+//     TString times[measurements] = { "1853", "1650", "1501", "1320", "Xday","2033"};
+//     double voltages[measurements] = { 560., 570., 580., 590., 600., 610.};
+    
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/eta2_voltageScan/sm2_eta2_";
+// //     TString datePhrase = "V_20171204_";
+//     TString endPhrase = "_r03_properties.root";
+//     
+//     const unsigned int ndetectors = 2;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in"};
+//     
+//     const unsigned int measurements = 4;
+//     TString times[measurements] = { "V_20180405_1920", "V_20180406_1502", "V_20180406_1807", "V_20180407_1315"};
+//     double voltages[measurements] = { 540., 550., 560., 570.};
+    
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/voltageScan/sm2_m1_";
+// //     TString endPhrase = "_2s_16x24_properties.root";
+//     TString endPhrase = "_2s_16x24_coincEffi_properties.root";
+//     
+//     const unsigned int ndetectors = 4;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+//     
+//     const unsigned int measurements = 4;
+//     TString times[measurements] = { "V_ZS2_20180528_1849", "V_ZS2_20180529_0930", "V_ZS2_20180601_0928", "V_ZS2_20180531_0902"};
+//     double voltages[measurements] = { 550., 560., 570., 580.};
+// //     TString times[measurements] = { "V_C150V_ZS2_20180603_0146", "V_C150V_ZS2_20180602_1133", "V_C150V_ZS2_20180602_0230", "V_C150V_ZS2_20180603_1051"};
+// //     double voltages[measurements] = { 540., 550., 560., 570.};
+    
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/withEta5/sm2_m3_eta5_";
+// //     TString endPhrase = "_2s_16x24_properties.root";
+//     TString endPhrase = "_r01_properties.root";
+//     
+//     const unsigned int ndetectors = 6;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out", "etaBot", "etaTop"};
+//     
+//     const unsigned int measurements = 5;
+//     TString times[measurements] = { "V_20181020_0859", "V_20181019_1401", "V_20181019_1637", "V_20181018_2010", "V_20181019_1854"};
+//     double voltages[measurements] = { 545., 550., 555., 560., 565.};
+    
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/withEta5/sm2_m3_eta5_";
+// //     TString endPhrase = "_2s_16x24_properties.root";
+//     TString endPhrase = "_r02_coinAll_properties.root";
+//     
+//     const unsigned int ndetectors = 6;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out", "etaBot", "etaTop"};
+//     
+//     const unsigned int measurements = 7;
+//     TString times[measurements] = { "V_20181022_1758", "V_20181020_0859", "V_20181019_1401", "V_20181019_1637", "V_20181018_2010", "V_20181019_1854", "V_20181022_1355"};
+//     double voltages[measurements] = { 540., 545., 550., 555., 560., 565., 570.};
+    
+    TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/ampScan/m6_eta3_";
+//     TString endPhrase = "_2s_16x24_properties.root";
+    TString endPhrase = "_5x7_coinPanel_properties.root";
+    
+    const unsigned int ndetectors = 6;
+    TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out", "etaBot", "etaTop"};
+    
+    const unsigned int measurements = 4;
+    TString times[measurements] = { "V_20181213_1833", "V_20181212_1519", "V_20181207_1613", "V_20181214_1001"};
+    double voltages[measurements] = { 540., 550., 560., 570.};
+    
+    vector<unsigned int> nbins { 0, 0};
+    vector<double> lowEdge { 0., 0.};
+    vector<double> highEdge { 0., 0.};
+    vector<double> step { 0., 0.};
+    
+    TGraphErrors **** efficiency = new TGraphErrors***[ndetectors];
+    TH2D * readhist;
+    
+    TString strDummy;
+    
+    for(unsigned int m=0; m<measurements; m++){
+        
+        TString readname = startPhrase;
+        readname += voltages[m];
+//         readname += datePhrase;
+        readname += times[m];
+        readname += endPhrase;
+        
+        cout << " reading file " << readname << " ... ";
+        
+        TFile * infile = new TFile( readname, "READ");
+        
+        if( !infile->IsOpen() ){ 
+            cout << " can not find file " << endl;
+            return;
+        }
+        else cout << " worked " << endl;
+        
+        for(unsigned int d=0; d<ndetectors; d++){
+            
+            TString histname = detectornames[d];
+//             histname += "_coincidenceEffi";
+            histname += "_nearEfficiency";
+        
+            cout << " reading hist " << histname << " ... ";
+            
+            readhist = (TH2D*)infile->Get(histname);
+        
+            if( readhist == NULL ){ 
+                cout << " can not find histogram " << endl;
+                return;
+            }
+            else cout << " worked " << endl;
+        
+            if( m==0 && d==0 ){
+                
+                nbins.at(0) = readhist->GetXaxis()->GetNbins();
+                lowEdge.at(0) = readhist->GetXaxis()->GetXmin();
+                highEdge.at(0) = readhist->GetXaxis()->GetXmax();
+                
+                cout << " bins and ranges x " << nbins.at(0) << " " << lowEdge.at(0) << " " << highEdge.at(0);
+                
+                step.at(0) = (highEdge.at(0)-lowEdge.at(0))/(double)(nbins.at(0));
+            
+                nbins.at(1) = readhist->GetYaxis()->GetNbins();
+                lowEdge.at(1) = readhist->GetYaxis()->GetXmin();
+                highEdge.at(1) = readhist->GetYaxis()->GetXmax();
+                
+                cout << " y " << nbins.at(1) << " " << lowEdge.at(1) << " " << highEdge.at(1) << endl;
+                
+                step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
+                
+            }
+            
+            if( m == 0 ) efficiency[d] = new TGraphErrors**[nbins.at(0)];
+            
+            cout << " start loop " << endl;
+            
+            for(unsigned int x=1; x<=nbins.at(0); x++){
+                
+//                 cout << " x " << x << endl;
+                
+                if( m == 0 ) efficiency[d][x-1] = new TGraphErrors*[nbins.at(1)];
+                
+                for(unsigned int y=1; y<=nbins.at(1); y++){
+                    
+//                     cout << " y " << y; 
+                    
+                    if( m == 0 ){ 
+                        efficiency[d][x-1][y-1] = new TGraphErrors();
+                        strDummy = histname;
+                        strDummy += "VSamplificationVoltage_";
+                        strDummy += x;
+                        strDummy += "_";
+                        strDummy += y;
+                        efficiency[d][x-1][y-1]->SetTitle(strDummy);
+                        efficiency[d][x-1][y-1]->SetName(strDummy);
+//                         cout << " generated graph " << strDummy;
+                    }
+                    
+//                     cout << " " << readhist->GetBinContent(x,y) << endl;
+                    
+                    efficiency[d][x-1][y-1]->SetPoint( efficiency[d][x-1][y-1]->GetN(), voltages[m], readhist->GetBinContent(x,y));
+                    efficiency[d][x-1][y-1]->SetPointError( efficiency[d][x-1][y-1]->GetN()-1, 2., readhist->GetBinError(x,y));
+                    
+                }
+                
+            }
+            
+        }
+        
+        infile->Close();
+        
+    }
+    
+    outfile->cd();
+        
+    for(unsigned int d=0; d<ndetectors; d++){
+        
+        for(unsigned int x=1; x<=nbins.at(0); x++){
+            
+            for(unsigned int y=1; y<=nbins.at(1); y++){
+                
+                efficiency[d][x-1][y-1]->Write();
+//                 if( x > 3 && x < 13 && y > 2 && y < 22 ) efficiency[d][x-1][y-1]->Write();
+//                 else  efficiency[d][x-1][y-1]->Delete();
+                    
+            }
+            
+        }
+        
+    }
+    
+    outfile->Close();
+}
+
+void chargePerPart(){
+    
+    TFile * outfile = new TFile("chargePartResults.root","RECREATE");
+    
+//     const unsigned int ndetectors = 4;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+//     
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/SM2-M0_voltageScan/sm2_m0_";
+//     TString datePhrase = "V_20171204_";
+// //     TString endPhrase = "_lC_RMScut5_noise_r06_allCluster_properties.root";
+//     TString endPhrase = "_lRn_r09_aC_properties.root";
+//     
+//     const unsigned int measurements = 6;
+//     TString times[measurements] = { "1853", "1650", "1501", "1320", "Xday","2033"};
+//     double voltages[measurements] = { 560., 570., 580., 590., 600., 610.};
+    
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/eta2_voltageScan/sm2_eta2_";
+// //     TString datePhrase = "V_20171204_";
+//     TString endPhrase = "_r03_properties.root";
+//     
+//     const unsigned int ndetectors = 2;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in"};
+//     
+//     const unsigned int nboards = 3;
+//     TString boardnames[nboards] = { "board6", "board7", "board8"};
+//     
+//     const unsigned int measurements = 4;
+//     TString times[measurements] = { "V_20180405_1920", "V_20180406_1502", "V_20180406_1807", "V_20180407_1315"};
+//     double voltages[measurements] = { 540., 550., 560., 570.};
+    
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/voltageScan/sm2_m1_";
+// //     TString endPhrase = "_2s_16x24_properties.root";
+//     TString endPhrase = "_2s_5x7_properties.root";
+//     
+//     const unsigned int ndetectors = 4;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+//     
+//     const unsigned int nboards = 3;
+//     TString boardnames[nboards] = { "board6", "board7", "board8"};
+//     
+//     const unsigned int measurements = 4;
+//     TString times[measurements] = { "V_ZS2_20180528_1849", "V_ZS2_20180529_0930", "V_ZS2_20180601_0928", "V_ZS2_20180531_0902"};
+//     double voltages[measurements] = { 550., 560., 570., 580.};
+// //     TString times[measurements] = { "V_C150V_ZS2_20180603_0146", "V_C150V_ZS2_20180602_1133", "V_C150V_ZS2_20180602_0230", "V_C150V_ZS2_20180603_1051"};
+// //     double voltages[measurements] = { 540., 550., 560., 570.};
+    
+    TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/withEta5/sm2_m3_eta5_";
+//     TString endPhrase = "_2s_16x24_properties.root";
+    TString endPhrase = "_r01_properties.root";
+    
+    const unsigned int ndetectors = 6;
+    TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out", "etaBot", "etaTop"};
+    
+    const unsigned int measurements = 7;
+    TString times[measurements] = { "V_20181022_1758", "V_20181020_0859", "V_20181019_1401", "V_20181019_1637", "V_20181018_2010", "V_20181019_1854", "V_20181022_1355"};
+    double voltages[measurements] = { 540., 545., 550., 555., 560., 565., 570.};
+    
+    vector<unsigned int> nbins { 0, 0};
+    vector<double> lowEdge { 0., 0.};
+    vector<double> highEdge { 0., 0.};
+    vector<double> step { 0., 0.};
+    
+    TGraphErrors **** clusterQ = new TGraphErrors***[ndetectors];
+    TH2D * readhist;
+    
+    TString strDummy;
+    
+    for(unsigned int m=0; m<measurements; m++){
+        
+        TString readname = startPhrase;
+        readname += voltages[m];
+//         readname += datePhrase;
+        readname += times[m];
+        readname += endPhrase;
+        
+        cout << " reading file " << readname << " ... ";
+        
+        TFile * infile = new TFile( readname, "READ");
+        
+        if( !infile->IsOpen() ){ 
+            cout << " can not find file " << endl;
+            return;
+        }
+        else cout << " worked " << endl;
+        
+        for(unsigned int d=0; d<ndetectors; d++){
+            
+            TString histname = detectornames[d];
+            histname += "_clusterChargeMPV";
+        
+            cout << " reading hist " << histname << " ... ";
+            
+            readhist = (TH2D*)infile->Get(histname);
+        
+            if( readhist == NULL ){ 
+                cout << " can not find histogram " << endl;
+                return;
+            }
+            else cout << " worked " << endl;
+        
+            if( m==0 && d==0 ){
+                
+                nbins.at(0) = readhist->GetXaxis()->GetNbins();
+                lowEdge.at(0) = readhist->GetXaxis()->GetXmin();
+                highEdge.at(0) = readhist->GetXaxis()->GetXmax();
+                
+                cout << " bins and ranges x " << nbins.at(0) << " " << lowEdge.at(0) << " " << highEdge.at(0);
+                
+                step.at(0) = (highEdge.at(0)-lowEdge.at(0))/(double)(nbins.at(0));
+            
+                nbins.at(1) = readhist->GetYaxis()->GetNbins();
+                lowEdge.at(1) = readhist->GetYaxis()->GetXmin();
+                highEdge.at(1) = readhist->GetYaxis()->GetXmax();
+                
+                cout << " y " << nbins.at(1) << " " << lowEdge.at(1) << " " << highEdge.at(1) << endl;
+                
+                step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
+                
+            }
+            
+            if( m == 0 ) clusterQ[d] = new TGraphErrors**[nbins.at(0)];
+            
+            cout << " start loop " << endl;
+            
+            for(unsigned int x=1; x<=nbins.at(0); x++){
+                
+//                 cout << " x " << x << endl;
+                
+                if( m == 0 ) clusterQ[d][x-1] = new TGraphErrors*[nbins.at(1)];
+                
+                for(unsigned int y=1; y<=nbins.at(1); y++){
+                    
+//                     cout << " y " << y; 
+                    
+                    if( m == 0 ){ 
+                        clusterQ[d][x-1][y-1] = new TGraphErrors();
+                        strDummy = histname;
+                        strDummy += "VSamplificationVoltage_";
+                        strDummy += x;
+                        strDummy += "_";
+                        strDummy += y;
+                        clusterQ[d][x-1][y-1]->SetTitle(strDummy);
+                        clusterQ[d][x-1][y-1]->SetName(strDummy);
+//                         cout << " generated graph " << strDummy;
+                    }
+                    
+//                     cout << " " << readhist->GetBinContent(x,y) << endl;
+                    
+                    clusterQ[d][x-1][y-1]->SetPoint( clusterQ[d][x-1][y-1]->GetN(), voltages[m], readhist->GetBinContent(x,y));
+                    clusterQ[d][x-1][y-1]->SetPointError( clusterQ[d][x-1][y-1]->GetN()-1, 2., readhist->GetBinError(x,y));
+                    
+                }
+                
+            }
+            
+        }
+        
+        infile->Close();
+        
+    }
+    
+    outfile->cd();
+        
+    for(unsigned int d=0; d<ndetectors; d++){
+        
+        for(unsigned int x=1; x<=nbins.at(0); x++){
+            
+            for(unsigned int y=1; y<=nbins.at(1); y++){
+                
+                clusterQ[d][x-1][y-1]->Write();
+//                 if( x > 3 && x < 13 && y > 2 && y < 22 ) clusterQ[d][x-1][y-1]->Write();
+//                 else  clusterQ[d][x-1][y-1]->Delete();
+                    
+            }
+            
+        }
+        
+    }
+    
+    outfile->Close();
+}
+
+void chargePerBoard(){
+    
+    TFile * outfile = new TFile("chargeResults.root","RECREATE");
+    
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/SM2-M0_voltageScan/sm2_m0_";
+//     TString datePhrase = "V_20171204_";
+//     TString endPhrase = "_lRn_r09_aC.root";
+//     
+//     const unsigned int ndetectors = 4;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+//     
+//     const unsigned int nboards = 3;
+//     TString boardnames[nboards] = { "board6", "board7", "board8"};
+//     
+//     const unsigned int measurements = 6;
+//     TString times[measurements] = { "1853", "1650", "1501", "1320", "Xday","2033"};
+//     double voltages[measurements] = { 560., 570., 580., 590., 600., 610.};
+    
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/eta2_voltageScan/sm2_eta2_";
+// //     TString datePhrase = "V_20171204_";
+//     TString endPhrase = "_r03.root";
+//     
+//     const unsigned int ndetectors = 2;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in"};
+//     
+//     const unsigned int nboards = 3;
+//     TString boardnames[nboards] = { "board6", "board7", "board8"};
+//     
+//     const unsigned int measurements = 4;
+//     TString times[measurements] = { "V_20180405_1920", "V_20180406_1502", "V_20180406_1807", "V_20180407_1315"};
+//     double voltages[measurements] = { 540., 550., 560., 570.};
+    
+    TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/voltageScan/sm2_m1_";
+    TString endPhrase = "_2s_5x7.root";
+    
+    const unsigned int ndetectors = 4;
+    TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+    
+    const unsigned int nboards = 3;
+    TString boardnames[nboards] = { "board6", "board7", "board8"};
+    
+    const unsigned int measurements = 4;
+//     TString times[measurements] = { "V_ZS2_20180528_1849", "V_ZS2_20180529_0930", "V_ZS2_20180601_0928", "V_ZS2_20180531_0902"};
+//     double voltages[measurements] = { 550., 560., 570., 580.};
+    TString times[measurements] = { "V_C150V_ZS2_20180603_0146", "V_C150V_ZS2_20180602_1133", "V_C150V_ZS2_20180602_0230", "V_C150V_ZS2_20180603_1051"};
+    double voltages[measurements] = { 540., 550., 560., 570.};
+    
+    vector<unsigned int> nbins { 0, 0};
+    vector<double> lowEdge { 0., 0.};
+    vector<double> highEdge { 0., 0.};
+    vector<double> step { 0., 0.};
+    
+    TGraphErrors *** charge = new TGraphErrors**[ndetectors];
+    
+    TString strDummy;
+    TH2I * readhist;
+    TH1D * projection;
+    TF1 * landau = new TF1("landau","landau",250,3e3);
+    
+    for(unsigned int m=0; m<measurements; m++){
+        
+        TString readname = startPhrase;
+        readname += voltages[m];
+//         readname += datePhrase;
+        readname += times[m];
+        readname += endPhrase;
+        
+        cout << " reading file " << readname << " ... ";
+        
+        TFile * infile = new TFile( readname, "READ");
+        
+        cout << " worked " << endl;
+        
+        for(unsigned int d=0; d<ndetectors; d++){
+            
+            if( m == 0 ) charge[d] = new TGraphErrors*[nboards];
+            
+            for(unsigned int b=0; b<nboards; b++){
+                
+                if( m == 0 ){
+                    charge[d][b] = new TGraphErrors();
+                    TString title = detectornames[d];
+                    title += "_";
+                    title += boardnames[b];
+                    title += "_MPVclusterQvsAmplificationVoltage";
+                    charge[d][b]->SetTitle(title);
+                    charge[d][b]->SetName(title);
+                }
+                
+                TString histname = "clusterQvsNstrips_near_";
+                histname += boardnames[b];
+                histname += "_";
+                histname += detectornames[d];
+            
+                cout << " reading hist " << histname << " ... ";
+                
+                readhist = (TH2I*)infile->Get(histname);
+            
+                cout << " worked " << endl;
+                
+                histname += "_";
+                histname += voltages[m];
+                histname += "V";
+                
+                projection = readhist->ProjectionY( histname, 2, 20);
+                
+//                 outfile->cd();
+//                 
+//                 projection->Write();
+//                 
+//                 continue;
+                
+                landau->SetParameters( projection->GetRMS(), projection->GetMaximumBin());
+                
+                projection->GetXaxis()->SetRangeUser(0.,5000.);
+                
+                projection->Fit( landau, "RQ");
+                
+                outfile->cd();
+                
+                projection->Write();
+                
+                projection->Draw();
+                gPad->Modified();
+                gPad->Update();
+                gPad->WaitPrimitive();
+                
+                charge[d][b]->SetPoint( charge[d][b]->GetN(), voltages[m], landau->GetParameter(1));
+//                 charge[d][b]->SetPointError( charge[d][b]->GetN()-1, 3., landau->GetParError(1));
+                charge[d][b]->SetPointError( charge[d][b]->GetN()-1, 3., landau->GetParameter(2));
+                
+            }
+            
+        }
+        
+        infile->Close();
+        
+    }
+    
+    outfile->cd();
+        
+    for(unsigned int d=0; d<ndetectors; d++){
+            
+        for(unsigned int b=0; b<nboards; b++){
+            
+            charge[d][b]->Write();
+                
+        }
+        
+    }
+    
+    outfile->Close();
+}
+
+void fitPol2(){
+    
+    TFile * file = new TFile("results/CRF/sm2_m0_2017_10n11_r55_cutSlopes_x5e-2_y1e-1_yDif1e-1_noRot_precision.root","READ");
+    TFile * resultfile = new TFile("results/CRF/sm2_m0_2017_10n11_r55_cutSlopes_x5e-2_y1e-1_yDif1e-1_noRot_precision_fitted.root","RECREATE");
+    
+    TString detectornames[4] = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+    TString boards[3] = { "board6", "board7", "board8"};
+    
+    double fitparams[4][3][3][2];
+    
+    if(!(file->IsOpen())){
+        cout << " not open " << endl;
+        return;
+    }
+    
+    TList * list = file->GetListOfKeys();
+        
+    TIter next(list);
+    TKey * key;
+    
+    while ( ( key = (TKey*)next() ) ) {
+        
+        TObject * obj = key->ReadObj() ;
+        
+        TString histname = obj->GetName();
+        
+        cout << " histname : " << histname << endl;
+        
+        if( !histname.Contains("resMeanVSscinX") ) continue; 
+        
+        int cdet = -1;
+            
+        for(unsigned int d=0; d<4; d++){
+            if( histname.Contains(detectornames[d]) ){ 
+                cdet = d;
+                break;
+            }
+        }
+        
+        if(cdet<0) continue;
+        
+        int cboard = -1;
+            
+        for(unsigned int b=0; b<3; b++){
+            if( histname.Contains(boards[b]) ){ 
+                cboard = b;
+                break;
+            }
+        }
+        
+        if(cboard<0) continue;
+        
+        cout << " detector " << cdet << " board " << cboard+6 << endl;
+        
+        double low = -1400;
+        double high = 200.;
+        
+//         if( cdet == 0 ){
+//             if( cboard == 2 ){ 
+//                 low = -1400.;
+//                 high = 200.;
+//             }
+//         }
+//         else if( cdet == 1 ){
+//             if( cboard == 2 ){ 
+//                 low = -1300.;
+//                 high = 250.;
+//             }
+//         }
+//         else if( cdet == 2 ){
+//             if( cboard == 0 ){ 
+//                 low = -1050.;
+//                 high = -450.;
+//             }
+//             if( cboard == 1 ){ 
+//                 low = -1050.;
+//                 high = -150.;
+//             }
+//             if( cboard == 2 ){ 
+//                 low = -950.;
+//                 high = -150.;
+//             }
+//         }
+        
+        if( cdet == 0 ){
+            if( cboard == 2 ){ 
+                low = -1350.;
+                high = 200.;
+            }
+        }
+        else if( cdet == 2 ){
+            if( cboard == 0 ){ 
+                low = -1050.;
+                high = -250.;
+            }
+            if( cboard == 1 ){ 
+                low = -1050.;
+                high = -150.;
+            }
+            if( cboard == 2 ){ 
+                low = -750.;
+                high = -250.;
+            }
+        }
+        else if( cdet == 3 ){
+            if( cboard == 0 ){ 
+                low = -1250.;
+            }
+            if( cboard == 2 ){
+                high = 150.;
+            }
+        }
+        
+        TF1 * pol2 = new TF1("pol2","[0]+[1]*(x+650)+[2]*(x+650)*(x+650)", low, high);
+        
+        if( cdet == 3 ) pol2->SetParameters( -0.2, -0.01, 1e-7);
+        else pol2->SetParameters( 14.5, 0.01, -8e-7);
+        
+//         pol2->SetParLimits( 0, -20., 20.);
+//         pol2->SetParLimits( 1, -1., 1.);
+//         pol2->SetParLimits( 2, -1., 1.);
+        
+        TGraphErrors * resVSscinX = (TGraphErrors*)obj;
+        
+        resVSscinX->GetYaxis()->SetRangeUser(-17., 17.);
+        
+        resVSscinX->Fit(pol2,"RB");
+        
+        resultfile->cd();
+        resVSscinX->Write();
+//         resVSscinX->Draw("AP");
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
+        
+        for(unsigned int p=0; p<3; p++){
+            fitparams[cdet][cboard][p][0] = pol2->GetParameter(p);
+            fitparams[cdet][cboard][p][1] = pol2->GetParError(p);
+        }
+        
+    }
+    
+    file->Close();
+    resultfile->Close();
+    
+    ofstream outfile("fitparams_resMeanVSscinX.txt");
+    
+    for(unsigned int d=0; d<4; d++){
+        outfile << detectornames[d] << endl;
+        for(unsigned int b=0; b<3; b++){
+            outfile << boards[b] << " \t ";
+            for(unsigned int p=0; p<3; p++){
+                outfile << fitparams[d][b][p][0] << " +/- " << fitparams[d][b][p][1] << "\t";
+            }
+            outfile << endl;
+        }
+    }
+    
+    outfile.close();
+    
+}
+
+void risetimer(){
+    
+    TFile * infile = new TFile("/project/etp4/mherrmann/analysis/anafiles/sm2_m0_2017_10_24_lC_RMScut5_noise_strips_risetimePP.root","READ");
+    
+    if( !( infile->IsOpen() ) ){
+        cerr << " ERROR: could not get file " << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    TH1I * readhist;
+    TString histname;
+    
+    vector<string> detectornames;
+    detectornames.push_back("eta_out");
+    detectornames.push_back("eta_in");
+    detectornames.push_back("stereo_in");
+    detectornames.push_back("stereo_out");
+    
+    TFile * outfile = new TFile("currentRisetimeResults.root","RECREATE");
+    
+    TH2F** risetimePerPartition= new TH2F*[4];
+    TH2F** meanRisetimePerPartition= new TH2F*[4];
+    TH2F** maxRisetimePerPartition= new TH2F*[4];
+    
+    for(unsigned int d=0; d<4; d++){
+        
+        histname = "risetimePerPartition_";
+        histname += detectornames.at(d);
+        risetimePerPartition[d] = new TH2F(histname,histname,16,0.,16.,24,0.,24.);
+        
+        histname = "meanRisetimePerPartition_";
+        histname += detectornames.at(d);
+        meanRisetimePerPartition[d] = new TH2F(histname,histname,16,0.,16.,24,0.,24.);
+        
+        histname = "maxRisetimePerPartition_";
+        histname += detectornames.at(d);
+        maxRisetimePerPartition[d] = new TH2F(histname,histname,16,0.,16.,24,0.,24.);
+        
+        for(unsigned int x=0; x<16; x++){
+            for(unsigned int y=0; y<24; y++){
+                
+                histname = "fastestRisetime";
+                histname += "_";
+                histname += detectornames.at(d);
+                histname += "_x";
+                histname += x;
+                histname += "_y";
+                histname += y;
+                readhist = (TH1I*)infile->Get(histname);
+                
+                if( readhist->GetEntries() < 500 ) continue;
+                
+                TF1 * landau = new TF1("landau","landau",0.3,1.5);
+//                 cout << " estimate " << readhist->GetEntries() << " \t " << (double)( readhist->GetMaximumBin() )/100. << " \t " << readhist->GetRMS() << endl;
+                landau->SetParameters( readhist->GetEntries(), (double)( readhist->GetMaximumBin() )/100., readhist->GetRMS());
+                landau->SetParLimits(0,0,1e5);
+                landau->SetParLimits(1,0.3,1.1);
+                landau->SetParLimits(2,0.1,1.);
+                
+                readhist->Fit(landau,"RQB");
+//                 readhist->Fit(landau,"RB");
+//                 cout << " fitparameter " << landau->GetParameter(0) << " \t " << landau->GetParameter(1) << " \t " << landau->GetParameter(2) << endl;
+                
+//                 readhist->Draw();
+//                 gPad->Modified();
+//                 gPad->Update();
+//                 gPad->WaitPrimitive();
+                
+                risetimePerPartition[d]->SetBinContent( x+1, y+1, landau->GetParameter(1));
+                meanRisetimePerPartition[d]->SetBinContent( x+1, y+1, readhist->GetMean());
+                maxRisetimePerPartition[d]->SetBinContent( x+1, y+1, (double)( readhist->GetMaximumBin() )/100.);
+                
+            }
+        }
+        
+    }
+    
+    infile->Close();
+    
+    outfile->cd();
+    
+    for(unsigned int d=0; d<4; d++){ 
+        risetimePerPartition[d]->Write();
+        meanRisetimePerPartition[d]->Write();
+        maxRisetimePerPartition[d]->Write();
+    }
+    
+    outfile->Close();
+    
+}
+
+void uTPCtime(){
+    
+//     TFile * infile = new TFile("/project/etp4/mherrmann/analysis/results/CRF/moduleOne/sm2_m1_560V_C100V_ZS2_20180611_0927_r50_uTPCt0.root","READ");
+//     TFile * infile = new TFile("/project/etp4/mherrmann/analysis/results/CRF/moduleOne/sm2_m1_570V_C150V_ZS2_20180606_1854_r51_uTPCt0.root","READ");
+    TFile * infile = new TFile("/project/etp4/mherrmann/analysis/results/CRF/moduleOne/sm2_m1_570V_ZS2_20180601_0928_r52_uTPCt0.root","READ");
+    
+    if( !( infile->IsOpen() ) ){
+        cerr << " ERROR: could not get file " << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    TH2I * readhist;
+    TH1D * slice;
+    TProfile * profile;
+    TString histname;
+    
+    double fitrange = 6.;
+    double slicerange = 10.;
+    double showrange = 2.;
+    
+    TF1 * linear = new TF1("linear","pol1",-fitrange,fitrange);
+    
+    vector<string> detectornames;
+    detectornames.push_back("eta_out");
+    detectornames.push_back("eta_in");
+    detectornames.push_back("stereo_in");
+    detectornames.push_back("stereo_out");
+    
+    unsigned int ndetectors = detectornames.size();
+    
+    for(unsigned int d=0; d<4; d++){ 
+                
+        histname = "uTPCresVSuTPCslope";
+        if(ndetectors>1){ 
+            histname += "_";
+            histname += detectornames.at(d);
+        }
+        readhist = (TH2I*)infile->Get(histname);
+        readhist->GetXaxis()->SetRangeUser(-fitrange,fitrange);
+        readhist->GetYaxis()->SetRangeUser(-slicerange,slicerange);
+        readhist->Draw("colz");
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
+        
+        profile = readhist->ProfileX();
+        slice = (TH1D*)profile;
+        
+//         readhist->FitSlicesY();
+//         histname += "_1";
+//         slice = (TH1D*)gDirectory->Get(histname);
+        
+        slice->Fit( linear, "R");
+        slice->GetXaxis()->SetRangeUser(-fitrange,fitrange);
+        slice->GetYaxis()->SetRangeUser(-showrange,showrange);
+        slice->Draw();
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
+        
+        
+    }
+    
+}
+
+void startNendTimes(){
+    
+    TFile * infile = new TFile("/project/etp4/mherrmann/analysis/results/CRF/moduleOne/sm2_m1_560V_C100V_ZS2_20180611_0927_r50_uTPCt0.root","READ");
+//     TFile * infile = new TFile("/project/etp4/mherrmann/analysis/results/CRF/moduleOne/sm2_m1_570V_C150V_ZS2_20180606_1854_r51_uTPCt0.root","READ");
+//     TFile * infile = new TFile("/project/etp4/mherrmann/analysis/results/CRF/moduleOne/sm2_m1_570V_ZS2_20180601_0928_r52_uTPCt0.root","READ");
+    
+    if( !( infile->IsOpen() ) ){
+        cerr << " ERROR: could not get file " << endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    TH2I * readhist;
+    TH1D * projection;
+    TString histname;
+    
+    TF1 * fitfunc;
+    
+    vector<string> detectornames;
+    detectornames.push_back("eta_out");
+    detectornames.push_back("eta_in");
+    detectornames.push_back("stereo_in");
+    detectornames.push_back("stereo_out");
+    
+    unsigned int ndetectors = detectornames.size();
+    
+    vector<string> boardnames;
+    boardnames.push_back("board6");
+    boardnames.push_back("board7");
+    boardnames.push_back("board8");
+    
+    vector<vector<vector<vector<double> > > > ranges = 
+    {
+//         { {{60.,190.},{230.,340.}}, {{60.,190.},{230.,340.}}, {{60.,190.},{230.,340.}}},
+//         { {{60.,190.},{230.,340.}}, {{60.,190.},{230.,340.}}, {{60.,190.},{230.,340.}}},
+//         { {{60.,190.},{230.,340.}}, {{60.,190.},{230.,340.}}, {{60.,200.},{230.,340.}}},
+//         { {{60.,190.},{230.,340.}}, {{60.,190.},{230.,340.}}, {{60.,190.},{230.,340.}}}
+        { {{60.,190.},{340.,460.}}, {{60.,190.},{340.,460.}}, {{60.,190.},{340.,460.}}},
+        { {{60.,190.},{340.,460.}}, {{60.,190.},{340.,460.}}, {{60.,190.},{340.,460.}}},
+        { {{50.,200.},{340.,460.}}, {{60.,190.},{340.,460.}}, {{60.,190.},{340.,460.}}},
+        { {{60.,190.},{345.,455.}}, {{60.,190.},{340.,460.}}, {{60.,190.},{340.,460.}}}
+    };
+    
+    vector<vector<vector<double> > > results = 
+    {
+        { {0.,0.}, {0.,0.}, {0.,0.}},
+        { {0.,0.}, {0.,0.}, {0.,0.}},
+        { {0.,0.}, {0.,0.}, {0.,0.}},
+        { {0.,0.}, {0.,0.}, {0.,0.}}
+    };
+    
+    unsigned int nboards = boardnames.size();
+    
+    for(unsigned int d=0; d<ndetectors; d++){ 
+        
+        cout << " " << detectornames.at(d);
+        
+        for(unsigned int b=0; b<nboards; b++){
+            
+            cout << " \t " << boardnames.at(b);
+                
+            histname = "starttimeVSslope_near";
+            if(nboards>1){
+                histname += "_";
+                histname += boardnames.at(b);
+            }
+            if(ndetectors>1){ 
+                histname += "_";
+                histname += detectornames.at(d);
+            }
+            readhist = (TH2I*)infile->Get(histname);
+            projection = readhist->ProjectionY();
+            projection->Draw();
+            gPad->Modified();
+            gPad->Update();
+            gPad->WaitPrimitive();
+            
+            projection->GetXaxis()->SetRangeUser( ranges.at(d).at(b).at(0).at(0)-10., ranges.at(d).at(b).at(0).at(1)+10.);
+            fitfunc = new TF1("fitfunc","[0]/(1.+exp(([1]-x)/[2]))+[3]", ranges.at(d).at(b).at(0).at(0), ranges.at(d).at(b).at(0).at(1));
+            fitfunc->SetParameters( 20000., 0.5*(ranges.at(d).at(b).at(0).at(0)+ranges.at(d).at(b).at(0).at(1)), 30., 1000.);
+            projection->Fit(fitfunc,"RQB");
+            projection->Draw();
+            gPad->Modified();
+            gPad->Update();
+            gPad->WaitPrimitive();
+            results.at(d).at(b).at(0) = fitfunc->GetParameter(1);
+            cout << " \t " << fitfunc->GetParameter(1) << " +/- " << fitfunc->GetParError(1);
+            
+            projection->GetXaxis()->SetRangeUser( ranges.at(d).at(b).at(1).at(0)-10., ranges.at(d).at(b).at(1).at(1)+10.);
+            fitfunc = new TF1("fitfunc","[0]/(1.+exp((x-[1])/[2]))+[3]", ranges.at(d).at(b).at(1).at(0), ranges.at(d).at(b).at(1).at(1));
+            fitfunc->SetParameters( 10000., 0.5*(ranges.at(d).at(b).at(0).at(0)+ranges.at(d).at(b).at(0).at(1)), 16., 2000.);
+            if(d==3 && b==0) fitfunc->SetParameters( 600., 0.5*(ranges.at(d).at(b).at(0).at(0)+ranges.at(d).at(b).at(0).at(1)), 16., 50.);
+            projection->Fit(fitfunc,"RQB");
+            projection->Draw();
+            gPad->Modified();
+            gPad->Update();
+            gPad->WaitPrimitive();
+            results.at(d).at(b).at(1) = fitfunc->GetParameter(1);
+            cout << " \t " << fitfunc->GetParameter(1) << " +/- " << fitfunc->GetParError(1);
+        
+        }
+        
+        cout << endl;
+        
+    }
+    
+}
+
+// void getResMean(TString filename, bool bugger=false){
+// 
+//     bool debug = false;
+//     int neighbors = 7;
+// 
+//     vector<string> detectornames = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+//     
+//     debug = bugger;
+//     
+//     if(debug) cout << " debugging mode enabled " << endl;
+//     
+//     TString readname = "/project/etp4/mherrmann/analysis/results/";
+//     readname += filename;
+//         
+//     TFile * readfile = new TFile(readname);
+//     
+//     if( !( readfile->IsOpen() ) ){
+//         cout << " file " << readname << " is not open " << endl;
+//         return;
+//     }
+// 
+//     TList * list = readfile->GetListOfKeys();
+//     
+//     TIter next(list);
+//     TKey * key;
+//     
+//     vector< vector<double> > results;
+//     vector<string> detOrder;
+//         
+//     while ( ( key = (TKey*)next() ) ) {
+//         
+//         TObject * obj = key->ReadObj() ;
+//         
+//         TString histname = obj->GetName();
+//         
+// //         if(debug) cout << " histname : " << histname << endl;
+//         
+//         if( !( histname.Contains("resVSslope_area") ) ) continue;
+//         
+//         string cdetname = "";
+//         
+//         for(unsigned int d=0; d<detectornames.size(); d++){
+//             if( histname.Contains(detectornames.at(d)) ) cdetname = detectornames.at(d);
+//         }
+//         
+//         if( cdetname.compare("") == 0 ) continue;
+//         
+//         detOrder.push_back(cdetname);
+//         
+//         if(debug) cout << cdetname << endl;
+//     
+//         TString proname = histname;
+//         proname += "_yprojection";
+//         
+//         TH2I * histo = (TH2I*)obj;
+//         TH1D * projection = ((TH2I*)(histo))->ProjectionY( proname);
+//         
+//         projection->GetXaxis()->SetRangeUser( -5., 5.);
+//         
+// //         results.push_back( fitDoubleGaussian( (TH1I*)projection, debug) );
+//         
+//     }
+//     
+//     cout << " detector \t residual mean +/- error \t sigma +/- error \t large small gaus ratio " << endl;
+//     
+//     for(unsigned int d=0; d<detOrder.size(); d++){
+//         cout << " " << detOrder.at(d) << " : \t ";
+//         cout << results.at(d).at(1) << " +/- " << results.at(d).at(7) << " \t ";
+//         cout << results.at(d).at(2) << " +/- " << results.at(d).at(8) << " \t ";
+//         cout << results.at(d).at(0) << " / " << results.at(d).at(3) << " = " << results.at(d).at(0)/results.at(d).at(3) << endl;
+//     }
+//     
+//     readfile->Close();
+// 
+// }
+
+void getResMean(TString filename, bool bugger=false){
+
+    bool debug = bugger;
+
+    TString searchname = "excludedTrackResiduumVSperpdendicular";
+    TString addname = "";
+    searchname += addname;
+    vector<string> detectornames = { "eta", "Tmm1", "Tmm2", "Tmm3", "Tmm4"};
+    
+    if(debug) cout << " debugging mode enabled " << endl;
+    
+    TString readname = "";
+    readname += filename;
+        
+    TFile * readfile = new TFile(readname);
+    
+    if( !( readfile->IsOpen() ) ){
+        cout << " file " << readname << " is not open " << endl;
+        return;
+    }
+
+    TList * list = readfile->GetListOfKeys();
+    
+    TIter next(list);
+    TKey * key;
+    
+    vector< vector<double> > results;
+    vector<vector<string> > detOrder;
+        
+    while ( ( key = (TKey*)next() ) ) {
+        
+        TObject * obj = key->ReadObj() ;
+        
+        TString histname = obj->GetName();
+        
+//         if(debug) cout << " histname : " << histname << endl;
+        
+        if( !( histname.Contains(searchname) ) ) continue;
+        
+        string cdetname = "";
+        
+        for(unsigned int d=0; d<detectornames.size(); d++){
+            if( histname.Contains(detectornames.at(d)) ) cdetname = detectornames.at(d);
+        }
+        
+        if( cdetname.compare("") == 0 ) continue;
+        
+        vector<string> strdummy;
+        
+        strdummy.push_back(cdetname);
+        
+        if( histname.Contains("_x") ) strdummy.push_back("x");
+        else if( histname.Contains("_y") ) strdummy.push_back("y");
+        else strdummy.push_back("?");
+        
+        detOrder.push_back(strdummy);
+        
+        if(debug) cout << endl << " ----------- " << cdetname << " " << strdummy.at(1) << " ---------- " << endl;
+    
+        TString proname = histname;
+        proname += "_yprojection";
+        
+        TH2I * histo = (TH2I*)obj;
+        TH1D * projection = ((TH2I*)(histo))->ProjectionY( proname);
+        
+        unsigned int maxBin = projection->GetMaximumBin();
+        double maxValue = 0.5 * ( projection->GetXaxis()->GetBinLowEdge(maxBin) + projection->GetXaxis()->GetBinUpEdge(maxBin) );
+        
+        if(debug) cout << " maxValue " << maxValue << endl;
+        
+        projection->GetXaxis()->SetRangeUser( maxValue-2., maxValue+2.);
+        
+        results.push_back( fitDoubleGaussian( (TH1I*)projection, debug) );
+        
+    }
+    
+    cout << " detector \t residual mean +/- error \t sigma +/- error \t large small gaus ratio " << endl;
+    
+    for(unsigned int d=0; d<detOrder.size(); d++){
+        cout << " " << detOrder.at(d).at(0) << " " << detOrder.at(d).at(1) << " : \t ";
+        cout << results.at(d).at(1) << " +/- " << results.at(d).at(7) << " \t ";
+        cout << results.at(d).at(2) << " +/- " << results.at(d).at(8) << " \t ";
+        cout << results.at(d).at(0) << " / " << results.at(d).at(3) << " = " << results.at(d).at(0)/results.at(d).at(3) << endl;
+    }
+    
+    readfile->Close();
+
+}
+
+void getNoisy( TString filename, bool bugger=false){
+
+    bool debug = false;
+    int neighbors = 7;
+
+    vector<string> detectornames = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+    
+    debug = bugger;
+    
+    if(debug) cout << " debugging mode enabled " << endl;
+    
+    TString readname = "/project/etp4/mherrmann/analysis/results/";
+    readname += filename;
+        
+    TFile * readfile = new TFile(readname);
+    
+    if( !( readfile->IsOpen() ) ){
+        cout << " ERROR : can not open file \"" << readname << "\" " << endl;
+        return;
+    }
+    
+    TList * list = readfile->GetListOfKeys();
+    
+    TIter next(list);
+    TKey * key;
+    
+    vector< vector<int> > foundNoisy;
+    vector< vector<string> > detOrder;
+        
+    while ( ( key = (TKey*)next() ) ) {
+        
+        TObject * obj = key->ReadObj() ;
+        
+        TString histname = obj->GetName();
+        
+//         if(debug) cout << " histname : " << histname << endl;
+        
+//         if( !( histname.Contains("chargeVSstrip") ) ) continue;
+        if( !( histname.Contains("clusterQvsPosition") ) ) continue;
+        
+        string cdetname = "";
+        
+        for(unsigned int d=0; d<detectornames.size(); d++){
+            if( histname.Contains(detectornames.at(d)) ) cdetname = detectornames.at(d);
+        }
+        
+        if( cdetname.compare("") == 0 ) continue;
+        
+        string cdir = "y";
+        
+        if( histname.Contains("x") ) cdir = "x";
+        
+        vector<string> dummy;
+        dummy.push_back(cdetname);
+        dummy.push_back(cdir);
+        detOrder.push_back( dummy );
+        
+        if(debug) cout << cdetname << "\t" << cdir << endl;
+        
+        vector<int> noisyStrips;
+    
+        TString proname = histname;
+        proname += "_xprojection";
+        
+        TH2I * histo = (TH2I*)obj;
+        TH1D * projection = ((TH2I*)(histo))->ProjectionX( proname);
+  
+        proname += "_counts";
+        
+//         TH1I * noisyStripsCounts = new TH1I(proname,proname,1e4,0.,1e6);
+//         noisyStripsCounts->SetXTitle("noise counts on strips");
+//         noisyStripsCounts->SetYTitle("counts"); 
+        
+        int nStrips = projection->GetNbinsX(); 
+        
+        double cContent=0.;
+//         double allMean=0.;
+//         double allSigma=0.;
+//         double cMean=0.;
+//         double cSigma=0.;
+//         double eMean=0.;
+//         double eSigma=0.;
+//         double nContent=0.;
+        
+        double maxContent = 0.;
+        
+        for(int cs=1; cs<nStrips; cs++){
+            
+            cContent = projection->GetBinContent(cs);
+            
+            if(cContent > maxContent) maxContent = cContent;
+            
+//             noisyStripsCounts->Fill(cContent);
+            
+//             allMean += cContent;
+//             allSigma += cContent*cContent;
+//             
+//             cMean=0.;
+//             cSigma=0.;
+//             eMean=0.;
+//             eSigma=0.;
+//             
+//             for(int n=-neighbors/2; n<neighbors/2+1; n++){
+//                 
+//                 int cn = cs+n;
+//                 
+//                 if( cn > 0 && cn < nStrips ) nContent = projection->GetBinContent(cn);
+//                 else if( cn < 1 ) nContent = projection->GetBinContent(cn+neighbors);
+//                 else if( cn > nStrips-1 ) nContent = projection->GetBinContent(cn-neighbors);
+//                 
+//                 cMean += nContent;
+//                 cSigma += nContent*nContent;
+//                 
+//                 if(n!=0){
+//                     eMean += nContent;
+//                     eSigma += nContent*nContent;
+//                 }
+//                 
+//             }
+//             
+//             cSigma = sqrt( ( cSigma - cMean*cMean / (double)neighbors ) / (neighbors-1.) );
+//             cMean = cMean / (neighbors-1.);
+//             
+//             eSigma = sqrt( ( eSigma - eMean*eMean / (neighbors-1.) ) / (neighbors-2.) );
+//             eMean = eMean / (neighbors-2.);
+            
+//             if( cMean > 2.*eMean 
+//                 || cSigma > 2.*eSigma
+//                 || cContent > 3.*eSigma+eMean
+//             ) noisyStrips.push_back( cs );
+            
+//             if(debug && ( cMean > 2.*eMean 
+//                 || cSigma > 2.*eSigma
+//                 || cContent > 3.*eSigma+eMean
+//             ) ){
+//                 cout << cs;
+//                 if(cMean > 2.*eMean) cout << " mean ";
+//                 if(cSigma > 2.*eSigma) cout << " sigma ";
+//                 if(cContent > 3.*eSigma+eMean) cout << " content ";
+//                 cout << endl;
+//             }
+            
+        }
+        
+        int binsToUse = (int)(nStrips/100.);
+        
+        TH1I * noisyStripsCounts = new TH1I( proname, proname, binsToUse, 0., maxContent+1);
+        noisyStripsCounts->SetXTitle("noise counts on strips");
+        noisyStripsCounts->SetYTitle("counts"); 
+        
+        
+        for(int cs=1; cs<nStrips; cs++){
+            
+            cContent = projection->GetBinContent(cs);
+            
+            noisyStripsCounts->Fill(cContent);
+            
+        }
+        
+        double noisyMean = noisyStripsCounts->GetMean();
+        double noisyDev = noisyStripsCounts->GetRMS();
+        
+        if(debug){
+            noisyStripsCounts->Draw();
+            gPad->Modified();
+            gPad->Update();
+            gPad->WaitPrimitive();
+        }
+        
+        for(int cs=1; cs<nStrips; cs++){
+            
+            cContent = projection->GetBinContent(cs);
+            
+//             if( cContent > noisyMean+3.*noisyDev) noisyStrips.push_back( cs );
+            
+            if( cdetname == detectornames.at(0) && cContent > 400 ) noisyStrips.push_back( cs );
+            else if( cdetname == detectornames.at(1) && cContent > 400 ) noisyStrips.push_back( cs );
+            else if( cdetname == detectornames.at(2) && cContent > 400 ) noisyStrips.push_back( cs );
+            else if( cdetname == detectornames.at(3) && cContent > 300 ) noisyStrips.push_back( cs );
+            
+        }
+        
+        foundNoisy.push_back( noisyStrips );
+        
+    }
+    
+    for(unsigned int d=0; d<detOrder.size(); d++){
+        cout << " " << detOrder.at(d).at(0) << " " << detOrder.at(d).at(1) << " ";
+        for(unsigned int s=0; s<foundNoisy.at(d).size(); s++) cout << foundNoisy.at(d).at(s) << " ";
+        cout << endl;
+    }
+    
+    readfile->Close();
+    
+}
+
+void getProfile(TString pathNname, TString histname, double lower = -3., double upper = 3., bool fitYaxis = true, bool getWidth=false){
+    
+    TFile * infile = new TFile(pathNname,"READ");
+    
+    if( !( infile->IsOpen() ) ){
+        cerr << " ERROR: could not get file " << endl;
+        exit(EXIT_FAILURE);
+    }
+    else cout << " file read " << endl;
+    
+    TH2I * readhist;
+    TH1D * slice;
+    
+    readhist = (TH2I*)infile->Get(histname);
+    
+    if(readhist==NULL){
+        cerr << " ERROR: could not get histogram " << endl;
+        exit(EXIT_FAILURE);
+    }
+    else cout << " histogram read " << endl;
+    
+    TFile * outfile = new TFile("currentProfile.root","RECREATE");
+        
+    readhist->Draw("COLZ");
+    gPad->Modified();
+    gPad->Update();
+    gPad->WaitPrimitive();
+    
+    cout << " fitting slices ..." << endl;
+    
+    if( fitYaxis ){ 
+        readhist->GetYaxis()->SetRangeUser( lower, upper);
+        readhist->FitSlicesY();
+    }
+    else{ 
+        readhist->GetXaxis()->SetRangeUser( lower, upper);
+        readhist->FitSlicesX();
+    }
+    
+    cout << " done " << endl;
+    
+    TString slicename = histname;
+    if( getWidth ) slicename += "_2";
+    else slicename += "_1";
+    slice = (TH1D*)gDirectory->Get(slicename);
+    
+    slice->GetYaxis()->SetRangeUser( lower, upper);
+        
+    slice->Draw();
+    gPad->Modified();
+    gPad->Update();
+    gPad->WaitPrimitive();
+    
+    outfile->cd();
+    
+    slice->Write();
+    
+    infile->Close();
+    outfile->Close();
+    
+    
+}
+
+void simpleStripAna(){
+    
+    TFile * infile = new TFile("/project/etp4/mherrmann/fitteddata/moduleOne/sm2_m1_570V_ZS2_20180609_1134_fitNclust.root","READ");
+    
+    TTree * strip;
+    infile->GetObject("strip",strip);
+    
+    vector<short> * maxcharge;
+    vector<double> * risetime;
+    vector<short> * detector;
+    vector<short> * fec;
+    vector<short> * apv;
+    
+    strip->Branch("maxcharge",&maxcharge);
+    strip->Branch("risetime",&risetime);
+    strip->Branch("detector",&detector);
+    strip->Branch("fec",&fec);
+    strip->Branch("apv",&apv);
+    
+    TFile * outfile = new TFile("latestSimpleStripAna.root","RECREATE");
+    
+    vector<string> detectornames;
+    detectornames.push_back("eta_out");
+    detectornames.push_back("eta_in");
+    detectornames.push_back("stereo_in");
+    detectornames.push_back("stereo_out");
+    
+    unsigned int ndetectors = detectornames.size();
+    
+    vector<string> boards;
+    boards.push_back("board6");
+    boards.push_back("board7");
+    boards.push_back("board8");
+    unsigned int nBoards = boards.size();
+    
+    TH2I *** risetimeVScharge = new TH2I**[ndetectors]; 
+    for(unsigned int d=0; d<ndetectors; d++){
+        risetimeVScharge[d] = new TH2I*[nBoards];
+        for(unsigned int b=0; b<nBoards; b++){
+            TString name = "risetimeVScharge_";
+            name += detectornames.at(d);
+            name += "_";
+            name += boards.at(b);
+            risetimeVScharge[d][b] = new TH2I( name, name, 500, 0, 2500, 500, 0., 50.);
+            risetimeVScharge[d][b]->SetXTitle("strip charge [ADC channel]");
+            risetimeVScharge[d][b]->SetYTitle("risetime [ns]");  
+        }
+    }
+    
+    
+    
+}
+
+void muontomo(){
+    
+    TString inname = "/project/etp4/mherrmann/analysis/results/CRF/study/sm2_m1_2018_0530to0616_r02.root";
+    TFile * infile = new TFile( inname,"READ");
+    TString outname = inname;
+    outname.ReplaceAll(".root","_tomo.root");
+    TFile * outfile = new TFile( outname,"RECREATE");
+    
+    unsigned int division[3][2] = { { 8, 18}, { 0, 15}, { 9, 10}};
+    unsigned int ndiv[3] = { division[0][1]-division[0][0]+1, division[1][1]-division[1][0]+1, division[2][1]-division[2][0]+1};
+    unsigned int required[3] = { 10, 200, 50};
+    
+    TH2D ** tomography = new TH2D*[3]; 
+    
+    vector<unsigned int> nbins { 0, 0};
+    vector<double> lowEdge { 0., 0.};
+    vector<double> highEdge { 0., 0.};
+    vector<double> step { 0., 0.};
+    
+    for(unsigned int c=0; c<3; c++){
+            
+        TString combination = "YZperX";
+        if( c == 1 ) combination = "XZperY";
+        else if( c == 2 ) combination = "XYperZ";
+        
+        TString histname = "intersection";
+        histname += combination;
+        histname += division[c][0];
+        TH2D * readhist = (TH2D*)infile->Get(histname);
+        
+        nbins.at(0) = readhist->GetXaxis()->GetNbins();
+        lowEdge.at(0) = readhist->GetXaxis()->GetXmin();
+        highEdge.at(0) = readhist->GetXaxis()->GetXmax();
+        step.at(0) = (highEdge.at(0)-lowEdge.at(0))/(double)(nbins.at(0));
+    
+        nbins.at(1) = readhist->GetYaxis()->GetNbins();
+        lowEdge.at(1) = readhist->GetYaxis()->GetXmin();
+        highEdge.at(1) = readhist->GetYaxis()->GetXmax();
+        step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
+        
+        readhist->Delete();
+        
+        histname = "tomography";
+        TString toAdd = "YZ";
+        if( c == 1 ) toAdd = "XZ";
+        else if( c == 2 ) toAdd = "XY";
+        histname += toAdd;
+        tomography[c] = new TH2D( histname, histname, nbins.at(0), lowEdge.at(0), highEdge.at(0), nbins.at(1), lowEdge.at(1), highEdge.at(1));
+        tomography[c]->SetXTitle(" [mm]");
+        tomography[c]->SetYTitle(" [mm]"); 
+        
+        TH2D ** intersection = new TH2D*[ndiv[c]];
+        TH2D ** intersectionWeighted = new TH2D*[ndiv[c]];
+        unsigned int count = 0;
+        
+        for(unsigned int d=division[c][0]; d<=division[c][1]; d++){
+            
+            combination = "YZperX";
+            if( c == 1 ) combination = "XZperY";
+            else if( c == 2 ) combination = "XYperZ";
+            
+            histname = "intersection";
+            histname += combination;
+            histname += d;
+            intersection[count] = (TH2D*)infile->Get(histname);
+            
+            histname = "intersectionWeighted";
+            histname += combination;
+            histname += d;
+            intersectionWeighted[count] = (TH2D*)infile->Get(histname);
+            
+            count++;
+            
+        }
+        
+        for(unsigned int x=1; x<nbins.at(0); x++){
+            for(unsigned int y=1; y<nbins.at(1); y++){
+                double hits = 0.;
+                double weights = 0.;
+                for(unsigned int d=0; d<ndiv[c]; d++){
+                    hits += intersection[d]->GetBinContent( x, y);
+                    weights += intersectionWeighted[d]->GetBinContent( x, y);
+                }
+                if( hits < required[c] ) continue;
+                tomography[c]->SetBinContent( x, y, weights / hits);
+            }
+        }
+        
+        outfile->cd();
+        tomography[c]->Write();
+        
+    }
+    
+    outfile->Close();
+    
+}
+
+void coshfit(){
+    
+//     TFile * infile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/sm2_m1_570V_ZS2_0530to31N0603to05_r13_align.root", "READ");
+    TFile * infile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/sm2_m1_570V_ZS2_20180601_0928_onlySlope_r83_align.root", "READ");
+    
+    TH2D * deltaZ = (TH2D*)infile->Get("eta_out_deltaZ");
+    
+    TF2 * coshfunc = new TF2("coshfunc","[0]+[1]*cosh([2]*(x-[3]))+[4]*cosh([5]*(y-[6]))");
+    
+//     coshfunc->SetParameter(3,8.);
+//     coshfunc->SetParameter(6,18.);
+    coshfunc->SetParameters(-76.,76.,0.02,7.9,76.,0.01,14.8);
+    
+    deltaZ->GetZaxis()->SetRangeUser(-0.7,1.2);
+    
+    deltaZ->Fit(coshfunc);
+    deltaZ->Fit(coshfunc);
+    deltaZ->Fit(coshfunc);
+    deltaZ->Fit(coshfunc);
+    deltaZ->Fit(coshfunc);
+    
+    for(unsigned int p=0; p<coshfunc->GetNpar(); p++) cout << " " << coshfunc->GetParameter(p) << "+/-" << coshfunc->GetParError(p) << "\t";
+    cout << endl;
+    
+    deltaZ->Draw("lego2");
+    coshfunc->Draw("cont1 same");
+    
+    gPad->Modified();
+    gPad->Update();
+    gPad->WaitPrimitive();
+    
+    vector<unsigned int> nbins { 0, 0};
+    vector<double> lowEdge { 0., 0.};
+    vector<double> highEdge { 0., 0.};
+    vector<double> step { 0., 0.};
+        
+    nbins.at(0) = deltaZ->GetXaxis()->GetNbins();
+    lowEdge.at(0) = deltaZ->GetXaxis()->GetXmin();
+    highEdge.at(0) = deltaZ->GetXaxis()->GetXmax();
+    step.at(0) = (highEdge.at(0)-lowEdge.at(0))/(double)(nbins.at(0));
+
+    nbins.at(1) = deltaZ->GetYaxis()->GetNbins();
+    lowEdge.at(1) = deltaZ->GetYaxis()->GetXmin();
+    highEdge.at(1) = deltaZ->GetYaxis()->GetXmax();
+    step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
+    
+    TH1I * heightVariation = new TH1I("heightVariation","heightVariation",200,-2.,2.);
+    TH1I * differenceTOfit = new TH1I("differenceTOfit","differenceTOfit",200,-2.,2.);
+    
+    TH2D * differenceSurface = (TH2D*)deltaZ->Clone("differenceSurface");
+    TH2D * fitArea = (TH2D*)deltaZ->Clone("fitArea");
+    
+    for(unsigned int x=1; x<=nbins.at(0); x++){
+        for(unsigned int y=1; y<=nbins.at(1); y++){
+            double height = deltaZ->GetBinContent( x, y);
+            heightVariation->Fill(height);
+            double fitvalue = coshfunc->Eval( x-0.5, y-0.5);
+            differenceTOfit->Fill(height-fitvalue);
+            differenceSurface->SetBinContent( x, y, height-fitvalue);
+            fitArea->SetBinContent( x, y, fitvalue);
+        }
+    }
+    
+    heightVariation->Draw();
+    gPad->Modified();
+    gPad->Update();
+    gPad->WaitPrimitive();
+    
+    differenceTOfit->Draw();
+    gPad->Modified();
+    gPad->Update();
+    gPad->WaitPrimitive();
+    
+    differenceSurface->GetZaxis()->SetRangeUser(-0.7,1.2);
+    differenceSurface->Draw("colz");
+    gPad->Modified();
+    gPad->Update();
+    gPad->WaitPrimitive();
+    
+    fitArea->GetZaxis()->SetRangeUser(-0.7,1.2);
+    fitArea->Draw("colz");
+    gPad->Modified();
+    gPad->Update();
+    gPad->WaitPrimitive();
+    
+}
+
+void newtonMethod( function<double(double)> func, function<double(double)> funcPrime){
+    
+    unsigned int maxIterations = 100;
+    unsigned int count = 0;
+    double deviation = 1e6;
+    double requiredPrecision = 1e-5;
+    double value = 0.;   
+    
+    while( count < maxIterations && deviation > requiredPrecision ){
+        count++;
+        value = value - func(value) / funcPrime(value);
+        deviation = abs( func(value) );
+    }
+    
+    if( deviation > requiredPrecision ){
+        cout << " method did not converge (" << deviation << ")" << endl;
+        return;
+    }
+    
+    cout << " method converged after " << count << " steps at " << value << " with an deviation of " << deviation << endl;
+    
+}
+
+vector< vector<double> > getHoughLines(vector< vector<double> > points, unsigned int required=2){
+    
+    bool debug = true;
+    
+    vector< vector<double> > houghLines;
+    vector<double> singleLine;
+            
+    unsigned int number = points.size();
+    
+//     if(debug) cout << " #points " << number << endl;
+    
+    if( number < 1 ) return houghLines;
+    
+    if( number == 1 ){
+        singleLine.push_back( points.at(0).at(1) );
+        singleLine.push_back( 0. );
+        houghLines.push_back( singleLine );
+        singleLine.clear();
+        return houghLines;
+    }
+    
+    bool withWeights = false;
+    
+    if( points.at(0).size() == 3 ) withWeights = true;
+    
+    double range[2][2] = { { 1e6, -1e6} , { 1e6, -1e6} };
+    double maxWeight = -1e6;
+    double minDist = 1e6;
+    
+    for(unsigned int p=0; p<number; p++){
+        if( points.at(p).at(0) < range[0][0] ) range[0][0] = points.at(p).at(0);
+        if( points.at(p).at(0) > range[0][1] ) range[0][1] = points.at(p).at(0);
+        if( points.at(p).at(1) < range[1][0] ) range[1][0] = points.at(p).at(1);
+        if( points.at(p).at(1) > range[1][1] ) range[1][1] = points.at(p).at(1);
+        if( withWeights && points.at(p).at(2) > maxWeight ) maxWeight = points.at(p).at(2);
+        for(unsigned int o=p+1; o<number; o++){
+            double dist = sqrt( pow( points.at(p).at(0) - points.at(o).at(0) , 2) + pow( points.at(p).at(1) - points.at(o).at(1) , 2) );
+            if( dist < minDist ) minDist = dist;
+        }
+    }
+    
+    unsigned int npixel[2] = { (unsigned int)(range[0][1]-range[0][0]+1), (unsigned int)(range[1][1]-range[1][0]+1)};
+    
+    if(debug){ 
+//         for(unsigned int r=0; r<2; r++)
+//             cout << " " << range[r][0] << " " << range[r][1] << " => " << npixel[r] << endl;
+    }
+    
+    for(unsigned int r=0; r<2; r++){
+        if( npixel[r] < 2 ){
+            cout << " WARNING : points too close in " << r << endl;
+            if( r == 0 ){
+                singleLine.push_back( -1e6 * range[0][0] );
+                singleLine.push_back( 1e6 );
+            }
+            else{
+                singleLine.push_back( range[0][0] );
+                singleLine.push_back( 0.);
+            }
+            houghLines.push_back( singleLine );
+            singleLine.clear();
+            return houghLines;
+        }
+    }
+    
+    Mat binary( npixel[0], npixel[1], CV_8U, Scalar::all(0));
+    
+//     if(debug) cout << " picture initialized " << endl;
+    
+    for(unsigned int p=0; p<number; p++){
+        unsigned int toFill = 255;
+        if( withWeights ) toFill = (unsigned int)( 255. * points.at(p).at(2) / maxWeight );
+//         cout << " " << (unsigned int)(points.at(p).at(0) - range[0][0] ) << " " << (unsigned int)(points.at(p).at(1) - range[1][0] ) << endl;
+        binary.at<uchar>( 
+                    (unsigned int)(points.at(p).at(0) - range[0][0] /*+ 1*/ ), 
+                    (unsigned int)(points.at(p).at(1) - range[1][0] /*+ 1*/ )
+        ) = (uchar)toFill;
+//         circle( binary, Point( (unsigned int)(points.at(p).at(1) - range[1][0] ), (unsigned int)(points.at(p).at(0) - range[0][0] )), 0, (uchar)toFill, -1, 8);
+    }
+    
+    if(debug){
+        namedWindow("filled", WINDOW_NORMAL);
+        resizeWindow("filled",400,1000);
+        imshow("filled",binary);
+//         imwrite("filled.bmp",binary);
+        waitKey(100);
+        sleep(2);
+//         destroyWindow("filled");
+    }
+    
+    unsigned int maxLength = (unsigned int)sqrt( npixel[0] * npixel[0] + npixel[1] * npixel[1] ) + 1;
+    
+    vector<Vec2f> lines;
+    
+//     if(debug) cout << " picture filled \t minDist " << minDist << " \t maxLength " << maxLength << endl;
+    
+    HoughLines( binary, lines, 1, CV_PI/18000., required);
+    
+//     if(debug) cout << " hough lines calculated " << endl;
+    
+    if( lines.size() < 1 ){
+        cout << " WARNING : no hough line found " << endl;
+        return houghLines;
+    }
+    
+    cout << " # lines " << lines.size() << endl;
+    
+    vector<Vec2f> averagedLines;
+    vector<unsigned int> toAverage;
+    vector<bool> used;
+    for(unsigned int l=0; l<lines.size(); l++) used.push_back(false);
+    
+    for(unsigned int l=0; l<lines.size(); l++){
+        
+        if( used.at(l) ) continue;
+        
+        for(unsigned int o=l+1; o<lines.size(); o++){
+            
+            if( used.at(o) ) continue;
+            if( abs( lines.at(l)[0] - lines.at(o)[0] ) < 2 && abs( lines.at(l)[1] - lines.at(o)[1] ) < 1e-2 ){ 
+                toAverage.push_back(o);
+                used.at(o) = true;
+//                 cout << " l" << l << " o" << o << endl;
+            }
+            
+        }
+        
+        unsigned int additional =  toAverage.size();
+        
+        if( additional < 1 ){
+            averagedLines.push_back(lines.at(l));
+            continue;
+        }
+        
+        float rho = lines.at(l)[0];
+        float theta = lines.at(l)[1]; 
+        
+        for(unsigned int a=0; a<additional; a++){
+            rho += lines.at( toAverage.at(a) )[0];
+            theta += lines.at( toAverage.at(a) )[1];
+        }
+        
+        toAverage.clear();
+        
+        rho = rho/(float)(additional+1);
+        theta = theta/(float)(additional+1);
+        
+        Vec2f averaged = { rho , theta };
+        averagedLines.push_back( averaged );
+        
+    }
+    
+    cout << " # averaged " << averagedLines.size() << endl;
+    
+    double slope = 0.;
+    double intercept = 0.;
+    for(unsigned int l=0; l<averagedLines.size(); l++){
+        
+        float rho = averagedLines.at(l)[0];
+        float theta = averagedLines.at(l)[1];
+        slope = - cos( theta ) / sin( theta );
+        intercept = rho / sin( theta );
+        if( abs( 1. / slope ) < 1. ) line( binary, Point( -1 , intercept + slope * (-1) ), Point( maxLength , intercept + slope * maxLength ), 150, 1, 8, 0 );
+        else continue;
+        slope = 1. / slope;
+        intercept = - intercept * slope;
+        intercept += range[1][0] - slope * range[0][0];
+        
+        singleLine.push_back( intercept );
+        singleLine.push_back( slope );
+        singleLine.push_back( rho );
+        singleLine.push_back( theta );
+        houghLines.push_back( singleLine );
+        singleLine.clear();
+    }
+    
+    if(debug){
+    
+        for(unsigned int p=0; p<number; p++){
+            unsigned int toFill = 255;
+            if( withWeights ) toFill = (unsigned int)( 255. * points.at(p).at(2) / maxWeight );
+    //         cout << " " << (unsigned int)(points.at(p).at(0) - range[0][0] ) << " " << (unsigned int)(points.at(p).at(1) - range[1][0] ) << endl;
+            binary.at<uchar>( 
+                        (unsigned int)(points.at(p).at(0) - range[0][0] /*+ 1*/ ), 
+                        (unsigned int)(points.at(p).at(1) - range[1][0] /*+ 1*/ )
+            ) = (uchar)toFill;
+    //         circle( binary, Point( (unsigned int)(points.at(p).at(1) - range[1][0] ), (unsigned int)(points.at(p).at(0) - range[0][0] )), 0, (uchar)toFill, -1, 8);
+        }
+        
+        namedWindow("fitted", WINDOW_NORMAL);
+        resizeWindow("fitted",400,1000);
+        imshow("fitted",binary);
+//         imwrite("fitted.bmp",binary);
+        waitKey(100);
+        sleep(2);
+//         destroyWindow("fitted");
+    }
+    
+    return houghLines;
+    
+}
+
+void tracking(){
+    
+    vector<double> zlimits = { -150., 150. };
+    vector<double> slopelimits = { -0.3, 0.3 };
+    vector<double> interceptlimits = { -30., 30. };
+    TRandom3 * generator = new TRandom3();
+    
+    TH2I * efficiencyVStracker = new TH2I( "efficiencyVStracker", "efficiencyVStracker", 8, 2.5, 10.5, 11, 0., 1.1);
+    TH2I * efficiencyVStracks = new TH2I( "efficiencyVStracks", "efficiencyVStracks", 10, 0.5, 10.5, 11, 0., 1.1);
+//     TH2I * efficiencyVStracks = new TH2I( "efficiencyVStracks", "efficiencyVStracks", 4, 2.5, 6.5, 4, 2.5, 6.5);
+    
+    for(unsigned int i=0; i<1000; i++){
+        
+        cout << "---------------------step" << i << endl;
+        
+        unsigned int addTracker = 1 + (unsigned int)( generator->Rndm() * 8 );
+        vector<double> zpos = zlimits;
+        
+        for(unsigned int t=0; t<addTracker; t++){
+            zpos.push_back( zlimits.at(0) + generator->Rndm() * ( zlimits.at(1) - zlimits.at(0) ) );
+        }
+        
+        unsigned int addTracks = 0 + (unsigned int)( generator->Rndm() * 10 );
+        vector< vector<double> > tracks = { { interceptlimits.at(1), slopelimits.at(0) } };
+        
+        for(unsigned int t=0; t<addTracks; t++){
+            vector<double> dvecdummy = {
+                interceptlimits.at(0) + generator->Rndm() * ( interceptlimits.at(1) - interceptlimits.at(0) ),
+                slopelimits.at(0) + generator->Rndm() * ( slopelimits.at(1) - slopelimits.at(0) )
+            };
+            tracks.push_back( dvecdummy );
+        }
+        
+        vector< vector<double> > points;
+        
+        for(unsigned int t=0; t<tracks.size(); t++){
+            cout << " " << t << " \t " << tracks.at(t).at(0) << " \t " << tracks.at(t).at(1) << endl;
+        }
+        
+        double multiplactor = 1.;
+        
+        for(unsigned int t=0; t<tracks.size(); t++){
+            for(unsigned int z=0; z<zpos.size(); z++){
+                vector<double> dvecdummy;
+                dvecdummy.push_back( zpos.at(z) * multiplactor );
+                dvecdummy.push_back( ( tracks.at(t).at(0) + tracks.at(t).at(1) * zpos.at(z) ) * multiplactor );
+                points.push_back( dvecdummy );
+            }
+        }
+        
+        vector< vector<double> > lines = getHoughLines( points , 3 );
+        
+        for(unsigned int l=0; l<lines.size(); l++){
+            cout << " " << l << " \t ";
+            for(unsigned int c=0; c<2; c++){
+//             for(unsigned int c=0; c<lines.at(l).size(); c++){
+                cout << lines.at(l).at(c) << " \t ";
+            }
+            cout << endl;
+        }
+        
+        unsigned int nTracksFound = 0;
+        
+        for(unsigned int t=0; t<tracks.size(); t++){
+            for(unsigned int l=0; l<lines.size(); l++){
+                if( abs( tracks.at(t).at(0) - lines.at(l).at(0) ) < 1. && abs( tracks.at(t).at(1) - lines.at(l).at(1) ) < 0.01 ){ 
+                    nTracksFound++;
+                    break;
+                }
+            }
+        }
+        
+        if( nTracksFound > tracks.size() ){ 
+            cout << " WARNING : wrong efficiency calculation " << endl;
+            break;
+        }
+        
+        efficiencyVStracker->Fill( zpos.size() , (double)nTracksFound / (double)tracks.size() );
+        efficiencyVStracks->Fill( tracks.size() , (double)nTracksFound / (double)tracks.size() );
+//         efficiencyVStracks->Fill( tracks.size() , zpos.size() );
+    
+    }
+    
+    cout << "-----------------FINISHED " << endl;
+    
+    efficiencyVStracker->Draw("colz");
+    gPad->Modified();
+    gPad->Update();
+    gPad->WaitPrimitive();
+    
+    efficiencyVStracks->Draw("colz");
+    gPad->Modified();
+    gPad->Update();
+    gPad->WaitPrimitive();
+    
+}
+
+void driftPlots(){
+    
+    TFile * refFile = new TFile("/project/etp4/mherrmann/analysis/results/electron_parameters_diff_ArCo2_93_7.root","READ");
+    
+    TGraphErrors * refGraph = (TGraphErrors*)refFile->Get("vz_T_293K_p_979mbar");
+    TGraphErrors * rescaledGraph = new TGraphErrors();
+    
+//     cout << " # points " << refGraph->GetN() << endl;
+    
+    double x, y;
+    for(unsigned int p=0; p<refGraph->GetN(); p++){
+        refGraph->GetPoint( p , x , y );
+        rescaledGraph->SetPoint( rescaledGraph->GetN() , x , y*1e4 );
+//         cout << " " << p << " \t " << x << " \t " << y << endl;
+    }
+    
+    refFile->Close();
+    
+    rescaledGraph->GetXaxis()->SetTitle("drift field [V/cm]");
+    rescaledGraph->GetYaxis()->SetTitle("drift velocity [#mum/ns]");
+    
+    TGraphErrors * measuredGraph = new TGraphErrors();
+    
+    double driftGap=0.5, gapError=0.0001, timebin=25./1000.;
+    
+    vector< vector<double> > values =
+    {
+        { 100. , 0.467 , 0.007 },
+        { 150. , 0.62  , 0.01  },
+        { 200. , 0.68  , 0.01  },
+        { 250. , 0.70  , 0.01  },
+        { 350. , 0.69  , 0.02  },
+        { 400. , 0.66  , 0.02  }
+    };
+    
+    for(unsigned int m=0; m<values.size(); m++){
+        double voltage=values.at(m).at(0), driftVelocity=values.at(m).at(1), fitError=values.at(m).at(2);
+    //     cout << " " << measuredGraph->GetN() << " \t " << voltage / driftGap << " \t " << driftVelocity / timebin << endl;
+        measuredGraph->SetPoint( measuredGraph->GetN() , voltage / driftGap , driftVelocity / timebin );
+        measuredGraph->SetPointError( measuredGraph->GetN()-1 , sqrt( pow( 1. / driftGap , 2 ) + pow( voltage / pow( driftGap , 2 ) * gapError , 2 ) ) , fitError / timebin );
+    }
+    
+    rescaledGraph->Draw("AP");
+    
+    measuredGraph->Draw("P same");
+    
+    measuredGraph = new TGraphErrors();
+    values =
+    {
+        { 100. , 0.50 , 0.01 },
+        { 150. , 0.71 , 0.01 },
+        { 200. , 0.82 , 0.01 },
+        { 250. , 0.84 , 0.01 },
+        { 300. , 0.83 , 0.02 },
+        { 350. , 0.82 , 0.02 },
+        { 400. , 0.81 , 0.02 }
+    };
+    
+    for(unsigned int m=0; m<values.size(); m++){
+        double voltage=values.at(m).at(0), driftVelocity=values.at(m).at(1), fitError=values.at(m).at(2);
+    //     cout << " " << measuredGraph->GetN() << " \t " << voltage / driftGap << " \t " << driftVelocity / timebin << endl;
+        measuredGraph->SetPoint( measuredGraph->GetN() , voltage / driftGap , driftVelocity / timebin );
+        measuredGraph->SetPointError( measuredGraph->GetN()-1 , sqrt( pow( 1. / driftGap , 2 ) + pow( voltage / pow( driftGap , 2 ) * gapError , 2 ) ) , fitError / timebin );
+    }
+    
+    measuredGraph->Draw("P same");
+    
+//     gPad->Modified();
+//     gPad->Update();
+//     gPad->WaitPrimitive();
+    
+}
+
+void tester(TString filename="test.dat", bool bugger=false){
+    effiPerPart();
+//     chargePerPart();
+//     chargePerBoard();
+//     uTPCtime();
+//     startNendTimes();
+//     simpleStripAna();
+//     muontomo();
+//     coshfit();
+//     double first = 1;
+//     double second = 2;
+//     auto cosFunc = [](double z){return cos(z)-z/**second*0.5*first*/;};
+//     auto cosPrimeFunc = [](double z){return -sin(z)-1/*-first*/;};
+//     newtonMethod( cosFunc, cosPrimeFunc);
+//     getResMean(filename, bugger);
+//     tracking();
+//     driftPlots();
+}
+

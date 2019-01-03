@@ -1,0 +1,2 @@
+detectorname    #xstrips    #ystrips   pitch   xlength    ylength   #divisionsX   #divisionsY    positionX    positionY  positionZ    angleX    angleY    angleZ    layer   flip    uTPCtime   CCCfactor   driftVelocity  cluTime
+MDTs            0          2000      2000    4000        2000        40           20              0.           0.          0.         0.        0.       0.        1       0      0.           0.            0.            0.

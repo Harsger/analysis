@@ -1,0 +1,5 @@
+FEC 0 triggerOffset 597.4 
+FEC 1 triggerOffset 628.9 
+FEC 2 triggerOffset 635.7 
+
+unix start 1522987935 end 1523656800

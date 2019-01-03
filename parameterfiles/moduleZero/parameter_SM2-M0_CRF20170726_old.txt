@@ -1,0 +1,8 @@
+stripmask_SM2-M0_CRF20170726.txt
+fecmap_SM2-M0_CRF20170726.txt
+corrections_SM2-M0_CRF20170726.txt
+detectorname	#xstrips	#ystrips	pitch	xlength		ylength		#divisionsX		#divisionsY		positionX		positionY		positionZ	angleX			angleY			angleZ			layer	flip	uTPCtime
+eta_out		0	3072	0.425	1100	1305.6	3	12	10	-77.764		4.842	0		-6.7e-3		-2.72e-3	3		0	44.19
+eta_in		0	3072	0.425	1100	1305.6	3	12	10	-77.856		21.955	1.4e-3	        -5.8e-3		-2.68e-3	2		0	43.36
+stereo_in	0	3072	0.425	1100	1305.6	3	12	10	-60.006		38.568	0		-5.3e-3		-0.02968	100		0	43.2
+stereo_out	0	3072	0.425	1100	1305.6	3	12	10	-95.198		54.831	0		-6.5e-3		0.02374		-100	0	45.36

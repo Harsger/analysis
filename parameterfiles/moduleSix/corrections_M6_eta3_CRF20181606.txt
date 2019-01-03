@@ -1,0 +1,20 @@
+FEC 0 triggerOffset 590.6 
+FEC 1 triggerOffset 621.4 
+FEC 2 triggerOffset 630.7 
+FEC 3 triggerOffset 627.0 
+FEC 4 triggerOffset 213.3 
+FEC 5 triggerOffset 213.2 
+FEC 6 triggerOffset 574.4 
+FEC 7 triggerOffset 593.8 
+FEC 8 triggerOffset 606.1
+
+unix start 1544050800 end 1548975600
+
+eta_out    minClusterSize 2 effiRange 5
+eta_in     minClusterSize 2 effiRange 5
+stereo_in  minClusterSize 2 effiRange 5
+stereo_out minClusterSize 2 effiRange 5
+etaBot     minClusterSize 2 effiRange 5
+etaTop     minClusterSize 2 effiRange 5
+
+eta_out FECnAPV 3 12 shift 0.425 FECnAPV 3 13 shift 0.425

@@ -1,0 +1,10 @@
+properties_SM2-M1_CRF20180528.txt
+fecmap_SM2-M1_CRF20180528.txt
+corrections_SM2-M1_CRF20180528_wStereoCor.txt
+rections_SM2-M1_CRF20180528.txt
+boardmap_SM2-M1_CRF20180528.txt
+detectorname    #xstrips    #ystrips   pitch   xlength    ylength   #divisionsX   #divisionsY    positionX    positionY  positionZ    angleX    angleY    angleZ    layer   flip    uTPCtime   CCCfactor   driftVelocity  cluTime
+eta_out            0          3072     0.425    1600       1305.6        160           240           0.           0.         0.        0.        0.        0.          -3     0         0.        -0.3        0.047          0.
+eta_in             0          3072     0.425    1600       1305.6        160           240           0.           0.         0.        0.        0.        0.           2     0         0.         0.3        0.047          0.
+stereo_in          0          3072     0.42485  1600       1305.6        160           240           0.           0.         0.        0.        0.       -0.026186   100     0         0.        -0.3        0.047          0.
+stereo_out         0          3072     0.42485  1600       1305.6        160           240           0.           0.         0.        0.        0.        0.026186  -100     0         0.         0.3        0.047          0.

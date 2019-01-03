@@ -1,0 +1,7 @@
+FitMacroName:                            fit_user_function.C
+fBinly:                                  171
+fBinuy:                                  230
+fBinlx:                                  12
+fBinux:                                  19
+fXtitle:                                 slope y (average MDTs)
+fYtitle:                                 residual y [mm]

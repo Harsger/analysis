@@ -1,0 +1,8 @@
+properties_SM2-M1_H8jun18_run164.txt
+corrections_SM2-M1_H8jun18_run164.txt
+detectorname  #xstrips #ystrips pitch xlength  ylength  #divisionsX #divisionsY  positionX  positionY positionZ angleX angleY  angleZ     layer   flip   uTPCtime  cluTime    driftVelocity
+eta            3072         0   0.425   100.    100.       10           10        487.           0.    -356.8     0.     0.      0.          5       0       0.        0.         0.047
+Tmm1            360       360   0.25    100.    100.       10           10          0.           0.      -2.3     0.     0.      0.         -1       0       0.        0.         0.047
+Tmm2            360       360   0.25    100.    100.       10           10          0.           0.      39.4     0.     0.      0.         -2       2       0.        0.         0.047
+Tmm3            360       360   0.25    100.    100.       10           10          0.           0.     599.1     0.     0.      0.         -3       0       0.        0.         0.047
+Tmm4            360       360   0.25    100.    100.       10           10          0.           0.     642.4     0.     0.      0.         -4       2       0.        0.         0.047

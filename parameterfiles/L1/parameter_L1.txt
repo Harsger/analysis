@@ -1,0 +1,6 @@
+properties_L1.txt
+stripmask_L1.txt
+fecmap_L1.txt
+corrections_L1.txt
+detectorname  #xstrips  #ystrips  pitch  xlength    ylength    #divisionsX  #divisionsY  positionX  positionY  positionZ  angleX    angleY    angleZ    layer  flip  uTPCtime  CCCfactor  driftVelocity
+L1              0         2048    0.45    1000      921.6          10          16         -1165.    -20.02       -15.04     0.        0.      0.00412     1      0      0.        0.         0.047

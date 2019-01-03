@@ -1,0 +1,32 @@
+FEC 0 triggerOffset 593.4 
+FEC 1 triggerOffset 623.8 
+FEC 2 triggerOffset 632.6 
+FEC 3 triggerOffset 626.8 
+FEC 4 triggerOffset 223.5 
+FEC 5 triggerOffset 215.4 
+
+uAngle
+
+useNewXtrack
+
+unix start 1527458400 end 1530309600
+
+eta_out    minClusterSize 2 effiRange 5
+eta_in     minClusterSize 2 effiRange 5
+stereo_in  minClusterSize 2 effiRange 5
+stereo_out minClusterSize 2 effiRange 5
+
+stereo_out FEC 2 pitch 0.42473 FEC 3 pitch 0.42473 FEC 4 pitch 0.42455 FEC 5 pitch 0.42455
+
+stereo_in    board 0 angle 2  -99.8e-5     board 1 angle 2  -97.6e-5     board 2 angle 2  -96.3e-5
+stereo_out   board 0 angle 2   43.6e-5     board 1 angle 2   66.2e-5     board 2 angle 2   53.3e-5
+
+comment eta_out coshPar -101.52 50.64 0.0224 8.55 50.58 0.0099 13.7                 all
+comment eta_out coshPar -101.51 50.66 0.0226 8.37 50.56 0.0082 16.1                 run 01.06.2018
+
+uTPC_eta_out.txt
+uTPC_eta_in.txt
+uTPC_stereo_in.txt
+uTPC_stereo_out.txt
+
+COMMENTstereo shift 2 -41.2
