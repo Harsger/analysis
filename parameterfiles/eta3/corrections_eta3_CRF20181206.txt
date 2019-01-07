@@ -1,0 +1,8 @@
+FEC 0 triggerOffset 574.4 TDC 6
+FEC 1 triggerOffset 593.8 TDC 7 
+FEC 2 triggerOffset 606.1 TDC 8
+
+unix start 1546815600 end 1551135600
+
+etaBot     minClusterSize 2 effiRange 5
+etaTop     minClusterSize 2 effiRange 5
