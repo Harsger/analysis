@@ -243,6 +243,7 @@ public:
     vector<unsigned int> etaLayer;
     
     vector<double> triggerOffset;
+    vector<unsigned int> TDCforFEC;
     vector< vector< vector<double> > > pitchCor; 
     vector< vector< vector<double> > > shift; 
     vector< vector< vector<double> > > angleCor;
@@ -744,6 +745,7 @@ void analysis::readParameter(){
     if(fecmapping.size() < 0) cout << " ERROR : \"" << fecmapname << "\" provided no FEC mapping information " << endl;
     else{
         for(unsigned int f=0; f<nfec; f++) triggerOffset.push_back(0.);
+        for(unsigned int f=0; f<nfec; f++) TDCforFEC.push_back( f );
         vector<int> vecsintdummy;
         for(unsigned int f=0; f<fecmapping.size(); f++){
             napv.push_back(fecmapping.at(f).size());
@@ -927,6 +929,10 @@ void analysis::readParameter(){
                     if( cfec < 0 || cfec > napv.size()-1 ) continue;
                     if( corrections.at(r).at(c+2).compare("triggerOffset") == 0 ){
                         triggerOffset.at(cfec) = atof( corrections.at(r).at(c+3).c_str() );
+                        c += 3;
+                    }
+                    if( corrections.at(r).at(c).compare("TDC") == 0 ){
+                        TDCforFEC.at(cfec) = atoi( corrections.at(r).at(c+3).c_str() );
                         c += 3;
                     }
                 }

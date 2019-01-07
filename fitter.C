@@ -489,6 +489,26 @@ void analysis::fitNclust(){
     }
     
     Long64_t entries = data->GetEntriesFast();
+    
+    if( !debug ) gROOT->SetBatch();
+    
+    if(withTDC){
+        for(unsigned int f=0; f<nfec; f++){
+            TString condition = "TDC_channel==";
+            condition += TDCforFEC.at(f);
+            data->Draw( "time_correction_ns" , condition );
+            TH1F * htemp = (TH1F*)gPad->GetPrimitive("htemp");
+            if( htemp->GetEntries() < 0.9 * entries ){
+                cout << " WARNING : for FEC " << f << " at TDC channel " << TDCforFEC.at(f) << " only " << htemp->GetEntries() << " entries were found " << endl;
+                continue;
+            }
+            if( triggerOffset.at(f) != 0. && abs( htemp->GetMean() - triggerOffset.at(f) ) > 2. ){
+                cout << " WARNING :";
+            }
+            cout << " FEC " << f << " TDC channel " << TDCforFEC.at(f) << /*" expectation " << triggerOffset.at(f) <<*/ " triggerOffset " << htemp->GetMean() << endl;
+            triggerOffset.at(f) = htemp->GetMean();
+        }
+    }
    
     unsigned int toStart;
     unsigned int toEnd;
@@ -528,7 +548,7 @@ void analysis::fitNclust(){
         for(unsigned int f=0; f<nfec; f++) TDCorder[f] = f;
         
         if(withTDC){
-            if( ( debug && verbose ) || firstTDCoutput ){
+            if( /*( debug && verbose ) ||*/ firstTDCoutput ){
                 cout << " TDC order ";
                 for(unsigned int i=0; i<TDC_channel->size(); i++) cout << " " << TDC_channel->at(i);
                 cout << endl;
@@ -538,8 +558,26 @@ void analysis::fitNclust(){
                 cout << " ERROR : less TDC channel than FECs " << entry << endl;
                 continue;
             }
-            for(unsigned int i=0; i<TDC_channel->size(); i++){
-                if( TDC_channel->at(i) != i && TDC_channel->at(i) < nfec ) TDCorder[TDC_channel->at(i)] = i;
+            bool wrongTDC = false;
+            for(unsigned int f=0; f<nfec; f++){
+                if( TDC_channel->at(f) != TDCforFEC.at(f) ){ 
+                    bool notFound = true;
+                    for(unsigned int i=0; i<TDC_channel->size(); i++){
+                        if( TDC_channel->at(i) == TDCforFEC.at(f) ){ 
+                            TDCorder[f] = i;
+                            notFound = false;
+                            break;
+                        }
+                    }
+                    if( notFound ){
+                        wrongTDC = true;
+                        break;
+                    }
+                }
+            }
+            if( wrongTDC ){ 
+                cout << " ERROR : wrong TDC channel assigned for FEC (not found) " << endl;
+                continue;
             }
         }
         
