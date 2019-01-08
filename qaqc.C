@@ -161,6 +161,8 @@ int main(int argc, char* argv[]){
     }
     readJson.close();
     
+    TApplication app("app", &argc, argv);
+    
 //     cout << writer << endl;
     
     if( deadNoiseName != "" ) deadNnoisy();
@@ -352,6 +354,8 @@ void amplificationScan(){
     }
     
     vector<unsigned int> voltOrder = getSortedIndices( ampVoltages );
+    
+    map< string , TGraphErrors* > effiVSamp;
         
     for( auto l : layer ){
         
@@ -366,6 +370,7 @@ void amplificationScan(){
                 tag += "efficiency";
                 
                 writer[tag].clear();
+                effiVSamp[tag] = new TGraphErrors();
                 
             }
             
@@ -375,6 +380,7 @@ void amplificationScan(){
     
     for( auto v : voltOrder ){
         
+        double voltage = ampVoltages.at( voltOrder.at(v) );
         unsigned int d = 0;
         
         for( auto l : layer ){
@@ -386,6 +392,7 @@ void amplificationScan(){
                 for( auto s : SideColumn ){
                     
                     double efficiency = usehist->GetBinContent( s.second , p.second );
+                    double effiError = usehist->GetBinError( s.second , p.second );
                     
                     string tag = l.second;
                     tag += "P"; 
@@ -393,11 +400,11 @@ void amplificationScan(){
                     tag += s.first;
                     tag += "efficiency";
                     
-                    cout << " " << tag << " \t " << ampVoltages.at( voltOrder.at(v) ) << " \t " << efficiency << endl;
-                    
-                    pair< double , double > voltNeffi = { ampVoltages.at( voltOrder.at(v) ) , efficiency };
+                    pair< double , double > voltNeffi = { voltage , efficiency };
                     
                     writer[tag].push_back( voltNeffi );
+                    effiVSamp[tag]->SetPoint( effiVSamp[tag]->GetN() , voltage , efficiency );
+                    effiVSamp[tag]->SetPointError( effiVSamp[tag]->GetN()-1 , 1. , effiError );
                     
                 }
                 
@@ -406,6 +413,39 @@ void amplificationScan(){
             d++;
             
         }
+        
+    }
+    
+    for( auto g : effiVSamp ){
+        
+        string tag = g.first;
+        g.second->SetTitle( tag.c_str() );
+        g.second->SetName( tag.c_str() );
+        
+        TF1 * linear = new TF1( "linear" , " [0] + [1] * x " );
+        g.second->Fit( linear, "Q" );
+        
+        double intercept = linear->GetParameter(0);
+        double interceptError = linear->GetParError(0);
+        double slope = linear->GetParameter(1);
+        double slopeError = linear->GetParError(1);
+        
+        double halfEfficient = ( 0.5 - intercept ) / slope ;
+        double halfError = sqrt( pow( interceptError / slope , 2 ) + pow( ( 0.5 - intercept ) / slope / slope * slopeError , 2 ) );
+        
+        cout << " " << tag << " 50% at " << halfEfficient << " +/- " << halfError << endl;
+        
+        TString halfTag = tag;
+        halfTag = halfTag.ReplaceAll( "efficiency" , "effi50" );
+        
+        writer[ halfTag.Data() ] = halfEfficient;
+        
+        g.second->GetYaxis()->SetRangeUser( 0.3 , 1. );
+        
+        g.second->Draw("AP");
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
         
     }
     
