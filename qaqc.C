@@ -1,6 +1,7 @@
 #include <TROOT.h>
 #include <TSystem.h>
 #include <TSystemDirectory.h>
+#include <TSystemFile.h>
 #include <TApplication.h>
 #include <TPad.h> 
 #include <TStyle.h>
@@ -41,6 +42,17 @@ map< string , string > layer = {
     { "stereo_out" , "L4" }
 };
 
+map< string , unsigned int > PCBrow = {
+    { "6" , 2 },
+    { "7" , 4 },
+    { "8" , 6 }
+};
+
+map< string , unsigned int > SideColumn = {
+    { "L" , 4 },
+    { "R" , 2 }
+};
+
 unsigned int stripsPerBoard = 1024;
     
 unsigned int moduleNumber = 0;
@@ -56,6 +68,9 @@ TString modulePrefix = "MMS2000";
 void deadNnoisy();
 void amplificationScan();
 void effiNchargeMaps();
+
+vector< vector<string> > getInput( string filename );
+vector<unsigned int> getSortedIndices(vector<double> order);
 
 int main(int argc, char* argv[]){
     
@@ -273,6 +288,127 @@ void deadNnoisy(){
 
 void amplificationScan(){
     
+    TSystemDirectory mainDir( ampScanDir , ampScanDir ); 
+    TList * files = mainDir.GetListOfFiles(); 
+    
+    if( !files ){
+        cout << " ERROR : directory \"" << ampScanDir << "\" not found => EXIT " << endl;
+        return;
+    }
+    
+    TSystemFile * readfile; 
+    TString filename , pathNname; 
+    TIter next( files );
+    
+    vector<double> ampVoltages;
+    vector< vector<TH2D*> > effiHists;
+    
+    while( ( readfile = (TSystemFile*)next() ) ){ 
+        
+        filename = readfile->GetName(); 
+        
+        if( ! filename.EndsWith(".root") ) continue;
+        
+        pathNname = ampScanDir;
+        pathNname += "/";
+        pathNname += filename;
+        
+        TFile * infile = new TFile( pathNname , "READ" );
+        
+        if( infile->IsZombie() ){
+            cout << " ERROR : can not open file " << pathNname << " => skipped " << endl;
+            continue;
+        }
+        
+        TString voltage = filename;
+        voltage = voltage( 0 , voltage.Last('V') );
+        if( voltage.Contains('V') ) voltage = voltage( 0 , voltage.Last('V') );
+        voltage = voltage( voltage.Last('_')+1 , voltage.Sizeof() );
+        
+        ampVoltages.push_back( atof( voltage.Data() ) );
+        
+        vector<TH2D*> effiPerDet;
+        
+        for( auto det : layer ){
+            
+            TString histname = det.first;
+            histname += "_coincidenceEffi";
+            
+            TH2D * readhist = (TH2D*)infile->Get(histname);
+        
+            if( readhist == NULL ){ 
+                cout << " ERROR : can not find histogram " << histname << " => abort " << endl;
+                return;
+            }
+        
+            effiPerDet.push_back( readhist );
+        
+        }
+        
+        effiHists.push_back( effiPerDet );
+        
+//         infile->Close();
+        
+    }
+    
+    vector<unsigned int> voltOrder = getSortedIndices( ampVoltages );
+        
+    for( auto l : layer ){
+        
+        for( auto p : PCBrow ){
+            
+            for( auto s : SideColumn ){
+                        
+                string tag = l.second;
+                tag += "P"; 
+                tag += p.first;
+                tag += s.first;
+                tag += "efficiency";
+                
+                writer[tag].clear();
+                
+            }
+            
+        }
+        
+    }
+    
+    for( auto v : voltOrder ){
+        
+        unsigned int d = 0;
+        
+        for( auto l : layer ){
+            
+            TH2D * usehist = effiHists.at( voltOrder.at(v) ).at(d);
+            
+            for( auto p : PCBrow ){
+                
+                for( auto s : SideColumn ){
+                    
+                    double efficiency = usehist->GetBinContent( s.second , p.second );
+                    
+                    string tag = l.second;
+                    tag += "P"; 
+                    tag += p.first;
+                    tag += s.first;
+                    tag += "efficiency";
+                    
+                    cout << " " << tag << " \t " << ampVoltages.at( voltOrder.at(v) ) << " \t " << efficiency << endl;
+                    
+                    pair< double , double > voltNeffi = { ampVoltages.at( voltOrder.at(v) ) , efficiency };
+                    
+                    writer[tag].push_back( voltNeffi );
+                    
+                }
+                
+            }
+            
+            d++;
+            
+        }
+        
+    }
+    
 }
 
 void effiNchargeMaps(){
@@ -398,5 +534,109 @@ void effiNchargeMaps(){
     
 }
 
+
+
+vector< vector<string> > getInput( string filename ){
+    
+    vector< vector<string> > input;
+    
+    if( filename.compare("") == 0 ){ 
+        cout << " WARNING : no input to read from " << endl;
+        return input;
+    }
+    
+    ifstream ifile(filename.c_str());
+    if( !( ifile ) ){ 
+        cout << " WARNING : could not read input file " << filename << endl;
+        return input;
+    }
+    
+    string line = "";
+    string word = "";
+    vector<string> dummy;
+    
+    while( getline( ifile, line) ){
+        
+        stringstream sline(line);
+        
+        while( !( sline.eof() ) ){ 
+            
+            sline >> skipws >> word;
+            if( word != "" ) dummy.push_back(word);
+            word="";
+            
+        }
+        
+        if( dummy.size() > 0 ) input.push_back(dummy);
+        dummy.clear();
+    }
+    
+    ifile.close();
+    
+    return input;
+    
+}
+
+vector<unsigned int> getSortedIndices(vector<double> order){
+   
+    vector<unsigned int> sorted;
+    unsigned int nPoints = order.size();
+    double lower = 0;
+    double lowest = 0;
+    unsigned int index = 0;
+    
+    if( nPoints < 1 ) return sorted;
+
+    for(unsigned int l=0; l<nPoints; l++){
+
+        if( sorted.size() < 1 ) lowest = order.at(0);
+        else{ 
+            lower = order.at( sorted.at(l-1) );
+            unsigned int newone = 0;
+            bool found = false;
+            for(unsigned int p=0; p<nPoints; p++){
+                bool inlist = false;
+                for(unsigned int s=0; s<sorted.size(); s++){
+                    if( sorted.at(s) == p ){ 
+                        inlist = true;
+                        break;
+                    }
+                }
+                if( !inlist){ 
+                    newone = p;
+                    found = true;
+                    break;
+                }
+            }
+            if( !found ){
+                cout << " WARNING : no index found " << endl;
+                break;
+            }
+            else{ 
+                lowest = order.at(newone);
+                index = newone;
+            }
+        }
+
+        for(unsigned int p=0; p<nPoints; p++){
+
+            if( sorted.size() < 1 && order.at(p) < lowest ){
+                lowest = order.at(p);
+                index = p;
+            }
+            if( order.at(p) < lowest && order.at(p) > lower  ){ 
+                index = p;
+                lowest = order.at(p);
+            }
+
+        }
+
+        sorted.push_back( index );
+
+    }
+    
+    return sorted;
+  
+}
 
 
