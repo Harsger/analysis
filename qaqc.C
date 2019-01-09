@@ -366,9 +366,8 @@ void amplificationScan(){
             for( auto s : SideColumn ){
                         
                 string tag = l.second;
-                tag += "P"; 
-                tag += p.first;
                 tag += s.first;
+                tag += p.first;
                 tag += "efficiency";
                 
                 writer[tag].clear();
@@ -397,9 +396,8 @@ void amplificationScan(){
                     double effiError = usehist->GetBinError( s.second , p.second );
                     
                     string tag = l.second;
-                    tag += "P"; 
-                    tag += p.first;
                     tag += s.first;
+                    tag += p.first;
                     tag += "efficiency";
                     
                     pair< double , double > voltNeffi = { voltage , efficiency };
@@ -456,6 +454,7 @@ void amplificationScan(){
 void effiNchargeMaps(){
             
     gROOT->SetStyle("Plain");
+    gStyle->SetPalette(kRainBow);
     gStyle->SetTitleX(0.5);
     gStyle->SetTitleAlign(23);
     gStyle->SetOptStat(0);
