@@ -280,6 +280,8 @@ void deadNnoisy(){
                 specifier += "Counts";
                 writer[specifier] = counts[b];
                 
+                cout << " " << specifier << " \t " << counts[b] << endl;
+                
             }
             
         }
@@ -563,6 +565,8 @@ void effiNchargeMaps(){
             nametag = specifier;
             nametag += "Max";
             writer[nametag] = max;
+            
+            cout << " " << specifier << " \t mean " << mean << " \t stdv " << stdv << " \t min " << min << " \t max " << max << endl;
             
             histname = outputDir;
             histname += "/";
