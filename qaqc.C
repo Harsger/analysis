@@ -452,6 +452,26 @@ void amplificationScan(){
 }
 
 void effiNchargeMaps(){
+            
+    gROOT->SetStyle("Plain");
+    gStyle->SetTitleX(0.5);
+    gStyle->SetTitleAlign(23);
+    gStyle->SetOptStat(0);
+    gStyle->SetOptTitle(1);
+    gStyle->SetPadTopMargin( 0.07 );
+    gStyle->SetPadRightMargin( 0.165 );
+    gStyle->SetPadBottomMargin( 0.105 );
+    gStyle->SetPadLeftMargin( 0.08 );
+    double labelSize = 0.05;
+    gStyle->SetLabelSize( labelSize , "x" );
+    gStyle->SetTitleSize( labelSize , "x" );
+    gStyle->SetLabelSize( labelSize , "y" );
+    gStyle->SetTitleSize( labelSize , "y" );
+    gStyle->SetLabelSize( labelSize , "z" );
+    gStyle->SetTitleSize( labelSize , "z" );
+    gStyle->SetTitleOffset( 0.8 , "y" );
+    gStyle->SetTitleOffset( 1.2 , "z" );
+    gROOT->ForceStyle();
     
     TFile * infile = new TFile( mapName , "READ" );
     
@@ -466,6 +486,9 @@ void effiNchargeMaps(){
     
     TString histname;
     TH1I * readhist;
+    
+    TCanvas * drawer = new TCanvas();
+    TVirtualPad * padle = gPad;
     
     for( auto l : layer ){
         
@@ -548,24 +571,19 @@ void effiNchargeMaps(){
             histname += l.second;
             histname += ".pdf";
             
-            TCanvas * drawer = new TCanvas();
-            TVirtualPad * padle = gPad;
-            gStyle->SetOptStat(0);
-            gStyle->SetOptTitle(0);
-            gStyle->SetPadTopMargin( 0.03 );
-            gStyle->SetPadRightMargin( 0.16 );
-            gStyle->SetPadBottomMargin( 0.12 );
-            gStyle->SetPadLeftMargin( 0.12 );
-            double labelSize = 0.05;
-            gStyle->SetLabelSize( labelSize , "x" );
-            gStyle->SetTitleSize( labelSize , "x" );
-            gStyle->SetLabelSize( labelSize , "y" );
-            gStyle->SetTitleSize( labelSize , "y" );
-            gStyle->SetLabelSize( labelSize , "z" );
-            gStyle->SetTitleSize( labelSize , "z" );
-            if( m.second == "efficiency" ) readhist->GetZaxis()->SetRangeUser( 0.5 , 1. );
-            else readhist->GetZaxis()->SetRangeUser( 0. , max );
+            if( m.second == "efficiency" ){ 
+                readhist->GetZaxis()->SetRangeUser( 0.5 , 1. );
+                readhist->GetZaxis()->SetTitle( m.second.c_str() );
+            }
+            else{ 
+                readhist->GetZaxis()->SetRangeUser( 0. , max );
+                readhist->GetZaxis()->SetTitle( "MPV cluster charge [ADC channel]" );
+            }
+            readhist->SetTitle( specifier.c_str() );
             readhist->Draw("COLZ");
+            gPad->Modified();
+            gPad->Update();
+            gPad->WaitPrimitive();
             padle->Print( histname );
             
         }
