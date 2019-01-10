@@ -278,6 +278,8 @@ void analysis::investigateCRF(){
     TH2I** resVSscinX_area = new TH2I*[ndetectors];
     TH2I** resVSslope_full = new TH2I*[ndetectors];
     TH2I** resVSslope_area = new TH2I*[ndetectors];
+    TH2I** resVSslope_coincident = new TH2I*[ndetectors];
+    TH2I** difVSslope_coincident = new TH2I*[ndetectors];
     TH2I** resVSslopeX_area = new TH2I*[ndetectors];
     TH2I** resVSdifMDT_area = new TH2I*[ndetectors];
     
@@ -668,6 +670,26 @@ void analysis::investigateCRF(){
         resVSslope_area[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -100., 100.);
         resVSslope_area[d]->SetXTitle("slope y (average MDTs)");
         resVSslope_area[d]->SetYTitle("residual y [mm]");  
+                
+        histname = "resVSslope_coincident";
+        if(ndetectors>1){ 
+            histname += "_";
+            histname += detectornames.at(d);
+        }
+//         resVSslope_coincident[d] = new TH2I(histname, histname, 120, -0.6, 0.6, 2000, -100., 100.);
+        resVSslope_coincident[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -100., 100.);
+        resVSslope_coincident[d]->SetXTitle("slope y (average MDTs)");
+        resVSslope_coincident[d]->SetYTitle("residual y [mm]");  
+                
+        histname = "difVSslope_coincident";
+        if(ndetectors>1){ 
+            histname += "_";
+            histname += detectornames.at(d);
+        }
+//         difVSslope_coincident[d] = new TH2I(histname, histname, 120, -0.6, 0.6, 2000, -100., 100.);
+        difVSslope_coincident[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -100., 100.);
+        difVSslope_coincident[d]->SetXTitle("slope y (average MDTs)");
+        difVSslope_coincident[d]->SetYTitle("residual y [mm]");  
                 
         histname = "resVSslopeX_area";
         if(ndetectors>1){ 
@@ -1667,6 +1689,8 @@ void analysis::investigateCRF(){
         double leadingCharge[ndetectors][2];
         unsigned int foundCluster[ndetectors][2];
         unsigned int usedCluster[ndetectors][2];
+        double leadResidual[ndetectors][2];
+        double leadCentroid[ndetectors][2];
         
         for(unsigned int d=0; d<ndetectors; d++){
             for(unsigned int r=0; r<2; r++){ 
@@ -1674,6 +1698,8 @@ void analysis::investigateCRF(){
                 leadingCharge[d][r] = 0.;
                 foundCluster[d][r] = 0;
                 usedCluster[d][r] = 0;
+                leadResidual[d][r] = -1e6;
+                leadCentroid[d][r] = -1e6;
             }
         }
         
@@ -2195,6 +2221,8 @@ void analysis::investigateCRF(){
             vector<double> hitposition = GetPointGlobal( trackINdet.at(0), clusterposition, d, board);
             
             double resMaxQ = hitposition.at(1) - mdtposition;
+            leadCentroid[d][1] = hitposition.at(1);
+            leadResidual[d][1] = resMaxQ;
             
             if(debug && verbose) cout << " centroid " << centroid->at( leading[d][1] ) << " \t centered position" << clusterposition << " \t reconstruction " << hitposition.at(1) << " \t MDT reference " << mdtposition << endl;
             
@@ -2554,21 +2582,21 @@ void analysis::investigateCRF(){
             
             bool otherNotHitAll = false;
             
-//             if(debug && verbose) cout << " " << detectornames.at(d) << " coincidence with "; 
-//             for(unsigned int o=0; o<ndetectors; o++){
-//                 if( o == d || detstrips.at(o).at(1) < 1 ) continue;
-//                 if( !( inEffiRange[o] ) ){ 
-//                     otherNotHitAll = true; 
-//                     break;
-//                 }
-//                 if(debug && verbose) cout << " " << detectornames.at(o);
-//             }
+            if(debug && verbose) cout << " " << detectornames.at(d) << " coincidence with "; 
+            for(unsigned int o=0; o<ndetectors; o++){
+                if( o == d || detstrips.at(o).at(1) < 1 ) continue;
+                if( !( inEffiRange[o] ) ){ 
+                    otherNotHitAll = true; 
+                    break;
+                }
+                if(debug && verbose) cout << " " << detectornames.at(o);
+            }
             
             unsigned int other = 0;
             if( d % 2 == 0 ) other = d+1;
             else other = d-1;
-            if( detstrips.at(other).at(1) < 1 ) continue;
-            if( !( inEffiRange[other] ) ) otherNotHitAll = true;
+//             if( detstrips.at(other).at(1) < 1 ) continue;
+//             if( !( inEffiRange[other] ) ) otherNotHitAll = true;
 
             if( otherNotHitAll ) {
                 if(debug && verbose) cout << " => NOT ALL "<< endl;
@@ -2576,11 +2604,24 @@ void analysis::investigateCRF(){
             }
             
             effi[d][partition[d][0]][partition[d][1]]->Fill(6.);
+            
             if( inEffiRange[d] ){ 
                 if(debug && verbose) cout << " given " << endl;
                 effi[d][partition[d][0]][partition[d][1]]->Fill(7.);
             }
             else if(debug && verbose) cout << " NOT given " << endl;
+            
+            if( leadResidual[d][1] > -1e5 ){ 
+                if(useAngle) resVSslope_coincident[d]->Fill( mdtangle , leadResidual[d][1] );
+                else resVSslope_coincident[d]->Fill( mdtslope , leadResidual[d][1] );
+            }
+            
+            if( leadCentroid[d][1] > -1e5 && leadCentroid[other][1] > -1e5 ){ 
+                double detDifference = leadCentroid[d][1] - leadCentroid[other][1];
+                if(useAngle) difVSslope_coincident[d]->Fill( mdtangle , detDifference );
+                else difVSslope_coincident[d]->Fill( mdtslope , detDifference );
+            }
+            
         }
         
         if( trackXpoints.size() == nXtracker+2 ){
@@ -2749,6 +2790,8 @@ void analysis::investigateCRF(){
                 
         resVSslope_full[d]->Write(); 
         resVSslope_area[d]->Write(); 
+        resVSslope_coincident[d]->Write(); 
+        difVSslope_coincident[d]->Write(); 
         
         resVSslopeX_area[d]->Write(); 
         resVSdifMDT_area[d]->Write(); 
