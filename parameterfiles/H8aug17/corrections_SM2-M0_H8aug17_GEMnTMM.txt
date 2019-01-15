@@ -1,3 +1,8 @@
+FEC 0 triggerOffset 250. 
+FEC 1 triggerOffset 250. 
+FEC 2 triggerOffset 250. 
+FEC 3 triggerOffset 250. 
+
 unix start 1501797600 end 1502748000
 GEM1 flipCluster
 GEM3 flipCluster
