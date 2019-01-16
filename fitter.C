@@ -581,6 +581,13 @@ void analysis::fitNclust(){
             }
         }
         
+        if(withJitter){
+            if( time_correction_ns->size() < nfec ){
+                cout << " WARNING : jitter data missing at " << entry << " => skipped " << endl;
+                continue;
+            }
+        }
+        
 //         initMetaLeafs();
         
         clearMetaLeafs();
