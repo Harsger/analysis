@@ -263,10 +263,15 @@ void analysis::investigateCRF(){
     }
     
     TH2D** numberOfCluster = new TH2D*[ndetectors];
+    TH2D** nearHits = new TH2D*[ndetectors];
     TH2D** inefficiencies = new TH2D*[ndetectors];
     TH2D** CRFhits = new TH2D*[ndetectors];
     TH2D** clusterChargeSum = new TH2D*[ndetectors];
     TH2I** maxQstripVSstrip = new TH2I*[ndetectors];
+    TH2I** chargeVSstrip_near;
+    if(!onlyCluster){
+        chargeVSstrip_near = new TH2I*[ndetectors];
+    }
     
     TH2I** interceptDifVSslope_at = new TH2I*[ndetectors];
     
@@ -453,6 +458,15 @@ void analysis::investigateCRF(){
         numberOfCluster[d]->SetXTitle("all cluster per event");
         numberOfCluster[d]->SetYTitle("considered cluster per event");
     
+        histname = "nearHits";
+        if(ndetectors>1){ 
+            histname += "_";
+            histname += detectornames.at(d);
+        }
+        nearHits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+        nearHits[d]->SetXTitle("x [mm]");
+        nearHits[d]->SetYTitle("y [mm]");
+    
         histname = "inefficiencies";
         if(ndetectors>1){ 
             histname += "_";
@@ -490,6 +504,20 @@ void analysis::investigateCRF(){
         else maxQstripVSstrip[d] = new TH2I(histname, histname, detstrips.at(d).at(0)/10, 0.5, 0.5+detstrips.at(d).at(0), 500, 0, 2500);
         maxQstripVSstrip[d]->SetXTitle("centroid position [pitch]");
         maxQstripVSstrip[d]->SetYTitle("charge max strip [ADC channel]");  
+        
+        if(!onlyCluster){
+            
+            histname = "chargeVSstrip_near";
+            if(ndetectors>1){ 
+                histname += "_";
+                histname += detectornames.at(d);
+            }
+            if( detstrips.at(d).at(1) > 0 ) chargeVSstrip_near[d] = new TH2I(histname, histname, detstrips.at(d).at(1)/10, 0.5, 0.5+detstrips.at(d).at(1), 500, 0, 2500);
+            else chargeVSstrip_near[d] = new TH2I(histname, histname, detstrips.at(d).at(0)/10, 0.5, 0.5+detstrips.at(d).at(0), 500, 0, 2500);
+            chargeVSstrip_near[d]->SetXTitle("stripnumber");
+            chargeVSstrip_near[d]->SetYTitle("charge max strip [ADC channel]"); 
+            
+        }
         
         fastestVSslope_board[d] = new TH2I*[nboards.at(d)];
         slowestVSslope_board[d] = new TH2I*[nboards.at(d)];
@@ -2462,6 +2490,8 @@ void analysis::investigateCRF(){
             }
             
             double near = 1e5;
+            double nearResidual = -1e6;
+            double nearPosition = -1e6;
             int nearest = -1;
             int nearboard = -1;
             
@@ -2509,16 +2539,23 @@ void analysis::investigateCRF(){
                     
                 vector<double> cposition = GetPointGlobal( trackINdet.at(0), cenpos, d, cboard);
                 
-                double residual = abs( cposition.at(1) - mdtposition  );
+                double residual = cposition.at(1) - mdtposition;
                 
                 if(debug && verbose) cout << " resdiual " << residual << endl; 
                 
-                if( residual < near ){
-                    near = residual;
+                if( abs( residual ) < near ){
+                    near = abs( residual );
+                    nearResidual = residual;
+                    nearPosition = cposition.at(1);
                     nearest = c;
                     nearboard = cboard;
                 }
                 
+            }
+            
+            if( nearResidual > -1e5 && nearPosition > -1e5 ){
+                leadCentroid[d][1] = nearPosition;
+                leadResidual[d][1] = nearResidual;
             }
             
             if( nearest > -1 ){
@@ -2526,13 +2563,16 @@ void analysis::investigateCRF(){
                     inEffiRange[d] = true;
                     effi[d][xpart][ypart]->Fill(4.);
                     clusterQvsNstrips_near_board[d][nearboard]->Fill( size->at( nearest ), chargesum->at(nearest));
+//                     maxQstripVSstrip[d]->Fill( centroid->at( nearest ), maxStripQ->at( nearest ) );
                     if( size->at(nearest) < 2 ) effi[d][xpart][ypart]->Fill(5.);
 //                     inefficiencies[d]->Fill( intersection.at(0), intersection.at(1));
+                    nearHits[d]->Fill( intersection.at(0), intersection.at(1) );
                     if(!onlyCluster){
                         unsigned int stripindex = 0;
                         for(unsigned int s=0; s<size->at(leading[d][1]); s++){
                             stripindex = strips->at(leading[d][1]).at(s);
                             risetimeVScharge_near_board[d][nearboard]->Fill( maxcharge->at(stripindex), risetime->at(stripindex) * 25.);
+                            chargeVSstrip_near[d]->Fill( number->at(stripindex) , maxcharge->at(stripindex) );
                             if(useAngle) starttimeVSslope_near_board[d][nearboard]->Fill( mdtslope, ( turntime->at(stripindex) - extrapolationfactor * risetime->at(stripindex) ) * 25.);
                             else starttimeVSslope_near_board[d][nearboard]->Fill( mdtslope, ( turntime->at(stripindex) - extrapolationfactor * risetime->at(stripindex) ) * 25.);
                         }
@@ -2755,9 +2795,14 @@ void analysis::investigateCRF(){
     
         numberOfCluster[d]->Write();
         inefficiencies[d]->Write();
+        nearHits[d]->Write();
         CRFhits[d]->Write();
         clusterChargeSum[d]->Write();
         maxQstripVSstrip[d]->Write();
+        
+        if(!onlyCluster){
+            chargeVSstrip_near[d]->Write();
+        }
         
         for(unsigned int b=0; b<nboards.at(d); b++){
             
