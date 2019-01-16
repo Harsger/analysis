@@ -1555,7 +1555,7 @@ void analysis::tracking(){
             trackChi[r]->Fill( residuum.at(ntracker[r]+1), residuum.at(ntracker[r]+2));
             trackSlopeIntercept[r]->Fill( residuum.at(ntracker[r]+1), residuum.at(ntracker[r]));
             
-//             if( residuum.at(ntracker[r]+2) > 10 ) allTrackHit[r] = false;
+//             if( residuum.at(ntracker[r]+2) > 10 && r == 0 ) allTrackHit[r] = false;
             
             fittedtracks.push_back( tracksOneDimension );
         
