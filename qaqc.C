@@ -53,6 +53,19 @@ map< string , unsigned int > SideColumn = {
     { "R" , 2 }
 };
 
+map< string , pair< unsigned int , unsigned int > > BoardPartitions = {
+    { "B6" , {  1 ,  8 } },
+    { "B7" , {  9 , 16 } },
+    { "B8" , { 17 , 24 } }
+};
+
+map< string , pair< unsigned int , unsigned int > > SideRange = {
+    { "L" , {  5 ,  8 } },
+    { "R" , {  9 , 12 } }
+};
+
+vector<string> exclusions;
+
 unsigned int stripsPerBoard = 1024;
     
 unsigned int moduleNumber = 0;
@@ -72,6 +85,8 @@ void effiNchargeMaps();
 vector< vector<string> > getInput( string filename );
 vector<unsigned int> getSortedIndices(vector<double> order);
 
+bool toExclude( string layer , unsigned int xpart , unsigned int ypart );
+
 int main(int argc, char* argv[]){
     
     if( argc < 2 || string( argv[1] ).compare( string("--help") ) == 0 ){
@@ -83,6 +98,7 @@ int main(int argc, char* argv[]){
         " -d\tfile for dead and noisy channels \n"
         " -a\tdirectory of amplification scan \n"
         " -m\tfile for efficiency and charge maps \n"
+        " -e\texclude sector in maps \n"
         "\n"
         " output will be stored in "<< outputDir <<"\n"
         "\n";
@@ -90,7 +106,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ( ( c = getopt( argc , argv , "n:d:a:m:" ) ) != -1 ){
+    while ( ( c = getopt( argc , argv , "n:d:a:m:e:" ) ) != -1 ){
         switch( c ){
             case 'n':
                 moduleNumber = atoi( optarg );
@@ -103,6 +119,9 @@ int main(int argc, char* argv[]){
                 break;
             case 'm':
                 mapName = optarg;
+                break;
+            case 'e':
+                exclusions.push_back( optarg );
                 break;
             case '?':
                 if( isprint( optopt ) ) fprintf( stderr , " Unknown option `-%c'.\n" , optopt );
@@ -533,6 +552,8 @@ void effiNchargeMaps(){
                     
                     if( content < -1e2 ) continue;
                     
+                    if( toExclude( l.first , x ,y ) ) continue;
+                    
                     counts++;
                     mean += content;
                     stdv += content * content;
@@ -595,7 +616,45 @@ void effiNchargeMaps(){
     
 }
 
-
+bool toExclude( string layer , unsigned int xpart , unsigned int ypart ){
+    
+    bool excludeThis = false;
+    
+    for( auto sector : exclusions ){
+        
+        TString secTag = sector;
+        
+        if( !( secTag.Contains(layer) ) ) continue;
+        
+        pair< unsigned int , unsigned int > srang = { 1000 , 1000 } , brang = { 1000 , 1000 };
+        
+        for( auto s : SideRange ){
+            if( secTag.Contains(s.first) ) srang = s.second;
+        }
+        
+        if( srang.first == 1000 ) continue;
+        
+        for( auto b : BoardPartitions ){
+            if( secTag.Contains(b.first) ) brang = b.second;
+        }
+        
+        if( brang.first == 1000 ) continue;
+        
+        if( 
+            xpart >= srang.first  && 
+            xpart <= srang.second && 
+            ypart >= brang.first  && 
+            ypart <= brang.second 
+        ){ 
+            excludeThis = true;
+            break;
+        }
+        
+    }
+    
+    return excludeThis;
+    
+}
 
 vector< vector<string> > getInput( string filename ){
     
