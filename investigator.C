@@ -268,6 +268,7 @@ void analysis::investigateCRF(){
     TH2D** CRFhits = new TH2D*[ndetectors];
     TH2D** clusterChargeSum = new TH2D*[ndetectors];
     TH2I** maxQstripVSstrip = new TH2I*[ndetectors];
+    TH1D*** centralAreaHits = new TH1D**[ndetectors];
     TH2I** chargeVSstrip_near;
     if(!onlyCluster){
         chargeVSstrip_near = new TH2I*[ndetectors];
@@ -504,6 +505,23 @@ void analysis::investigateCRF(){
         else maxQstripVSstrip[d] = new TH2I(histname, histname, detstrips.at(d).at(0)/10, 0.5, 0.5+detstrips.at(d).at(0), 500, 0, 2500);
         maxQstripVSstrip[d]->SetXTitle("centroid position [pitch]");
         maxQstripVSstrip[d]->SetYTitle("charge max strip [ADC channel]");  
+            
+        centralAreaHits[d] = new TH1D*[2];
+        
+        for(unsigned int m=0; m<2; m++){
+        
+            histname = "centralAreaHits";
+            if( m == 0 ) histname += "_CRF";
+            if(ndetectors>1){ 
+                histname += "_";
+                histname += detectornames.at(d);
+            }
+            if( detstrips.at(d).at(1) > 0 ) centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(1)/10, 0.5, 0.5+detstrips.at(d).at(1));
+            else centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(0)/10, 0.5, 0.5+detstrips.at(d).at(0));
+            centralAreaHits[d][m]->SetXTitle("stripnumber");
+            centralAreaHits[d][m]->SetYTitle("hits"); 
+        
+        }
         
         if(!onlyCluster){
             
@@ -2147,6 +2165,12 @@ void analysis::investigateCRF(){
                 numberOfCluster[d]->Fill( foundCluster[d][1], usedCluster[d][1]);
                 effi[d][xpart][ypart]->Fill(1.);
                 
+                if( xpart > 0.3 * divisions.at(d).at(0) && xpart < 0.7 * divisions.at(d).at(0) ){
+                    vector<double> trackINdet = GetPointDet( intersection.at(0), intersection.at(1), intersection.at(2), d, 0);
+                    double mdtStripPosition = trackINdet.at(1) / pitch.at(d) + detstrips.at(d).at(1) * 0.5;
+                    centralAreaHits[d][0]->Fill( mdtStripPosition );
+                }
+                
                 if( !onlyCluster && leading[d][1] > -1 ){
                     
                     int clusterindex = leading[d][1];
@@ -2569,8 +2593,8 @@ void analysis::investigateCRF(){
                     nearHits[d]->Fill( intersection.at(0), intersection.at(1) );
                     if(!onlyCluster){
                         unsigned int stripindex = 0;
-                        for(unsigned int s=0; s<size->at(leading[d][1]); s++){
-                            stripindex = strips->at(leading[d][1]).at(s);
+                        for(unsigned int s=0; s<size->at(nearest); s++){
+                            stripindex = strips->at(nearest).at(s);
                             risetimeVScharge_near_board[d][nearboard]->Fill( maxcharge->at(stripindex), risetime->at(stripindex) * 25.);
                             chargeVSstrip_near[d]->Fill( number->at(stripindex) , maxcharge->at(stripindex) );
                             if(useAngle) starttimeVSslope_near_board[d][nearboard]->Fill( mdtslope, ( turntime->at(stripindex) - extrapolationfactor * risetime->at(stripindex) ) * 25.);
@@ -2579,6 +2603,26 @@ void analysis::investigateCRF(){
                     }
                 }
                 if( nearest == leading[d][1] ) effi[d][xpart][ypart]->Fill(10.);
+            }
+            
+            if( xpart > 0.3 * divisions.at(d).at(0) && xpart < 0.7 * divisions.at(d).at(0) ){
+                
+//                 double mdtStripPosition = trackINdet.at(1) / pitch.at(d) + detstrips.at(d).at(1) * 0.5;
+//                 centralAreaHits[d][0]->Fill( mdtStripPosition );
+                
+                if( nearest > -1 ){
+                    if( onlyCluster ) centralAreaHits[d][1]->Fill( centroid->at( nearest ) );
+                    else{
+                        unsigned int stripindex = 0;
+                        double clusterSize = size->at(nearest);
+                        for(unsigned int s=0; s<clusterSize; s++){
+                            stripindex = strips->at(nearest).at(s);
+                            centralAreaHits[d][1]->Fill( number->at( stripindex ) , 1. / clusterSize );
+                        }
+                        
+                    }
+                }
+                
             }
             
             if( detlayer.at(d)/100 == 0 ){ 
@@ -2799,6 +2843,7 @@ void analysis::investigateCRF(){
         CRFhits[d]->Write();
         clusterChargeSum[d]->Write();
         maxQstripVSstrip[d]->Write();
+        for(unsigned int m=0; m<2; m++) centralAreaHits[d][m]->Write();
         
         if(!onlyCluster){
             chargeVSstrip_near[d]->Write();
