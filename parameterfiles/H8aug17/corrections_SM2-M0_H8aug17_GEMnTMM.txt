@@ -4,7 +4,17 @@ FEC 2 triggerOffset 250.
 FEC 3 triggerOffset 250. 
 
 unix start 1501797600 end 1502748000
-GEM1 flipCluster
-GEM3 flipCluster
-TMM1 flipCluster
-TMM2 flipCluster
+
+comment GEM1 flipCluster
+comment GEM3 flipCluster
+comment TMM1 flipCluster
+comment TMM2 flipCluster
+
+eta_out    minClusterSize 1 effiRange 1
+eta_in     minClusterSize 1 effiRange 1
+stereo_in  minClusterSize 1 effiRange 1
+stereo_out minClusterSize 1 effiRange 1
+GEM1       minClusterSize 1 effiRange 1
+GEM3       minClusterSize 1 effiRange 1
+TMM1       minClusterSize 1 effiRange 1
+TMM2       minClusterSize 1 effiRange 1
