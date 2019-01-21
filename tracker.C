@@ -205,7 +205,9 @@ void analysis::tracking(){
     TH2I*** excludedTrackResiduumVSnStrips = new TH2I**[ndetectors];
     TH2I*** excludedTrackResiduumVSclustertime = new TH2I**[ndetectors];
     TH2I*** excludedTrackResiduumVSposition = new TH2I**[ndetectors];
+    TH2I*** excludedTrackResiduumVSposition_near = new TH2I**[ndetectors];
     TH2I*** excludedTrackResiduumVSperpdendicular = new TH2I**[ndetectors];
+    TH2I*** excludedTrackResiduumVSperpdendicular_near = new TH2I**[ndetectors];
     TH2I*** excludedTrackResiduumVSjitter = new TH2I**[ndetectors];
     
     TH2D** trackHits = new TH2D*[ndetectors];
@@ -220,6 +222,7 @@ void analysis::tracking(){
     TH2I*** uTPCslopeVStrackSlope = new TH2I**[ndetectors];
     TH2I*** uTPCresVSslope = new TH2I**[ndetectors];
     TH2I*** uTPCresVSuTPCslope = new TH2I**[ndetectors];
+    TH2I*** uTPCresVSuTPCangle = new TH2I**[ndetectors];
     TH2I*** uTPCresVScluTime = new TH2I**[ndetectors];
     TH2I*** uTPCresVSnStrips = new TH2I**[ndetectors];
     TH2I*** uTPCresVSjitter = new TH2I**[ndetectors];
@@ -303,7 +306,7 @@ void analysis::tracking(){
                 histname += "_";
                 if(r==0) histname += "x";
                 else if(r==1) histname += "y";
-                posDifVSposMean[d][o][r] = new TH2I( histname, histname, 1000, -spotRange[r], spotRange[r], 1000, -residualRange[0], residualRange[0]);
+                posDifVSposMean[d][o][r] = new TH2I( histname, histname, 1000, -spotRange[1], spotRange[1], 1000, -residualRange[0], residualRange[0]);
                 posDifVSposMean[d][o][r]->SetXTitle("cluster position mean");
                 posDifVSposMean[d][o][r]->SetYTitle("cluster position difference");
                 
@@ -320,7 +323,7 @@ void analysis::tracking(){
                 histname += "_";
                 if(r==0) histname += "x";
                 else if(r==1) histname += "y";
-                posDifVSperpendicular[d][o][r] = new TH2I( histname, histname, 1000, -spotRange[p], spotRange[p], 1000, -residualRange[0], residualRange[0]);
+                posDifVSperpendicular[d][o][r] = new TH2I( histname, histname, 1000, -spotRange[1], spotRange[1], 1000, -residualRange[0], residualRange[0]);
                 posDifVSperpendicular[d][o][r]->SetXTitle("perpendicular cluster position");
                 posDifVSperpendicular[d][o][r]->SetYTitle("cluster position difference");
                 
@@ -360,7 +363,9 @@ void analysis::tracking(){
         excludedTrackResiduumVSnStrips[d] = new TH2I*[2];
         excludedTrackResiduumVSclustertime[d] = new TH2I*[2];
         excludedTrackResiduumVSposition[d] = new TH2I*[2];
+        excludedTrackResiduumVSposition_near[d] = new TH2I*[2];
         excludedTrackResiduumVSperpdendicular[d] = new TH2I*[2];
+        excludedTrackResiduumVSperpdendicular_near[d] = new TH2I*[2];
         excludedTrackResiduumVSjitter[d] = new TH2I*[2];
         
         clusterQperPartition[d] = new TH2D*[2];
@@ -453,7 +458,7 @@ void analysis::tracking(){
             histname += "_";
             if(r==0) histname += "x";
             else if(r==1) histname += "y";
-            excludedTrackResiduumVSposition[d][r] = new TH2I( histname, histname, 1000, -spotRange[r], spotRange[r], 2000, -residualRange[0], residualRange[0]);
+            excludedTrackResiduumVSposition[d][r] = new TH2I( histname, histname, 1000, -spotRange[1], spotRange[1], 2000, -residualRange[0], residualRange[0]);
             histname = "track position ";
             if(r==0) histname += "x";
             else if(r==1) histname += "y";
@@ -464,6 +469,23 @@ void analysis::tracking(){
             else if(r==1) histname += "y";
             histname += " [mm]";
             excludedTrackResiduumVSposition[d][r]->SetYTitle(histname);
+        
+            histname = "excludedTrackResiduumVSposition_near_";
+            histname += detectornames.at(d);
+            histname += "_";
+            if(r==0) histname += "x";
+            else if(r==1) histname += "y";
+            excludedTrackResiduumVSposition_near[d][r] = new TH2I( histname, histname, 1000, -spotRange[0], spotRange[0], 2000, -residualRange[1], residualRange[1]);
+            histname = "track position ";
+            if(r==0) histname += "x";
+            else if(r==1) histname += "y";
+            histname += " [mm]";
+            excludedTrackResiduumVSposition_near[d][r]->SetXTitle(histname);
+            histname = "excluded track resdiual ";
+            if(r==0) histname += "x";
+            else if(r==1) histname += "y";
+            histname += " [mm]";
+            excludedTrackResiduumVSposition_near[d][r]->SetYTitle(histname);
             
             unsigned int p = 0;
             if( r == 0 ) p = 1;
@@ -473,7 +495,7 @@ void analysis::tracking(){
             histname += "_";
             if(r==0) histname += "x";
             else if(r==1) histname += "y";
-            excludedTrackResiduumVSperpdendicular[d][r] = new TH2I( histname, histname, 1000, -spotRange[p], spotRange[p], 2000, -residualRange[0], residualRange[0]);
+            excludedTrackResiduumVSperpdendicular[d][r] = new TH2I( histname, histname, 1000, -spotRange[1], spotRange[1], 2000, -residualRange[0], residualRange[0]);
             histname = "track position ";
             if(r==0) histname += "y";
             else if(r==1) histname += "x";
@@ -484,6 +506,23 @@ void analysis::tracking(){
             else if(r==1) histname += "y";
             histname += " [mm]";
             excludedTrackResiduumVSperpdendicular[d][r]->SetYTitle(histname);
+        
+            histname = "excludedTrackResiduumVSperpdendicular_near_";
+            histname += detectornames.at(d);
+            histname += "_";
+            if(r==0) histname += "x";
+            else if(r==1) histname += "y";
+            excludedTrackResiduumVSperpdendicular_near[d][r] = new TH2I( histname, histname, 1000, -spotRange[0], spotRange[0], 2000, -residualRange[1], residualRange[1]);
+            histname = "track position ";
+            if(r==0) histname += "y";
+            else if(r==1) histname += "x";
+            histname += " [mm]";
+            excludedTrackResiduumVSperpdendicular_near[d][r]->SetXTitle(histname);
+            histname = "excluded track resdiual ";
+            if(r==0) histname += "x";
+            else if(r==1) histname += "y";
+            histname += " [mm]";
+            excludedTrackResiduumVSperpdendicular_near[d][r]->SetYTitle(histname);
         
             histname = "excludedTrackResiduumVSjitter_";
             histname += detectornames.at(d);
@@ -630,6 +669,7 @@ void analysis::tracking(){
         uTPCslopeVStrackSlope[d] = new TH2I*[2];
         uTPCresVSslope[d] = new TH2I*[2];
         uTPCresVSuTPCslope[d] = new TH2I*[2];
+        uTPCresVSuTPCangle[d] = new TH2I*[2];
         uTPCresVScluTime[d] = new TH2I*[2];
         uTPCresVSnStrips[d] = new TH2I*[2];
         uTPCresVSjitter[d] = new TH2I*[2];
@@ -692,6 +732,22 @@ void analysis::tracking(){
             else if(r==1) histname += "y";
             histname += " [mm]";
             uTPCresVSuTPCslope[d][r]->SetYTitle(histname);
+        
+            histname = "uTPCresVSuTPCangle_";
+            histname += detectornames.at(d);
+            histname += "_";
+            if(r==0) histname += "x";
+            else if(r==1) histname += "y";
+            uTPCresVSuTPCangle[d][r] = new TH2I( histname, histname, 720, -90., 90., 2000, -residualRange[1], residualRange[1]);
+            histname = "track slope ";
+            if(r==0) histname += "x";
+            else if(r==1) histname += "y";
+            uTPCresVSuTPCangle[d][r]->SetXTitle(histname);
+            histname = "uTPC residual ";
+            if(r==0) histname += "x";
+            else if(r==1) histname += "y";
+            histname += " [mm]";
+            uTPCresVSuTPCangle[d][r]->SetYTitle(histname);
         
             histname = "uTPCresVScluTime_";
             histname += detectornames.at(d);
@@ -989,7 +1045,7 @@ void analysis::tracking(){
                     histname += "_";
                     if(r==0) histname += "x";
                     else if(r==1) histname += "y";
-                    excludedTrackResiduumVSposition_stereo[d][r] = new TH2I( histname, histname, 1000, -spotRange[r], spotRange[r], 2000, -residualRange[1], residualRange[1]);
+                    excludedTrackResiduumVSposition_stereo[d][r] = new TH2I( histname, histname, 1000, -spotRange[0], spotRange[0], 2000, -residualRange[1], residualRange[1]);
                     histname = "track position ";
                     if(r==0) histname += "x";
                     else if(r==1) histname += "y";
@@ -1009,7 +1065,7 @@ void analysis::tracking(){
                     histname += "_";
                     if(r==0) histname += "x";
                     else if(r==1) histname += "y";
-                    excludedTrackResiduumVSperpdendicular_stereo[d][r] = new TH2I( histname, histname, 1000, -spotRange[p], spotRange[p], 2000, -residualRange[1], residualRange[1]);
+                    excludedTrackResiduumVSperpdendicular_stereo[d][r] = new TH2I( histname, histname, 1000, -spotRange[0], spotRange[0], 2000, -residualRange[1], residualRange[1]);
                     histname = "track position ";
                     if(r==1) histname += "x";
                     else if(r==0) histname += "y";
@@ -1413,7 +1469,7 @@ void analysis::tracking(){
                 
             }
                 
-            if( stereoCounter != stereoLayer.size()/2 ){
+            if( useNewXtrack && stereoCounter != stereoLayer.size()/2 ){
                 allTrackHit[0] = false;
                 allTrackHit[1] = false;
             }
@@ -1651,7 +1707,9 @@ void analysis::tracking(){
                 excludedTrackResiduumVSnStrips[d][r]->Fill( size->at( leading[d][r] ), detResidual);
                 excludedTrackResiduumVSclustertime[d][r]->Fill( averagetime->at( leading[d][r] ), detResidual);
                 excludedTrackResiduumVSposition[d][r]->Fill( trackPosition, detResidual);
+                excludedTrackResiduumVSposition_near[d][r]->Fill( trackPosition, detResidual);
                 excludedTrackResiduumVSperpdendicular[d][r]->Fill( perpendicularTrackPosition, detResidual);
+                excludedTrackResiduumVSperpdendicular_near[d][r]->Fill( perpendicularTrackPosition, detResidual);
                 if(!onlyCluster && withJitter) excludedTrackResiduumVSjitter[d][r]->Fill( triggerOffset.at( FEC->at( leading[d][r] ) ) - timeCorrection->at( strips->at( leading[d][r] ).at(0) ), detResidual);
                 if(withTime) residualVSunixtime[d][r]->Fill( unixtime, detResidual);
                 
@@ -1701,6 +1759,7 @@ void analysis::tracking(){
                 
                 double uTPCangle = TMath::ATan( pitch.at(d) / 25. / uTPCslope->at( leading[d][r] ) / driftVelocity.at(d) ) * 180. / TMath::Pi();
                 
+                uTPCresVSuTPCangle[d][r]->Fill( uTPCangle, uTPCres);
                 uTPCangleVScluTime[d][r]->Fill( averagetime->at( leading[d][r] ), uTPCangle);
                 uTPCangleVSfirstTime[d][r]->Fill( earliest->at( leading[d][r] ), uTPCangle);
                 uTPCangleVSlastTime[d][r]->Fill( latest->at( leading[d][r] ), uTPCangle);
@@ -1874,7 +1933,9 @@ void analysis::tracking(){
             excludedTrackResiduumVSnStrips[d][r]->Write();
             excludedTrackResiduumVSclustertime[d][r]->Write();
             excludedTrackResiduumVSposition[d][r]->Write();
+            excludedTrackResiduumVSposition_near[d][r]->Write();
             excludedTrackResiduumVSperpdendicular[d][r]->Write();
+            excludedTrackResiduumVSperpdendicular_near[d][r]->Write();
             excludedTrackResiduumVSjitter[d][r]->Write();
             
             if( divisions.at(d).at(0) > 0 && divisions.at(d).at(1) > 1 ){
@@ -1903,6 +1964,7 @@ void analysis::tracking(){
             uTPCslopeVStrackSlope[d][r]->Write();
             uTPCresVSslope[d][r]->Write();
             uTPCresVSuTPCslope[d][r]->Write();
+            uTPCresVSuTPCangle[d][r]->Write();
             uTPCresVScluTime[d][r]->Write();
             uTPCresVSnStrips[d][r]->Write();
             uTPCresVSjitter[d][r]->Write();
