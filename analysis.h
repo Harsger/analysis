@@ -176,6 +176,7 @@ public:
     bool useNewXtrack = false;
     bool useAngle = false;
     bool onlySingleCluster = false;
+    bool fullCoincidence = false;
     
     TString readname;
     TString outname;
@@ -983,6 +984,7 @@ void analysis::readParameter(){
                     c += 2;
                 }
             }
+            else if( corrections.at(r).at(0).compare("fullCoincidence") == 0 ) fullCoincidence = true;
             else if( corrections.at(r).at(0).compare("noPartitions") == 0 ) noPartitions = true;
             else if( corrections.at(r).at(0).compare("useNewXtrack") == 0 ) useNewXtrack = true;
             else if( corrections.at(r).at(0).compare("useAngle") == 0 ) useAngle = true;

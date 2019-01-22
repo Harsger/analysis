@@ -2666,21 +2666,25 @@ void analysis::investigateCRF(){
             
             bool otherNotHitAll = false;
             
-            if(debug && verbose) cout << " " << detectornames.at(d) << " coincidence with "; 
-            for(unsigned int o=0; o<ndetectors; o++){
-                if( o == d || detstrips.at(o).at(1) < 1 ) continue;
-                if( !( inEffiRange[o] ) ){ 
-                    otherNotHitAll = true; 
-                    break;
-                }
-                if(debug && verbose) cout << " " << detectornames.at(o);
-            }
-            
             unsigned int other = 0;
             if( d % 2 == 0 ) other = d+1;
             else other = d-1;
-//             if( detstrips.at(other).at(1) < 1 ) continue;
-//             if( !( inEffiRange[other] ) ) otherNotHitAll = true;
+            
+            if( fullCoincidence ){
+                if(debug && verbose) cout << " " << detectornames.at(d) << " coincidence with "; 
+                for(unsigned int o=0; o<ndetectors; o++){
+                    if( o == d || detstrips.at(o).at(1) < 1 ) continue;
+                    if( !( inEffiRange[o] ) ){ 
+                        otherNotHitAll = true; 
+                        break;
+                    }
+                    if(debug && verbose) cout << " " << detectornames.at(o);
+                }
+            }
+            else{
+                if( detstrips.at(other).at(1) < 1 ) continue;
+                if( !( inEffiRange[other] ) ) otherNotHitAll = true;
+            }
 
             if( otherNotHitAll ) {
                 if(debug && verbose) cout << " => NOT ALL "<< endl;
