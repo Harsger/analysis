@@ -40,6 +40,8 @@ map< string , string > layer = {
     { "eta_in"     , "L2" },
     { "stereo_in"  , "L3" },
     { "stereo_out" , "L4" }
+//     ,{ "etaBot"  , "etaBot" },
+//     { "etaTop" , "etaTop" }
 };
 
 map< string , unsigned int > PCBrow = {
@@ -344,8 +346,7 @@ void amplificationScan(){
         }
         
         TString voltage = filename;
-        voltage = voltage( 0 , voltage.Last('V') );
-        if( voltage.Contains('V') ) voltage = voltage( 0 , voltage.Last('V') );
+        voltage = voltage( 0 , voltage.First('V') );
         voltage = voltage( voltage.Last('_')+1 , voltage.Sizeof() );
         
         ampVoltages.push_back( atof( voltage.Data() ) );
@@ -596,7 +597,7 @@ void effiNchargeMaps(){
             histname += ".pdf";
             
             if( m.second == "efficiency" ){ 
-                readhist->GetZaxis()->SetRangeUser( 0.5 , 1. );
+                readhist->GetZaxis()->SetRangeUser( 0.3 , 1. );
                 readhist->GetZaxis()->SetTitle( m.second.c_str() );
             }
             else{ 
