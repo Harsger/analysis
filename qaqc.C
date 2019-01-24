@@ -399,7 +399,7 @@ void amplificationScan(){
         
     }
     
-    for( auto v : voltOrder ){
+    for( unsigned int v=0; v<voltOrder.size(); v++ ){
         
         double voltage = ampVoltages.at( voltOrder.at(v) );
         unsigned int d = 0;
@@ -423,6 +423,13 @@ void amplificationScan(){
                     pair< double , double > voltNeffi = { voltage , efficiency };
                     
                     writer[tag].push_back( voltNeffi );
+                    
+                    if( v > 0 ){
+                        double lastVoltage , lastEffi;
+                        effiVSamp[tag]->GetPoint( effiVSamp[tag]->GetN()-1 , lastVoltage , lastEffi );
+                        if( efficiency < lastEffi - 0.1 ) continue;
+                    }
+                    
                     effiVSamp[tag]->SetPoint( effiVSamp[tag]->GetN() , voltage , efficiency );
                     effiVSamp[tag]->SetPointError( effiVSamp[tag]->GetN()-1 , 1. , effiError );
                     
@@ -443,7 +450,8 @@ void amplificationScan(){
         g.second->SetName( tag.c_str() );
         
         TF1 * linear = new TF1( "linear" , " [0] + [1] * x " );
-        g.second->Fit( linear, "Q" );
+        if( g.second->GetN() > 1 ) g.second->Fit( linear, "Q" );
+        else linear->SetParameter(1) = -1.;
         
         double intercept = linear->GetParameter(0);
         double interceptError = linear->GetParError(0);
@@ -452,6 +460,11 @@ void amplificationScan(){
         
         double halfEfficient = ( 0.5 - intercept ) / slope ;
         double halfError = sqrt( pow( interceptError / slope , 2 ) + pow( ( 0.5 - intercept ) / slope / slope * slopeError , 2 ) );
+        
+        if( slope < 0. ){
+            halfEfficient = 600. ;
+            halfError = 600. ;
+        }
         
         cout << " " << tag << " 50% at " << halfEfficient << " +/- " << halfError << endl;
         
