@@ -451,7 +451,7 @@ void amplificationScan(){
         
         TF1 * linear = new TF1( "linear" , " [0] + [1] * x " );
         if( g.second->GetN() > 1 ) g.second->Fit( linear, "Q" );
-        else linear->SetParameter(1) = -1.;
+        else linear->SetParameter( 1 , -1 );
         
         double intercept = linear->GetParameter(0);
         double interceptError = linear->GetParError(0);
