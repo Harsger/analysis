@@ -22,11 +22,18 @@
 #include <string>
 #include <cmath>
 
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
+// #include "opencv2/highgui/highgui.hpp"
+// #include "opencv2/imgproc/imgproc.hpp"
 
-using namespace cv;
+// using namespace cv;
 using namespace std;
+
+const unsigned short apv_sending_order_table[128] = {0,32,64,96,8,40,72,104,16,48,80,
+    112,24,56,88,120,1,33,65,97,9,41,73,105,17,49,81,113,25,57,89,121,2,34,66,98,
+    10,42,74,106,18,50,82,114,26,58,90,122,3,35,67,99,11,43,75,107,19,51,83,115,
+    27,59,91,123,4,36,68,100,12,44,76,108,20,52,84,116,28,60,92,124,5,37,69,101,
+    13,45,77,109,21,53,85,117,29,61,93,125,6,38,70,102,14,46,78,110,22,54,86,118,
+    30,62,94,126,7,39,71,103,15,47,79,111,23,55,87,119,31,63,95,127};
 
 vector< vector<string> > getInput(string filename);
 
@@ -308,16 +315,22 @@ void effiPerPart(){
 //     TString times[measurements] = { "V_20181022_1758", "V_20181020_0859", "V_20181019_1401", "V_20181019_1637", "V_20181018_2010", "V_20181019_1854", "V_20181022_1355"};
 //     double voltages[measurements] = { 540., 545., 550., 555., 560., 565., 570.};
     
-    TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/ampScan/m6_eta3_";
+    TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/ampScan/m6_";
 //     TString endPhrase = "_2s_16x24_properties.root";
-    TString endPhrase = "_5x7_coinPanel_properties.root";
+//     TString endPhrase = "_5x7_coinPanel_properties.root";
+    TString endPhrase = "_coinNext_5x7_properties.root";
     
-    const unsigned int ndetectors = 6;
-    TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out", "etaBot", "etaTop"};
+//     const unsigned int ndetectors = 6;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out", "etaBot", "etaTop"};
+    const unsigned int ndetectors = 2;
+    TString detectornames[ndetectors] = { "etaBot", "etaTop"};
     
     const unsigned int measurements = 4;
-    TString times[measurements] = { "V_20181213_1833", "V_20181212_1519", "V_20181207_1613", "V_20181214_1001"};
-    double voltages[measurements] = { 540., 550., 560., 570.};
+//     TString times[measurements] = { "V_20181213_1833", "V_20181212_1519", "V_20181207_1613", "V_20181214_1001"};
+//     double voltages[measurements] = { 540., 550., 560., 570.};
+    TString midPhrase[measurements] = { "560V_eta3_" , "530V_eta3_" , "545V_eta3_" , "570V_eta3_" };
+    TString times[measurements] = { "V_C350V_20190115_1023", "V_C450V_20190118_1817", "V_C450V_20190119_0727", "V_C450V_20190119_2209"};
+    double voltages[measurements] = { 630., 640., 650., 660.};
     
     vector<unsigned int> nbins { 0, 0};
     vector<double> lowEdge { 0., 0.};
@@ -332,6 +345,7 @@ void effiPerPart(){
     for(unsigned int m=0; m<measurements; m++){
         
         TString readname = startPhrase;
+        readname += midPhrase[m];
         readname += voltages[m];
 //         readname += datePhrase;
         readname += times[m];
@@ -1282,14 +1296,16 @@ void startNendTimes(){
 // 
 // }
 
-void getResMean(TString filename, bool bugger=false){
+void getResMean(TString filename = "/project/etp3/mherrmann/analysis/results/h8m0/run_126_ccc30_tt_fitNclust_track.root", bool bugger=false){
 
     bool debug = bugger;
 
     TString searchname = "excludedTrackResiduumVSperpdendicular";
+    TString excludetag = "near";
     TString addname = "";
     searchname += addname;
-    vector<string> detectornames = { "eta", "Tmm1", "Tmm2", "Tmm3", "Tmm4"};
+//     vector<string> detectornames = { "eta", "Tmm1", "Tmm2", "Tmm3", "Tmm4"};
+    vector<string> detectornames = { "eta_out" , "eta_in" , "stereo_in" , "stereo_out" , "TMM1" , "TMM2" , "GEM1" , "GEM3" };
     
     if(debug) cout << " debugging mode enabled " << endl;
     
@@ -1319,7 +1335,7 @@ void getResMean(TString filename, bool bugger=false){
         
 //         if(debug) cout << " histname : " << histname << endl;
         
-        if( !( histname.Contains(searchname) ) ) continue;
+        if( !( histname.Contains(searchname) ) || histname.Contains(excludetag) ) continue;
         
         string cdetname = "";
         
@@ -1371,34 +1387,36 @@ void getResMean(TString filename, bool bugger=false){
 
 }
 
-void getNoisy( TString filename, bool bugger=false){
+void getRotation(TString filename = "/project/etp3/mherrmann/analysis/results/h8m0/run_126_ccc30_tt_fitNclust_track.root", bool bugger=false){
 
-    bool debug = false;
-    int neighbors = 7;
+    bool debug = bugger;
 
-    vector<string> detectornames = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
-    
-    debug = bugger;
+    TString searchname = "excludedTrackResiduumVSperpdendicular";
+    TString includetag = "near";
+    TString addname = "";
+    searchname += addname;
+//     vector<string> detectornames = { "eta", "Tmm1", "Tmm2", "Tmm3", "Tmm4"};
+    vector<string> detectornames = { "eta_out" , "eta_in" , "stereo_in" , "stereo_out" , "TMM1" , "TMM2" , "GEM1" , "GEM3" };
     
     if(debug) cout << " debugging mode enabled " << endl;
     
-    TString readname = "/project/etp4/mherrmann/analysis/results/";
+    TString readname = "";
     readname += filename;
         
     TFile * readfile = new TFile(readname);
     
     if( !( readfile->IsOpen() ) ){
-        cout << " ERROR : can not open file \"" << readname << "\" " << endl;
+        cout << " file " << readname << " is not open " << endl;
         return;
     }
-    
+
     TList * list = readfile->GetListOfKeys();
     
     TIter next(list);
     TKey * key;
     
-    vector< vector<int> > foundNoisy;
-    vector< vector<string> > detOrder;
+    vector< vector<double> > results;
+    vector<vector<string> > detOrder;
         
     while ( ( key = (TKey*)next() ) ) {
         
@@ -1406,10 +1424,7 @@ void getNoisy( TString filename, bool bugger=false){
         
         TString histname = obj->GetName();
         
-//         if(debug) cout << " histname : " << histname << endl;
-        
-//         if( !( histname.Contains("chargeVSstrip") ) ) continue;
-        if( !( histname.Contains("clusterQvsPosition") ) ) continue;
+        if( !( histname.Contains(searchname) ) || !(histname.Contains(includetag)) ) continue;
         
         string cdetname = "";
         
@@ -1419,151 +1434,149 @@ void getNoisy( TString filename, bool bugger=false){
         
         if( cdetname.compare("") == 0 ) continue;
         
-        string cdir = "y";
+        vector<string> strdummy;
         
-        if( histname.Contains("x") ) cdir = "x";
+        strdummy.push_back(cdetname);
         
-        vector<string> dummy;
-        dummy.push_back(cdetname);
-        dummy.push_back(cdir);
-        detOrder.push_back( dummy );
+        if( histname.Contains("_x") ) strdummy.push_back("x");
+        else if( histname.Contains("_y") ) strdummy.push_back("y");
+        else strdummy.push_back("?");
         
-        if(debug) cout << cdetname << "\t" << cdir << endl;
-        
-        vector<int> noisyStrips;
+        detOrder.push_back(strdummy);
     
         TString proname = histname;
-        proname += "_xprojection";
+        proname += "_yprojection";
         
         TH2I * histo = (TH2I*)obj;
-        TH1D * projection = ((TH2I*)(histo))->ProjectionX( proname);
-  
-        proname += "_counts";
         
-//         TH1I * noisyStripsCounts = new TH1I(proname,proname,1e4,0.,1e6);
-//         noisyStripsCounts->SetXTitle("noise counts on strips");
-//         noisyStripsCounts->SetYTitle("counts"); 
+        histo->RebinX(20.);
+        histo->GetYaxis()->SetRangeUser(-0.5,0.5);
         
-        int nStrips = projection->GetNbinsX(); 
+        double posMean = histo->GetMean(1);
+        double posStdv = histo->GetStdDev(1);
         
-        double cContent=0.;
-//         double allMean=0.;
-//         double allSigma=0.;
-//         double cMean=0.;
-//         double cSigma=0.;
-//         double eMean=0.;
-//         double eSigma=0.;
-//         double nContent=0.;
+        histo->GetXaxis()->SetRangeUser( posMean - 2. * posStdv , posMean + 2. * posStdv );
         
-        double maxContent = 0.;
+        TProfile * profile = histo->ProfileX();
         
-        for(int cs=1; cs<nStrips; cs++){
-            
-            cContent = projection->GetBinContent(cs);
-            
-            if(cContent > maxContent) maxContent = cContent;
-            
-//             noisyStripsCounts->Fill(cContent);
-            
-//             allMean += cContent;
-//             allSigma += cContent*cContent;
-//             
-//             cMean=0.;
-//             cSigma=0.;
-//             eMean=0.;
-//             eSigma=0.;
-//             
-//             for(int n=-neighbors/2; n<neighbors/2+1; n++){
-//                 
-//                 int cn = cs+n;
-//                 
-//                 if( cn > 0 && cn < nStrips ) nContent = projection->GetBinContent(cn);
-//                 else if( cn < 1 ) nContent = projection->GetBinContent(cn+neighbors);
-//                 else if( cn > nStrips-1 ) nContent = projection->GetBinContent(cn-neighbors);
-//                 
-//                 cMean += nContent;
-//                 cSigma += nContent*nContent;
-//                 
-//                 if(n!=0){
-//                     eMean += nContent;
-//                     eSigma += nContent*nContent;
-//                 }
-//                 
-//             }
-//             
-//             cSigma = sqrt( ( cSigma - cMean*cMean / (double)neighbors ) / (neighbors-1.) );
-//             cMean = cMean / (neighbors-1.);
-//             
-//             eSigma = sqrt( ( eSigma - eMean*eMean / (neighbors-1.) ) / (neighbors-2.) );
-//             eMean = eMean / (neighbors-2.);
-            
-//             if( cMean > 2.*eMean 
-//                 || cSigma > 2.*eSigma
-//                 || cContent > 3.*eSigma+eMean
-//             ) noisyStrips.push_back( cs );
-            
-//             if(debug && ( cMean > 2.*eMean 
-//                 || cSigma > 2.*eSigma
-//                 || cContent > 3.*eSigma+eMean
-//             ) ){
-//                 cout << cs;
-//                 if(cMean > 2.*eMean) cout << " mean ";
-//                 if(cSigma > 2.*eSigma) cout << " sigma ";
-//                 if(cContent > 3.*eSigma+eMean) cout << " content ";
-//                 cout << endl;
-//             }
-            
-        }
+        TF1 * linear = new TF1( "linear" , "[0]*(x-[1])" , posMean - 2. * posStdv , posMean + 2. * posStdv );
         
-        int binsToUse = (int)(nStrips/100.);
+        profile->Fit( linear , "Q" );
         
-        TH1I * noisyStripsCounts = new TH1I( proname, proname, binsToUse, 0., maxContent+1);
-        noisyStripsCounts->SetXTitle("noise counts on strips");
-        noisyStripsCounts->SetYTitle("counts"); 
+        profile->Draw();
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
         
+        vector<double> dvecdummy;
         
-        for(int cs=1; cs<nStrips; cs++){
-            
-            cContent = projection->GetBinContent(cs);
-            
-            noisyStripsCounts->Fill(cContent);
-            
-        }
+        dvecdummy.push_back( linear->GetParameter(0) );
+        dvecdummy.push_back( linear->GetParError(0) );
+//         dvecdummy.push_back( linear->GetParameter(1) );
+//         dvecdummy.push_back( linear->GetParError(1) );
+        dvecdummy.push_back( posMean );
+        dvecdummy.push_back( posStdv );
+        dvecdummy.push_back( linear->GetChisquare() );
+        dvecdummy.push_back( linear->GetNDF() );
         
-        double noisyMean = noisyStripsCounts->GetMean();
-        double noisyDev = noisyStripsCounts->GetRMS();
-        
-        if(debug){
-            noisyStripsCounts->Draw();
-            gPad->Modified();
-            gPad->Update();
-            gPad->WaitPrimitive();
-        }
-        
-        for(int cs=1; cs<nStrips; cs++){
-            
-            cContent = projection->GetBinContent(cs);
-            
-//             if( cContent > noisyMean+3.*noisyDev) noisyStrips.push_back( cs );
-            
-            if( cdetname == detectornames.at(0) && cContent > 400 ) noisyStrips.push_back( cs );
-            else if( cdetname == detectornames.at(1) && cContent > 400 ) noisyStrips.push_back( cs );
-            else if( cdetname == detectornames.at(2) && cContent > 400 ) noisyStrips.push_back( cs );
-            else if( cdetname == detectornames.at(3) && cContent > 300 ) noisyStrips.push_back( cs );
-            
-        }
-        
-        foundNoisy.push_back( noisyStrips );
+        results.push_back( dvecdummy );
         
     }
     
+    cout << " detector \t slope +/- error \t intercept +/- error \t Chi^2 / NDF " << endl;
+    
     for(unsigned int d=0; d<detOrder.size(); d++){
-        cout << " " << detOrder.at(d).at(0) << " " << detOrder.at(d).at(1) << " ";
-        for(unsigned int s=0; s<foundNoisy.at(d).size(); s++) cout << foundNoisy.at(d).at(s) << " ";
-        cout << endl;
+        cout << " " << detOrder.at(d).at(0) << " " << detOrder.at(d).at(1) << " : \t ";
+        cout << results.at(d).at(0) << " +/- " << results.at(d).at(1) << " \t ";
+        cout << results.at(d).at(2) << " +/- " << results.at(d).at(3) << " \t ";
+        cout << results.at(d).at(4) << " / " << results.at(d).at(5) << " = " << results.at(d).at(4)/results.at(d).at(5) << endl;
     }
     
     readfile->Close();
+
+}
+
+void getNoisy(TString filename){
+
+    vector<string> detectornames = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+        
+    TFile * readfile = new TFile(filename);
+    
+    if( !( readfile->IsOpen() ) ){
+        cout << " ERROR : can not open file \"" << filename << "\" " << endl;
+        return;
+    }
+    
+    TFile * outfile = new TFile( "currentNoiseResults.root" , "RECREATE" );
+    
+    for(unsigned int d=0; d<detectornames.size(); d++){
+        
+        TString histname = "chargeVSstrip_";
+        histname += detectornames.at(d);
+        histname += "_y";
+        if( !( readfile->GetListOfKeys()->Contains( histname ) ) ){
+            cout << " ERROR : can not find histogram " << histname << endl;
+            continue;
+        }
+        TH2I * readhist = (TH2I*)readfile->Get( histname );
+    
+        histname = "stripsHit_";
+        histname += detectornames.at(d);
+        TH1D * projection = readhist->ProjectionX( histname );
+        
+        unsigned int nStrips = projection->GetNbinsX(); 
+        
+        histname = "hitAPVchannel_";
+        histname += detectornames.at(d);
+        TH1I * writehist = new TH1I( histname , histname , 128 , -0.5 , 127.5 );
+        writehist->SetXTitle("APV channel");
+        writehist->SetYTitle("hits");
+        
+        for(unsigned int s=1; s<=nStrips; s++){
+            
+            cout << " strip " << s;
+            
+            unsigned int content = projection->GetBinContent( s );
+            
+            unsigned int apvChannel = ( s - 1 ) % 128;
+            
+            cout << " modulo " << apvChannel;
+            
+            unsigned int board = ( s - 1 ) / 512;
+            
+            cout << " board " << board;
+            
+            if( board % 2 == 1 ) apvChannel = 127 - apvChannel;
+            
+            cout << " flipped " << apvChannel;
+            
+//             apvChannel = apv_sending_order_table[apvChannel];
+            
+//             for(unsigned int c=0; c<128; c++){
+//                 
+//                 if( apv_sending_order_table[c] == apvChannel ){
+//                     apvChannel = c;
+//                     break;
+//                 }
+//                 
+//             }
+            
+            cout << " channel " << apvChannel << endl;
+            
+            writehist->Fill( apvChannel , content );
+            
+        }
+        
+        outfile->cd();
+        
+        projection->Write();
+        writehist->Write();
+        
+    }
+    
+    readfile->Close();
+    
+    outfile->Close();
     
 }
 
@@ -1890,304 +1903,304 @@ void newtonMethod( function<double(double)> func, function<double(double)> funcP
     
 }
 
-vector< vector<double> > getHoughLines(vector< vector<double> > points, unsigned int required=2){
-    
-    bool debug = true;
-    
-    vector< vector<double> > houghLines;
-    vector<double> singleLine;
-            
-    unsigned int number = points.size();
-    
-//     if(debug) cout << " #points " << number << endl;
-    
-    if( number < 1 ) return houghLines;
-    
-    if( number == 1 ){
-        singleLine.push_back( points.at(0).at(1) );
-        singleLine.push_back( 0. );
-        houghLines.push_back( singleLine );
-        singleLine.clear();
-        return houghLines;
-    }
-    
-    bool withWeights = false;
-    
-    if( points.at(0).size() == 3 ) withWeights = true;
-    
-    double range[2][2] = { { 1e6, -1e6} , { 1e6, -1e6} };
-    double maxWeight = -1e6;
-    double minDist = 1e6;
-    
-    for(unsigned int p=0; p<number; p++){
-        if( points.at(p).at(0) < range[0][0] ) range[0][0] = points.at(p).at(0);
-        if( points.at(p).at(0) > range[0][1] ) range[0][1] = points.at(p).at(0);
-        if( points.at(p).at(1) < range[1][0] ) range[1][0] = points.at(p).at(1);
-        if( points.at(p).at(1) > range[1][1] ) range[1][1] = points.at(p).at(1);
-        if( withWeights && points.at(p).at(2) > maxWeight ) maxWeight = points.at(p).at(2);
-        for(unsigned int o=p+1; o<number; o++){
-            double dist = sqrt( pow( points.at(p).at(0) - points.at(o).at(0) , 2) + pow( points.at(p).at(1) - points.at(o).at(1) , 2) );
-            if( dist < minDist ) minDist = dist;
-        }
-    }
-    
-    unsigned int npixel[2] = { (unsigned int)(range[0][1]-range[0][0]+1), (unsigned int)(range[1][1]-range[1][0]+1)};
-    
-    if(debug){ 
-//         for(unsigned int r=0; r<2; r++)
-//             cout << " " << range[r][0] << " " << range[r][1] << " => " << npixel[r] << endl;
-    }
-    
-    for(unsigned int r=0; r<2; r++){
-        if( npixel[r] < 2 ){
-            cout << " WARNING : points too close in " << r << endl;
-            if( r == 0 ){
-                singleLine.push_back( -1e6 * range[0][0] );
-                singleLine.push_back( 1e6 );
-            }
-            else{
-                singleLine.push_back( range[0][0] );
-                singleLine.push_back( 0.);
-            }
-            houghLines.push_back( singleLine );
-            singleLine.clear();
-            return houghLines;
-        }
-    }
-    
-    Mat binary( npixel[0], npixel[1], CV_8U, Scalar::all(0));
-    
-//     if(debug) cout << " picture initialized " << endl;
-    
-    for(unsigned int p=0; p<number; p++){
-        unsigned int toFill = 255;
-        if( withWeights ) toFill = (unsigned int)( 255. * points.at(p).at(2) / maxWeight );
-//         cout << " " << (unsigned int)(points.at(p).at(0) - range[0][0] ) << " " << (unsigned int)(points.at(p).at(1) - range[1][0] ) << endl;
-        binary.at<uchar>( 
-                    (unsigned int)(points.at(p).at(0) - range[0][0] /*+ 1*/ ), 
-                    (unsigned int)(points.at(p).at(1) - range[1][0] /*+ 1*/ )
-        ) = (uchar)toFill;
-//         circle( binary, Point( (unsigned int)(points.at(p).at(1) - range[1][0] ), (unsigned int)(points.at(p).at(0) - range[0][0] )), 0, (uchar)toFill, -1, 8);
-    }
-    
-    if(debug){
-        namedWindow("filled", WINDOW_NORMAL);
-        resizeWindow("filled",400,1000);
-        imshow("filled",binary);
-//         imwrite("filled.bmp",binary);
-        waitKey(100);
-        sleep(2);
-//         destroyWindow("filled");
-    }
-    
-    unsigned int maxLength = (unsigned int)sqrt( npixel[0] * npixel[0] + npixel[1] * npixel[1] ) + 1;
-    
-    vector<Vec2f> lines;
-    
-//     if(debug) cout << " picture filled \t minDist " << minDist << " \t maxLength " << maxLength << endl;
-    
-    HoughLines( binary, lines, 1, CV_PI/18000., required);
-    
-//     if(debug) cout << " hough lines calculated " << endl;
-    
-    if( lines.size() < 1 ){
-        cout << " WARNING : no hough line found " << endl;
-        return houghLines;
-    }
-    
-    cout << " # lines " << lines.size() << endl;
-    
-    vector<Vec2f> averagedLines;
-    vector<unsigned int> toAverage;
-    vector<bool> used;
-    for(unsigned int l=0; l<lines.size(); l++) used.push_back(false);
-    
-    for(unsigned int l=0; l<lines.size(); l++){
-        
-        if( used.at(l) ) continue;
-        
-        for(unsigned int o=l+1; o<lines.size(); o++){
-            
-            if( used.at(o) ) continue;
-            if( abs( lines.at(l)[0] - lines.at(o)[0] ) < 2 && abs( lines.at(l)[1] - lines.at(o)[1] ) < 1e-2 ){ 
-                toAverage.push_back(o);
-                used.at(o) = true;
-//                 cout << " l" << l << " o" << o << endl;
-            }
-            
-        }
-        
-        unsigned int additional =  toAverage.size();
-        
-        if( additional < 1 ){
-            averagedLines.push_back(lines.at(l));
-            continue;
-        }
-        
-        float rho = lines.at(l)[0];
-        float theta = lines.at(l)[1]; 
-        
-        for(unsigned int a=0; a<additional; a++){
-            rho += lines.at( toAverage.at(a) )[0];
-            theta += lines.at( toAverage.at(a) )[1];
-        }
-        
-        toAverage.clear();
-        
-        rho = rho/(float)(additional+1);
-        theta = theta/(float)(additional+1);
-        
-        Vec2f averaged = { rho , theta };
-        averagedLines.push_back( averaged );
-        
-    }
-    
-    cout << " # averaged " << averagedLines.size() << endl;
-    
-    double slope = 0.;
-    double intercept = 0.;
-    for(unsigned int l=0; l<averagedLines.size(); l++){
-        
-        float rho = averagedLines.at(l)[0];
-        float theta = averagedLines.at(l)[1];
-        slope = - cos( theta ) / sin( theta );
-        intercept = rho / sin( theta );
-        if( abs( 1. / slope ) < 1. ) line( binary, Point( -1 , intercept + slope * (-1) ), Point( maxLength , intercept + slope * maxLength ), 150, 1, 8, 0 );
-        else continue;
-        slope = 1. / slope;
-        intercept = - intercept * slope;
-        intercept += range[1][0] - slope * range[0][0];
-        
-        singleLine.push_back( intercept );
-        singleLine.push_back( slope );
-        singleLine.push_back( rho );
-        singleLine.push_back( theta );
-        houghLines.push_back( singleLine );
-        singleLine.clear();
-    }
-    
-    if(debug){
-    
-        for(unsigned int p=0; p<number; p++){
-            unsigned int toFill = 255;
-            if( withWeights ) toFill = (unsigned int)( 255. * points.at(p).at(2) / maxWeight );
-    //         cout << " " << (unsigned int)(points.at(p).at(0) - range[0][0] ) << " " << (unsigned int)(points.at(p).at(1) - range[1][0] ) << endl;
-            binary.at<uchar>( 
-                        (unsigned int)(points.at(p).at(0) - range[0][0] /*+ 1*/ ), 
-                        (unsigned int)(points.at(p).at(1) - range[1][0] /*+ 1*/ )
-            ) = (uchar)toFill;
-    //         circle( binary, Point( (unsigned int)(points.at(p).at(1) - range[1][0] ), (unsigned int)(points.at(p).at(0) - range[0][0] )), 0, (uchar)toFill, -1, 8);
-        }
-        
-        namedWindow("fitted", WINDOW_NORMAL);
-        resizeWindow("fitted",400,1000);
-        imshow("fitted",binary);
-//         imwrite("fitted.bmp",binary);
-        waitKey(100);
-        sleep(2);
-//         destroyWindow("fitted");
-    }
-    
-    return houghLines;
-    
-}
+// vector< vector<double> > getHoughLines(vector< vector<double> > points, unsigned int required=2){
+//     
+//     bool debug = true;
+//     
+//     vector< vector<double> > houghLines;
+//     vector<double> singleLine;
+//             
+//     unsigned int number = points.size();
+//     
+// //     if(debug) cout << " #points " << number << endl;
+//     
+//     if( number < 1 ) return houghLines;
+//     
+//     if( number == 1 ){
+//         singleLine.push_back( points.at(0).at(1) );
+//         singleLine.push_back( 0. );
+//         houghLines.push_back( singleLine );
+//         singleLine.clear();
+//         return houghLines;
+//     }
+//     
+//     bool withWeights = false;
+//     
+//     if( points.at(0).size() == 3 ) withWeights = true;
+//     
+//     double range[2][2] = { { 1e6, -1e6} , { 1e6, -1e6} };
+//     double maxWeight = -1e6;
+//     double minDist = 1e6;
+//     
+//     for(unsigned int p=0; p<number; p++){
+//         if( points.at(p).at(0) < range[0][0] ) range[0][0] = points.at(p).at(0);
+//         if( points.at(p).at(0) > range[0][1] ) range[0][1] = points.at(p).at(0);
+//         if( points.at(p).at(1) < range[1][0] ) range[1][0] = points.at(p).at(1);
+//         if( points.at(p).at(1) > range[1][1] ) range[1][1] = points.at(p).at(1);
+//         if( withWeights && points.at(p).at(2) > maxWeight ) maxWeight = points.at(p).at(2);
+//         for(unsigned int o=p+1; o<number; o++){
+//             double dist = sqrt( pow( points.at(p).at(0) - points.at(o).at(0) , 2) + pow( points.at(p).at(1) - points.at(o).at(1) , 2) );
+//             if( dist < minDist ) minDist = dist;
+//         }
+//     }
+//     
+//     unsigned int npixel[2] = { (unsigned int)(range[0][1]-range[0][0]+1), (unsigned int)(range[1][1]-range[1][0]+1)};
+//     
+//     if(debug){ 
+// //         for(unsigned int r=0; r<2; r++)
+// //             cout << " " << range[r][0] << " " << range[r][1] << " => " << npixel[r] << endl;
+//     }
+//     
+//     for(unsigned int r=0; r<2; r++){
+//         if( npixel[r] < 2 ){
+//             cout << " WARNING : points too close in " << r << endl;
+//             if( r == 0 ){
+//                 singleLine.push_back( -1e6 * range[0][0] );
+//                 singleLine.push_back( 1e6 );
+//             }
+//             else{
+//                 singleLine.push_back( range[0][0] );
+//                 singleLine.push_back( 0.);
+//             }
+//             houghLines.push_back( singleLine );
+//             singleLine.clear();
+//             return houghLines;
+//         }
+//     }
+//     
+//     Mat binary( npixel[0], npixel[1], CV_8U, Scalar::all(0));
+//     
+// //     if(debug) cout << " picture initialized " << endl;
+//     
+//     for(unsigned int p=0; p<number; p++){
+//         unsigned int toFill = 255;
+//         if( withWeights ) toFill = (unsigned int)( 255. * points.at(p).at(2) / maxWeight );
+// //         cout << " " << (unsigned int)(points.at(p).at(0) - range[0][0] ) << " " << (unsigned int)(points.at(p).at(1) - range[1][0] ) << endl;
+//         binary.at<uchar>( 
+//                     (unsigned int)(points.at(p).at(0) - range[0][0] /*+ 1*/ ), 
+//                     (unsigned int)(points.at(p).at(1) - range[1][0] /*+ 1*/ )
+//         ) = (uchar)toFill;
+// //         circle( binary, Point( (unsigned int)(points.at(p).at(1) - range[1][0] ), (unsigned int)(points.at(p).at(0) - range[0][0] )), 0, (uchar)toFill, -1, 8);
+//     }
+//     
+//     if(debug){
+//         namedWindow("filled", WINDOW_NORMAL);
+//         resizeWindow("filled",400,1000);
+//         imshow("filled",binary);
+// //         imwrite("filled.bmp",binary);
+//         waitKey(100);
+//         sleep(2);
+// //         destroyWindow("filled");
+//     }
+//     
+//     unsigned int maxLength = (unsigned int)sqrt( npixel[0] * npixel[0] + npixel[1] * npixel[1] ) + 1;
+//     
+//     vector<Vec2f> lines;
+//     
+// //     if(debug) cout << " picture filled \t minDist " << minDist << " \t maxLength " << maxLength << endl;
+//     
+//     HoughLines( binary, lines, 1, CV_PI/18000., required);
+//     
+// //     if(debug) cout << " hough lines calculated " << endl;
+//     
+//     if( lines.size() < 1 ){
+//         cout << " WARNING : no hough line found " << endl;
+//         return houghLines;
+//     }
+//     
+//     cout << " # lines " << lines.size() << endl;
+//     
+//     vector<Vec2f> averagedLines;
+//     vector<unsigned int> toAverage;
+//     vector<bool> used;
+//     for(unsigned int l=0; l<lines.size(); l++) used.push_back(false);
+//     
+//     for(unsigned int l=0; l<lines.size(); l++){
+//         
+//         if( used.at(l) ) continue;
+//         
+//         for(unsigned int o=l+1; o<lines.size(); o++){
+//             
+//             if( used.at(o) ) continue;
+//             if( abs( lines.at(l)[0] - lines.at(o)[0] ) < 2 && abs( lines.at(l)[1] - lines.at(o)[1] ) < 1e-2 ){ 
+//                 toAverage.push_back(o);
+//                 used.at(o) = true;
+// //                 cout << " l" << l << " o" << o << endl;
+//             }
+//             
+//         }
+//         
+//         unsigned int additional =  toAverage.size();
+//         
+//         if( additional < 1 ){
+//             averagedLines.push_back(lines.at(l));
+//             continue;
+//         }
+//         
+//         float rho = lines.at(l)[0];
+//         float theta = lines.at(l)[1]; 
+//         
+//         for(unsigned int a=0; a<additional; a++){
+//             rho += lines.at( toAverage.at(a) )[0];
+//             theta += lines.at( toAverage.at(a) )[1];
+//         }
+//         
+//         toAverage.clear();
+//         
+//         rho = rho/(float)(additional+1);
+//         theta = theta/(float)(additional+1);
+//         
+//         Vec2f averaged = { rho , theta };
+//         averagedLines.push_back( averaged );
+//         
+//     }
+//     
+//     cout << " # averaged " << averagedLines.size() << endl;
+//     
+//     double slope = 0.;
+//     double intercept = 0.;
+//     for(unsigned int l=0; l<averagedLines.size(); l++){
+//         
+//         float rho = averagedLines.at(l)[0];
+//         float theta = averagedLines.at(l)[1];
+//         slope = - cos( theta ) / sin( theta );
+//         intercept = rho / sin( theta );
+//         if( abs( 1. / slope ) < 1. ) line( binary, Point( -1 , intercept + slope * (-1) ), Point( maxLength , intercept + slope * maxLength ), 150, 1, 8, 0 );
+//         else continue;
+//         slope = 1. / slope;
+//         intercept = - intercept * slope;
+//         intercept += range[1][0] - slope * range[0][0];
+//         
+//         singleLine.push_back( intercept );
+//         singleLine.push_back( slope );
+//         singleLine.push_back( rho );
+//         singleLine.push_back( theta );
+//         houghLines.push_back( singleLine );
+//         singleLine.clear();
+//     }
+//     
+//     if(debug){
+//     
+//         for(unsigned int p=0; p<number; p++){
+//             unsigned int toFill = 255;
+//             if( withWeights ) toFill = (unsigned int)( 255. * points.at(p).at(2) / maxWeight );
+//     //         cout << " " << (unsigned int)(points.at(p).at(0) - range[0][0] ) << " " << (unsigned int)(points.at(p).at(1) - range[1][0] ) << endl;
+//             binary.at<uchar>( 
+//                         (unsigned int)(points.at(p).at(0) - range[0][0] /*+ 1*/ ), 
+//                         (unsigned int)(points.at(p).at(1) - range[1][0] /*+ 1*/ )
+//             ) = (uchar)toFill;
+//     //         circle( binary, Point( (unsigned int)(points.at(p).at(1) - range[1][0] ), (unsigned int)(points.at(p).at(0) - range[0][0] )), 0, (uchar)toFill, -1, 8);
+//         }
+//         
+//         namedWindow("fitted", WINDOW_NORMAL);
+//         resizeWindow("fitted",400,1000);
+//         imshow("fitted",binary);
+// //         imwrite("fitted.bmp",binary);
+//         waitKey(100);
+//         sleep(2);
+// //         destroyWindow("fitted");
+//     }
+//     
+//     return houghLines;
+//     
+// }
 
-void tracking(){
-    
-    vector<double> zlimits = { -150., 150. };
-    vector<double> slopelimits = { -0.3, 0.3 };
-    vector<double> interceptlimits = { -30., 30. };
-    TRandom3 * generator = new TRandom3();
-    
-    TH2I * efficiencyVStracker = new TH2I( "efficiencyVStracker", "efficiencyVStracker", 8, 2.5, 10.5, 11, 0., 1.1);
-    TH2I * efficiencyVStracks = new TH2I( "efficiencyVStracks", "efficiencyVStracks", 10, 0.5, 10.5, 11, 0., 1.1);
-//     TH2I * efficiencyVStracks = new TH2I( "efficiencyVStracks", "efficiencyVStracks", 4, 2.5, 6.5, 4, 2.5, 6.5);
-    
-    for(unsigned int i=0; i<1000; i++){
-        
-        cout << "---------------------step" << i << endl;
-        
-        unsigned int addTracker = 1 + (unsigned int)( generator->Rndm() * 8 );
-        vector<double> zpos = zlimits;
-        
-        for(unsigned int t=0; t<addTracker; t++){
-            zpos.push_back( zlimits.at(0) + generator->Rndm() * ( zlimits.at(1) - zlimits.at(0) ) );
-        }
-        
-        unsigned int addTracks = 0 + (unsigned int)( generator->Rndm() * 10 );
-        vector< vector<double> > tracks = { { interceptlimits.at(1), slopelimits.at(0) } };
-        
-        for(unsigned int t=0; t<addTracks; t++){
-            vector<double> dvecdummy = {
-                interceptlimits.at(0) + generator->Rndm() * ( interceptlimits.at(1) - interceptlimits.at(0) ),
-                slopelimits.at(0) + generator->Rndm() * ( slopelimits.at(1) - slopelimits.at(0) )
-            };
-            tracks.push_back( dvecdummy );
-        }
-        
-        vector< vector<double> > points;
-        
-        for(unsigned int t=0; t<tracks.size(); t++){
-            cout << " " << t << " \t " << tracks.at(t).at(0) << " \t " << tracks.at(t).at(1) << endl;
-        }
-        
-        double multiplactor = 1.;
-        
-        for(unsigned int t=0; t<tracks.size(); t++){
-            for(unsigned int z=0; z<zpos.size(); z++){
-                vector<double> dvecdummy;
-                dvecdummy.push_back( zpos.at(z) * multiplactor );
-                dvecdummy.push_back( ( tracks.at(t).at(0) + tracks.at(t).at(1) * zpos.at(z) ) * multiplactor );
-                points.push_back( dvecdummy );
-            }
-        }
-        
-        vector< vector<double> > lines = getHoughLines( points , 3 );
-        
-        for(unsigned int l=0; l<lines.size(); l++){
-            cout << " " << l << " \t ";
-            for(unsigned int c=0; c<2; c++){
-//             for(unsigned int c=0; c<lines.at(l).size(); c++){
-                cout << lines.at(l).at(c) << " \t ";
-            }
-            cout << endl;
-        }
-        
-        unsigned int nTracksFound = 0;
-        
-        for(unsigned int t=0; t<tracks.size(); t++){
-            for(unsigned int l=0; l<lines.size(); l++){
-                if( abs( tracks.at(t).at(0) - lines.at(l).at(0) ) < 1. && abs( tracks.at(t).at(1) - lines.at(l).at(1) ) < 0.01 ){ 
-                    nTracksFound++;
-                    break;
-                }
-            }
-        }
-        
-        if( nTracksFound > tracks.size() ){ 
-            cout << " WARNING : wrong efficiency calculation " << endl;
-            break;
-        }
-        
-        efficiencyVStracker->Fill( zpos.size() , (double)nTracksFound / (double)tracks.size() );
-        efficiencyVStracks->Fill( tracks.size() , (double)nTracksFound / (double)tracks.size() );
-//         efficiencyVStracks->Fill( tracks.size() , zpos.size() );
-    
-    }
-    
-    cout << "-----------------FINISHED " << endl;
-    
-    efficiencyVStracker->Draw("colz");
-    gPad->Modified();
-    gPad->Update();
-    gPad->WaitPrimitive();
-    
-    efficiencyVStracks->Draw("colz");
-    gPad->Modified();
-    gPad->Update();
-    gPad->WaitPrimitive();
-    
-}
+// void tracking(){
+//     
+//     vector<double> zlimits = { -150., 150. };
+//     vector<double> slopelimits = { -0.3, 0.3 };
+//     vector<double> interceptlimits = { -30., 30. };
+//     TRandom3 * generator = new TRandom3();
+//     
+//     TH2I * efficiencyVStracker = new TH2I( "efficiencyVStracker", "efficiencyVStracker", 8, 2.5, 10.5, 11, 0., 1.1);
+//     TH2I * efficiencyVStracks = new TH2I( "efficiencyVStracks", "efficiencyVStracks", 10, 0.5, 10.5, 11, 0., 1.1);
+// //     TH2I * efficiencyVStracks = new TH2I( "efficiencyVStracks", "efficiencyVStracks", 4, 2.5, 6.5, 4, 2.5, 6.5);
+//     
+//     for(unsigned int i=0; i<1000; i++){
+//         
+//         cout << "---------------------step" << i << endl;
+//         
+//         unsigned int addTracker = 1 + (unsigned int)( generator->Rndm() * 8 );
+//         vector<double> zpos = zlimits;
+//         
+//         for(unsigned int t=0; t<addTracker; t++){
+//             zpos.push_back( zlimits.at(0) + generator->Rndm() * ( zlimits.at(1) - zlimits.at(0) ) );
+//         }
+//         
+//         unsigned int addTracks = 0 + (unsigned int)( generator->Rndm() * 10 );
+//         vector< vector<double> > tracks = { { interceptlimits.at(1), slopelimits.at(0) } };
+//         
+//         for(unsigned int t=0; t<addTracks; t++){
+//             vector<double> dvecdummy = {
+//                 interceptlimits.at(0) + generator->Rndm() * ( interceptlimits.at(1) - interceptlimits.at(0) ),
+//                 slopelimits.at(0) + generator->Rndm() * ( slopelimits.at(1) - slopelimits.at(0) )
+//             };
+//             tracks.push_back( dvecdummy );
+//         }
+//         
+//         vector< vector<double> > points;
+//         
+//         for(unsigned int t=0; t<tracks.size(); t++){
+//             cout << " " << t << " \t " << tracks.at(t).at(0) << " \t " << tracks.at(t).at(1) << endl;
+//         }
+//         
+//         double multiplactor = 1.;
+//         
+//         for(unsigned int t=0; t<tracks.size(); t++){
+//             for(unsigned int z=0; z<zpos.size(); z++){
+//                 vector<double> dvecdummy;
+//                 dvecdummy.push_back( zpos.at(z) * multiplactor );
+//                 dvecdummy.push_back( ( tracks.at(t).at(0) + tracks.at(t).at(1) * zpos.at(z) ) * multiplactor );
+//                 points.push_back( dvecdummy );
+//             }
+//         }
+//         
+//         vector< vector<double> > lines = getHoughLines( points , 3 );
+//         
+//         for(unsigned int l=0; l<lines.size(); l++){
+//             cout << " " << l << " \t ";
+//             for(unsigned int c=0; c<2; c++){
+// //             for(unsigned int c=0; c<lines.at(l).size(); c++){
+//                 cout << lines.at(l).at(c) << " \t ";
+//             }
+//             cout << endl;
+//         }
+//         
+//         unsigned int nTracksFound = 0;
+//         
+//         for(unsigned int t=0; t<tracks.size(); t++){
+//             for(unsigned int l=0; l<lines.size(); l++){
+//                 if( abs( tracks.at(t).at(0) - lines.at(l).at(0) ) < 1. && abs( tracks.at(t).at(1) - lines.at(l).at(1) ) < 0.01 ){ 
+//                     nTracksFound++;
+//                     break;
+//                 }
+//             }
+//         }
+//         
+//         if( nTracksFound > tracks.size() ){ 
+//             cout << " WARNING : wrong efficiency calculation " << endl;
+//             break;
+//         }
+//         
+//         efficiencyVStracker->Fill( zpos.size() , (double)nTracksFound / (double)tracks.size() );
+//         efficiencyVStracks->Fill( tracks.size() , (double)nTracksFound / (double)tracks.size() );
+// //         efficiencyVStracks->Fill( tracks.size() , zpos.size() );
+//     
+//     }
+//     
+//     cout << "-----------------FINISHED " << endl;
+//     
+//     efficiencyVStracker->Draw("colz");
+//     gPad->Modified();
+//     gPad->Update();
+//     gPad->WaitPrimitive();
+//     
+//     efficiencyVStracks->Draw("colz");
+//     gPad->Modified();
+//     gPad->Update();
+//     gPad->WaitPrimitive();
+//     
+// }
 
 void driftPlots(){
     
@@ -2263,7 +2276,8 @@ void driftPlots(){
 }
 
 void tester(TString filename="test.dat", bool bugger=false){
-    effiPerPart();
+//     getNoisy(filename);
+//     effiPerPart();
 //     chargePerPart();
 //     chargePerBoard();
 //     uTPCtime();
@@ -2277,6 +2291,8 @@ void tester(TString filename="test.dat", bool bugger=false){
 //     auto cosPrimeFunc = [](double z){return -sin(z)-1/*-first*/;};
 //     newtonMethod( cosFunc, cosPrimeFunc);
 //     getResMean(filename, bugger);
+//     getResMean();
+    getRotation();
 //     tracking();
 //     driftPlots();
 }
