@@ -1688,7 +1688,7 @@ void analysis::investigateCRF(){
         
 //         if( abs( slopeY[0] - slopeY[1] ) > 1e-2 ) continue;
 //         if( abs( mdtslope ) > 1e-1 ) continue;
-//         if( abs( slopeX ) > 1e-2 ) continue;
+        if( abs( slopeX ) > 1e-2 ) continue;
         if( useNewXtrack && ( track[0][0] < trackWindow[0][0] || track[0][0] > trackWindow[0][1] || track[1][0] < trackWindow[1][0] || track[1][0] > trackWindow[1][1] ) ) continue;
 //         if( track[0][0] < -1100. || track[0][0] > -200. || track[1][0] < -200. || track[1][0] > 100.) continue;
         
@@ -2208,6 +2208,8 @@ void analysis::investigateCRF(){
             if( leading[d][1] < 0 ){ 
                 if(debug && verbose) cout << " no hit in detector " << endl;
                 inefficiencies[d]->Fill( intersection.at(0), intersection.at(1));
+                firstLayerPosition = -1e6;
+                firstLayerBoard = -1;
                 continue;
             }
             
@@ -2219,6 +2221,8 @@ void analysis::investigateCRF(){
                 if( leading[d][0] < 0 ){
                     if(debug && verbose) cout << " no hit in detector for x coordinate " << endl;
                     continue;
+                    firstLayerPosition = -1e6;
+                    firstLayerBoard = -1;
                 }
                 else xpart = (int)( (double)centroid->at( leading[d][0] ) / (double)detstrips.at(d).at(0) * divisions.at(d).at(0) );
             }
@@ -2227,7 +2231,11 @@ void analysis::investigateCRF(){
             unsigned int fec = FEC->at(leading[d][1]);
             
 //             if( apv < 0 || apv > 15 || fec < 0 || fec > 5 ) continue;
-            if( fec < 0 || fec > nfec-1 || apv < 0 || apv > napv.at(fec) ) continue;
+            if( fec < 0 || fec > nfec-1 || apv < 0 || apv > napv.at(fec) ){ 
+                firstLayerPosition = -1e6;
+                firstLayerBoard = -1;
+                continue;
+            }
             
             double detpitch = pitchCor.at(d).at(fec).at(apv);
             double detshift = shift.at(d).at(fec).at(apv);
@@ -2289,7 +2297,11 @@ void analysis::investigateCRF(){
                 xpart >= divisions.at(d).at(0) || 
                 ypart < 0 || 
                 ypart >= divisions.at(d).at(1) 
-            ) continue;
+            ){ 
+                firstLayerPosition = centroid->at( leading[d][1] ) * detpitch - detshift;
+                firstLayerBoard = board;
+                continue;
+            }
             
 //             if( ypart != fec * 4 +  apv - firstAPV.at(d) ) effi[d][xpart][ypart]->Fill(9.);
                 
@@ -2407,6 +2419,9 @@ void analysis::investigateCRF(){
                 }
                 
             }
+            
+            firstLayerPosition = centroid->at( leading[d][1] ) * detpitch - detshift;
+            firstLayerBoard = board;
             
             if( 
 //                 abs( resMaxQ ) < effiRange.at(d) &&
