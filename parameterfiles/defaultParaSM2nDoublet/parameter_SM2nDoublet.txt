@@ -1,7 +1,7 @@
-properties_M6_eta3_CRF20181206.txt
-fecmap_M6_eta3_CRF20181206.txt
-corrections_M6_eta3_CRF20181606.txt
-boardmap_M6_eta3_CRF20181206.txt
+properties_SM2nDoublet.txt
+fecmap_SM2nDoublet.txt
+corrections_SM2nDoublet.txt
+boardmap_SM2nDoublet.txt
 detectorname    #xstrips    #ystrips   pitch   xlength    ylength   #divisionsX   #divisionsY    positionX    positionY  positionZ    angleX    angleY    angleZ    layer   flip    uTPCtime   CCCfactor   driftVelocity  cluTime
 eta_out            0          3072     0.425    1600       1305.6        16           24            0.           0.        0.         0.         0.        0.         3       0         0.        -0.3        0.047        0.
 eta_in             0          3072     0.425    1600       1305.6        16           24            0.           0.        0.         0.         0.        0.         2       0         0.         0.3        0.047        0.
