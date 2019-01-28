@@ -275,6 +275,8 @@ void analysis::investigateCRF(){
     }
     
     TH2I** interceptDifVSslope_at = new TH2I*[ndetectors];
+    TH2I** interceptDifVSmdtY_at = new TH2I*[ndetectors];
+    TH2I*** interceptDifVSscinX_at = new TH2I**[ndetectors];
     
     TH2I** resVSstrip_full = new TH2I*[ndetectors];
     TH2I** resVSstrip_area = new TH2I*[ndetectors];
@@ -642,6 +644,15 @@ void analysis::investigateCRF(){
         interceptDifVSslope_at[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 400, -10., 10.);
         interceptDifVSslope_at[d]->SetXTitle("slope y (average MDTs)");
         interceptDifVSslope_at[d]->SetYTitle("MDT intercept difference [mm]");
+        
+        histname = "interceptDifVSmdtY_at";
+        if(ndetectors>1){ 
+            histname += "_";
+            histname += detectornames.at(d);
+        }
+        interceptDifVSmdtY_at[d] = new TH2I(histname, histname, mdtSlopeDivision, 2000, -1000., 1000., 2000, -100., 100.);
+        interceptDifVSmdtY_at[d]->SetXTitle("intersection y (average MDTs)");
+        interceptDifVSmdtY_at[d]->SetYTitle("MDT intercept difference [mm]");
                 
         histname = "resVSstrip_full";
         if(ndetectors>1){ 
@@ -755,6 +766,7 @@ void analysis::investigateCRF(){
         resVSdifMDT_area[d]->SetXTitle("difference of MDT tracks [mm]");
         resVSdifMDT_area[d]->SetYTitle("residual y [mm]");  
         
+        interceptDifVSscinX_at[d] = new TH2I*[nboards.at(d)];
         resVSscinX_board[d] = new TH2I*[nboards.at(d)];
         resVSslope_board[d] = new TH2I*[nboards.at(d)];
         difVSscinX_board[d] = new TH2I*[nboards.at(d)];
@@ -766,6 +778,20 @@ void analysis::investigateCRF(){
         }
         
         for(unsigned int b=0; b<nboards.at(d); b++){
+                
+            histname = "interceptDifVSscinX_at";
+            if(nboards.at(d)>1){
+                histname += "_board";
+                if( nboards.at(d) == 3 ) histname += b+6;
+                else histname += b;
+            }
+            if(ndetectors>1){ 
+                histname += "_";
+                histname += detectornames.at(d);
+            }
+            interceptDifVSscinX_at[d][b] = new TH2I(histname, histname, 40, -2000., 2000., 2000, -20., 20.);
+            interceptDifVSscinX_at[d][b]->SetXTitle("x (scintillators) [mm]");
+            interceptDifVSscinX_at[d][b]->SetYTitle("MDT intercept difference [mm]"); 
                 
             histname = "resVSscinX";
             if(nboards.at(d)>1){
@@ -2284,6 +2310,8 @@ void analysis::investigateCRF(){
             leadCentroid[d][1] = hitposition.at(1);
             leadResidual[d][1] = resMaxQ;
             
+            double mdtDifference =  ( interceptY[0] - slopeY[0] * position.at(d).at(2) ) - ( interceptY[1] - slopeY[1] * position.at(d).at(2) ) ;
+            
             if(debug && verbose) cout << " centroid " << centroid->at( leading[d][1] ) << " \t centered position" << clusterposition << " \t reconstruction " << hitposition.at(1) << " \t MDT reference " << mdtposition << endl;
             
             resVSstrip_full[d]->Fill( centroid->at( leading[d][1] ), resMaxQ);
@@ -2349,6 +2377,7 @@ void analysis::investigateCRF(){
             maxQstripVSstrip[d]->Fill( centroid->at( leading[d][1] ), maxStripQ->at( leading[d][1]) );
             resVSstrip_area[d]->Fill( centroid->at( leading[d][1] ), resMaxQ);
             resVSmdtY_area[d]->Fill( intersection.at(1), resMaxQ);
+            interceptDifVSmdtY_at[d]->Fill( intersection.at(1) , mdtDifference );
             resVSscinX_area[d]->Fill( intersection.at(0), resMaxQ);
             if(useAngle) resVSslope_area[d]->Fill( mdtangle, resMaxQ);
             else resVSslope_area[d]->Fill( mdtslope, resMaxQ);
@@ -2372,10 +2401,10 @@ void analysis::investigateCRF(){
             else resVSslope[d][xpart][ypart]->Fill( mdtslope, resMaxQ);
 //             resVSslope[d][xpart][ypart]->Fill( track[0][1], resMaxQ);
             
-            if(useAngle) interceptDifVSslope_at[d]->Fill( mdtangle, ( interceptY[0] - slopeY[0] * position.at(d).at(2) ) - ( interceptY[1] - slopeY[1] * position.at(d).at(2) ) );
-            else interceptDifVSslope_at[d]->Fill( mdtslope, ( interceptY[0] - slopeY[0] * position.at(d).at(2) ) - ( interceptY[1] - slopeY[1] * position.at(d).at(2) ) );
+            if(useAngle) interceptDifVSslope_at[d]->Fill( mdtangle, mdtDifference );
+            else interceptDifVSslope_at[d]->Fill( mdtslope, mdtDifference );
             
-            resVSdifMDT_area[d]->Fill( ( interceptY[0] - slopeY[0] * position.at(d).at(2) ) - ( interceptY[1] - slopeY[1] * position.at(d).at(2) ) , resMaxQ );
+            resVSdifMDT_area[d]->Fill( mdtDifference , resMaxQ );
             
             if( d > 0 && firstLayerPosition > -1 ){ 
                 if(useAngle) difVSslope[d][xpart][ypart]->Fill( mdtangle, centroid->at( leading[d][1] ) * detpitch - detshift - firstLayerPosition);
@@ -2389,6 +2418,7 @@ void analysis::investigateCRF(){
             if( board < nboards.at(d) ){
                 
                 resVSscinX_board[d][board]->Fill( intersection.at(0), resMaxQ);
+                interceptDifVSscinX_at[d][board]->Fill( intersection.at(0), mdtDifference );
                 if(useAngle) resVSslope_board[d][board]->Fill( mdtangle, resMaxQ);
                 else resVSslope_board[d][board]->Fill( mdtslope, resMaxQ);
                 if( d > 0 && firstLayerPosition > -1 && board == firstLayerBoard){ 
@@ -2887,6 +2917,7 @@ void analysis::investigateCRF(){
         if( detstrips.at(d).at(1) < 1 ) continue;
         
         interceptDifVSslope_at[d]->Write();
+        interceptDifVSmdtY_at[d]->Write();
     
         resVSstrip_full[d]->Write();
         resVSstrip_area[d]->Write();
@@ -2907,6 +2938,7 @@ void analysis::investigateCRF(){
         
         for(unsigned int b=0; b<nboards.at(d); b++){
             
+            interceptDifVSscinX_at[d][b]->Write(); 
             resVSscinX_board[d][b]->Write(); 
             resVSslope_board[d][b]->Write(); 
             if( d > 0 ){ 
