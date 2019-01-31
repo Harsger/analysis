@@ -38,7 +38,7 @@ int main(int argc, char* argv[]){
         " -o\toutput directory       \t(default:  \"" << outdirectory << "\")\n"
         " -p\tparameterfile          \t(default:  \"" << parametername << "\")\n"
         " -r\trequired hits          \t(default:  \"" << requiredHits << "\")\n"
-        " -f\fit range               \t(default:  \"" << fitRange << "\")\n"
+        " -f\tfit range              \t(default:  \"" << fitRange << "\")\n"
         " -D\tenables debugging mode \t(default:  \"" << debug << "\")\n"
         "\n"
         "output files are named : <inputname>_<mode>.root\n"
