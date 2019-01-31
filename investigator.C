@@ -503,8 +503,8 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        if( detstrips.at(d).at(1) > 0 ) maxQstripVSstrip[d] = new TH2I(histname, histname, detstrips.at(d).at(1)/10, 0.5, 0.5+detstrips.at(d).at(1), 500, 0, 2500);
-        else maxQstripVSstrip[d] = new TH2I(histname, histname, detstrips.at(d).at(0)/10, 0.5, 0.5+detstrips.at(d).at(0), 500, 0, 2500);
+        if( detstrips.at(d).at(1) > 0 ) maxQstripVSstrip[d] = new TH2I(histname, histname, detstrips.at(d).at(1), 0.5, 0.5+detstrips.at(d).at(1), 500, 0, 2500);
+        else maxQstripVSstrip[d] = new TH2I(histname, histname, detstrips.at(d).at(0), 0.5, 0.5+detstrips.at(d).at(0), 500, 0, 2500);
         maxQstripVSstrip[d]->SetXTitle("centroid position [pitch]");
         maxQstripVSstrip[d]->SetYTitle("charge max strip [ADC channel]");  
             
@@ -518,8 +518,10 @@ void analysis::investigateCRF(){
                 histname += "_";
                 histname += detectornames.at(d);
             }
-            if( detstrips.at(d).at(1) > 0 ) centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(1)/10, 0.5, 0.5+detstrips.at(d).at(1));
-            else centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(0)/10, 0.5, 0.5+detstrips.at(d).at(0));
+            if( detstrips.at(d).at(1) > 0 ) centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(1)/128, 0.5, 0.5+detstrips.at(d).at(1));
+            else centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(0)/128, 0.5, 0.5+detstrips.at(d).at(0));
+//             if( detstrips.at(d).at(1) > 0 ) centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(1), 0.5, 0.5+detstrips.at(d).at(1));
+//             else centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(0), 0.5, 0.5+detstrips.at(d).at(0));
             centralAreaHits[d][m]->SetXTitle("stripnumber");
             centralAreaHits[d][m]->SetYTitle("hits"); 
         
@@ -532,8 +534,8 @@ void analysis::investigateCRF(){
                 histname += "_";
                 histname += detectornames.at(d);
             }
-            if( detstrips.at(d).at(1) > 0 ) chargeVSstrip_near[d] = new TH2I(histname, histname, detstrips.at(d).at(1)/10, 0.5, 0.5+detstrips.at(d).at(1), 500, 0, 2500);
-            else chargeVSstrip_near[d] = new TH2I(histname, histname, detstrips.at(d).at(0)/10, 0.5, 0.5+detstrips.at(d).at(0), 500, 0, 2500);
+            if( detstrips.at(d).at(1) > 0 ) chargeVSstrip_near[d] = new TH2I(histname, histname, detstrips.at(d).at(1), 0.5, 0.5+detstrips.at(d).at(1), 500, 0, 2500);
+            else chargeVSstrip_near[d] = new TH2I(histname, histname, detstrips.at(d).at(0), 0.5, 0.5+detstrips.at(d).at(0), 500, 0, 2500);
             chargeVSstrip_near[d]->SetXTitle("stripnumber");
             chargeVSstrip_near[d]->SetYTitle("charge max strip [ADC channel]"); 
             
@@ -650,7 +652,7 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        interceptDifVSmdtY_at[d] = new TH2I(histname, histname, mdtSlopeDivision, 2000, -1000., 1000., 2000, -100., 100.);
+        interceptDifVSmdtY_at[d] = new TH2I(histname, histname, 2000, -1000., 1000., 2000, -100., 100.);
         interceptDifVSmdtY_at[d]->SetXTitle("intersection y (average MDTs)");
         interceptDifVSmdtY_at[d]->SetYTitle("MDT intercept difference [mm]");
                 
@@ -659,7 +661,7 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        resVSstrip_full[d] = new TH2I(histname, histname, detstrips.at(d).at(1)/10, 0.5, 0.5+detstrips.at(d).at(1), 2000, -1000., 1000.);
+        resVSstrip_full[d] = new TH2I(histname, histname, detstrips.at(d).at(1)/8, 0.5, 0.5+detstrips.at(d).at(1), 2000, -1000., 1000.);
         resVSstrip_full[d]->SetXTitle("centroid position [pitch]");
         resVSstrip_full[d]->SetYTitle("residual y [mm]");  
                 
@@ -668,7 +670,7 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        resVSstrip_area[d] = new TH2I(histname, histname, detstrips.at(d).at(1)/10, 0.5, 0.5+detstrips.at(d).at(1), 1000, -5., 5.);
+        resVSstrip_area[d] = new TH2I(histname, histname, detstrips.at(d).at(1)/8, 0.5, 0.5+detstrips.at(d).at(1), 1000, -5., 5.);
         resVSstrip_area[d]->SetXTitle("centroid position [pitch]");
         resVSstrip_area[d]->SetYTitle("residual y [mm]");  
                 
@@ -1714,7 +1716,7 @@ void analysis::investigateCRF(){
         
 //         if( abs( slopeY[0] - slopeY[1] ) > 1e-2 ) continue;
 //         if( abs( mdtslope ) > 1e-1 ) continue;
-        if( abs( slopeX ) > 1e-2 ) continue;
+//         if( abs( slopeX ) > 1e-2 ) continue;
         if( useNewXtrack && ( track[0][0] < trackWindow[0][0] || track[0][0] > trackWindow[0][1] || track[1][0] < trackWindow[1][0] || track[1][0] > trackWindow[1][1] ) ) continue;
 //         if( track[0][0] < -1100. || track[0][0] > -200. || track[1][0] < -200. || track[1][0] > 100.) continue;
         
@@ -2158,6 +2160,7 @@ void analysis::investigateCRF(){
     
         double firstLayerPosition = -1e6;
         int firstLayerBoard = -1;
+        int firstLayer = -1;
         
         vector<double> uTPCpoints(ndetectors);
         bool inEffiRange[ndetectors];
@@ -2185,6 +2188,8 @@ void analysis::investigateCRF(){
             
             double mdtposition = intersection.at(1);
             
+            bool centralHit = false;
+            
             CRFhits[d]->Fill( intersection.at(0), intersection.at(1));
             if( xpart >= 0 && xpart < divisions.at(d).at(0) && ypart >= 0 && ypart < divisions.at(d).at(1) ){ 
                 
@@ -2192,6 +2197,7 @@ void analysis::investigateCRF(){
                 effi[d][xpart][ypart]->Fill(1.);
                 
                 if( xpart > 0.3 * divisions.at(d).at(0) && xpart < 0.7 * divisions.at(d).at(0) ){
+                    centralHit = true;
                     vector<double> trackINdet = GetPointDet( intersection.at(0), intersection.at(1), intersection.at(2), d, 0);
                     double mdtStripPosition = trackINdet.at(1) / pitch.at(d) + detstrips.at(d).at(1) * 0.5;
                     centralAreaHits[d][0]->Fill( mdtStripPosition );
@@ -2236,6 +2242,7 @@ void analysis::investigateCRF(){
                 inefficiencies[d]->Fill( intersection.at(0), intersection.at(1));
                 firstLayerPosition = -1e6;
                 firstLayerBoard = -1;
+                firstLayer = -1;
                 continue;
             }
             
@@ -2249,6 +2256,7 @@ void analysis::investigateCRF(){
                     continue;
                     firstLayerPosition = -1e6;
                     firstLayerBoard = -1;
+                    firstLayer = -1;
                 }
                 else xpart = (int)( (double)centroid->at( leading[d][0] ) / (double)detstrips.at(d).at(0) * divisions.at(d).at(0) );
             }
@@ -2260,6 +2268,7 @@ void analysis::investigateCRF(){
             if( fec < 0 || fec > nfec-1 || apv < 0 || apv > napv.at(fec) ){ 
                 firstLayerPosition = -1e6;
                 firstLayerBoard = -1;
+                firstLayer = -1;
                 continue;
             }
             
@@ -2283,13 +2292,15 @@ void analysis::investigateCRF(){
                 }
             }
             
-            if( d == 0 ) firstLayerBoard = board;
-            
             if(debug && verbose) cout << " FEC " << fec << " \t APV " << apv << " \t board " << board << " \t pitch " << detpitch << " \t shift " << detshift << endl;
             
             vector<double> trackINdet = GetPointDet( intersection.at(0), intersection.at(1), intersection.at(2), d, board);
             
-            if( d == 0 ) firstLayerPosition = centroid->at( leading[d][1] ) * detpitch - detshift;
+            if( d == 0 ){ 
+                firstLayerPosition = centroid->at( leading[d][1] ) * detpitch - detshift;
+                firstLayerBoard = board;
+                firstLayer = d;
+            }
                 
 //             double clusterposition = ( centroid->at( leading[d][1] ) - detstrips.at(d).at(1) * 0.5 ) * detpitch - detshift;
 //             if( flipCluster.at(d) && ( flip.at(d) == 2 || flip.at(d) == 3 ) ) clusterposition = - ( ( centroid->at( leading[d][1] ) - detstrips.at(d).at(1) * 0.5 ) * detpitch ) - detshift;
@@ -2312,7 +2323,7 @@ void analysis::investigateCRF(){
             
             double mdtDifference =  ( interceptY[0] - slopeY[0] * position.at(d).at(2) ) - ( interceptY[1] - slopeY[1] * position.at(d).at(2) ) ;
             
-            if(debug && verbose) cout << " centroid " << centroid->at( leading[d][1] ) << " \t centered position" << clusterposition << " \t reconstruction " << hitposition.at(1) << " \t MDT reference " << mdtposition << endl;
+            if(debug && verbose) cout << " centroid " << centroid->at( leading[d][1] ) << " \t centered position " << clusterposition << " \t reconstruction " << hitposition.at(1) << " \t MDT reference " << mdtposition << endl;
             
             resVSstrip_full[d]->Fill( centroid->at( leading[d][1] ), resMaxQ);
             resVSmdtY_full[d]->Fill( intersection.at(1), resMaxQ);
@@ -2328,6 +2339,7 @@ void analysis::investigateCRF(){
             ){ 
                 firstLayerPosition = centroid->at( leading[d][1] ) * detpitch - detshift;
                 firstLayerBoard = board;
+                firstLayer = d;
                 continue;
             }
             
@@ -2423,8 +2435,8 @@ void analysis::investigateCRF(){
                 else resVSslope_board[d][board]->Fill( mdtslope, resMaxQ);
                 if( d > 0 && firstLayerPosition > -1 && board == firstLayerBoard){ 
                     difVSscinX_board[d][board]->Fill( intersection.at(0), centroid->at( leading[d][1] ) * detpitch - detshift - firstLayerPosition);
-                    if(useAngle) firstTimeDifVSslope_board[d][board]->Fill( mdtangle, earliest->at( leading[d][1] ) - earliest->at( leading[0][1] ) );
-                    else firstTimeDifVSslope_board[d][board]->Fill( mdtslope, earliest->at( leading[d][1] ) - earliest->at( leading[0][1] ) );
+                    if(useAngle) firstTimeDifVSslope_board[d][board]->Fill( mdtangle, earliest->at( leading[d][1] ) - earliest->at( leading[firstLayer][1] ) );
+                    else firstTimeDifVSslope_board[d][board]->Fill( mdtslope, earliest->at( leading[d][1] ) - earliest->at( leading[firstLayer][1] ) );
                 }
                 clusterQvsUnixtime[d][board]->Fill( unixtime, chargesum->at( leading[d][1] ));
                 residualVSunixtime[d][board]->Fill( unixtime, resMaxQ);
@@ -2452,6 +2464,7 @@ void analysis::investigateCRF(){
             
             firstLayerPosition = centroid->at( leading[d][1] ) * detpitch - detshift;
             firstLayerBoard = board;
+            firstLayer = d;
             
             if( 
 //                 abs( resMaxQ ) < effiRange.at(d) &&
@@ -2650,22 +2663,22 @@ void analysis::investigateCRF(){
                 if( nearest == leading[d][1] ) effi[d][xpart][ypart]->Fill(10.);
             }
             
-            if( xpart > 0.3 * divisions.at(d).at(0) && xpart < 0.7 * divisions.at(d).at(0) ){
+            if( 
+                centralHit &&
+                xpart > 0.3 * divisions.at(d).at(0) && 
+                xpart < 0.7 * divisions.at(d).at(0) && 
+                nearest > -1 
+            ){
                 
-//                 double mdtStripPosition = trackINdet.at(1) / pitch.at(d) + detstrips.at(d).at(1) * 0.5;
-//                 centralAreaHits[d][0]->Fill( mdtStripPosition );
-                
-                if( nearest > -1 ){
-                    if( onlyCluster ) centralAreaHits[d][1]->Fill( centroid->at( nearest ) );
-                    else{
-                        unsigned int stripindex = 0;
-                        double clusterSize = size->at(nearest);
-                        for(unsigned int s=0; s<clusterSize; s++){
-                            stripindex = strips->at(nearest).at(s);
-                            centralAreaHits[d][1]->Fill( number->at( stripindex ) , 1. / clusterSize );
-                        }
-                        
+                if( onlyCluster ) centralAreaHits[d][1]->Fill( centroid->at( nearest ) );
+                else{
+                    unsigned int stripindex = 0;
+                    double clusterSize = size->at(nearest);
+                    for(unsigned int s=0; s<clusterSize; s++){
+                        stripindex = strips->at(nearest).at(s);
+                        centralAreaHits[d][1]->Fill( number->at( stripindex ) , 1. / clusterSize );
                     }
+                    
                 }
                 
             }
