@@ -1611,7 +1611,7 @@ void analysis::tracking(){
             trackChi[r]->Fill( residuum.at(ntracker[r]+1), residuum.at(ntracker[r]+2));
             trackSlopeIntercept[r]->Fill( residuum.at(ntracker[r]+1), residuum.at(ntracker[r]));
             
-//             if( residuum.at(ntracker[r]+2) > 10 && r == 0 ) allTrackHit[r] = false;
+            if( abs( residuum.at(ntracker[r]+1) ) > 0.4 && r == 1 ) allTrackHit[r] = false;
             
             fittedtracks.push_back( tracksOneDimension );
         
@@ -1673,7 +1673,7 @@ void analysis::tracking(){
                 int xpart = (int)( ( intersection.at(0) + 0.5 * length.at(d).at(0) ) / length.at(d).at(0) * divisions.at(d).at(0) ); 
                 int ypart = (int)( ( intersection.at(1) + 0.5 * length.at(d).at(1) ) / length.at(d).at(1) * divisions.at(d).at(1) );  
                 
-                if(debug) cout << " partition : \t X " << xpart << " \t Y " << ypart << endl;
+                if(debug && verbose) cout << " partition : \t X " << xpart << " \t Y " << ypart << endl;
                 
                 if( r == 0 ) trackHits[d]->Fill( xpart, ypart);
                 
@@ -1682,16 +1682,21 @@ void analysis::tracking(){
                 hitsPerPartition[d][r]->Fill( xpart, ypart);
                 clusterQperPartition[d][r]->Fill( xpart, ypart, chargesum->at( leading[d][r] ) );
                 
-                vector<double> trackINdet = GetPointDet( 
-                                                        fittedtracks.at(0).at(d).at(ntracker[0]-subtractIn) + fittedtracks.at(0).at(d).at(ntracker[0]+1-subtractIn) * position.at(d).at(2), 
-                                                        fittedtracks.at(1).at(d).at(ntracker[1]-subtractOut) + fittedtracks.at(1).at(d).at(ntracker[1]+1-subtractOut) * position.at(d).at(2), 
-                                                        position.at(d).at(2), d);
+                if(debug && verbose) cout << " " << fittedtracks.at(0).at(d).size() << " " << fittedtracks.at(1).at(d).size() << " " << ntracker[0] << " " << ntracker[1] << " " << subtractIn << " " << subtractOut << endl;
                 
+                vector<double> trackINdet; 
                 if( r == 1 )
-                            trackINdet = GetPointDet( 
-                                                    fittedtracks.at(0).at(d).at(ntracker[0]-subtractOut) + fittedtracks.at(0).at(d).at(ntracker[0]+1-subtractOut) * position.at(d).at(2), 
-                                                    fittedtracks.at(1).at(d).at(ntracker[1]-subtractIn) + fittedtracks.at(1).at(d).at(ntracker[1]+1-subtractIn) * position.at(d).at(2), 
-                                                    position.at(d).at(2), d);
+                    trackINdet = GetPointDet( 
+                        fittedtracks.at(0).at(d).at(ntracker[0]-subtractOut) + fittedtracks.at(0).at(d).at(ntracker[0]+1-subtractOut) * position.at(d).at(2), 
+                        fittedtracks.at(1).at(d).at(ntracker[1]-subtractIn) + fittedtracks.at(1).at(d).at(ntracker[1]+1-subtractIn) * position.at(d).at(2), 
+                        position.at(d).at(2), d
+                    );
+                else
+                    trackINdet = GetPointDet( 
+                        fittedtracks.at(0).at(d).at(ntracker[0]-subtractIn) + fittedtracks.at(0).at(d).at(ntracker[0]+1-subtractIn) * position.at(d).at(2), 
+                        fittedtracks.at(1).at(d).at(ntracker[1]-subtractOut) + fittedtracks.at(1).at(d).at(ntracker[1]+1-subtractOut) * position.at(d).at(2), 
+                        position.at(d).at(2), d
+                    );
                 
                 vector<double> detposition;
                 if( r == 1 ) detposition = GetPointGlobal( perpendicularTrackPosition, hitpositions.at(d).at(1), d);
