@@ -7,7 +7,7 @@ FEC 5 triggerOffset 215.4
 
 uAngle
 
-useNewXtrack
+uNewXtrack
 
 unix start 1527458400 end 1530309600
 
