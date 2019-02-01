@@ -8,6 +8,7 @@
 #include <TCanvas.h> 
 #include <TFile.h>
 #include <TString.h>
+#include <TLegend.h>
 #include <TMath.h>
 #include <TBranch.h>
 #include <TTree.h>
@@ -16,6 +17,7 @@
 #include <TH2.h>
 #include <TH3.h>
 #include <TGraphErrors.h>
+#include <TMultiGraph.h>
 #include <TProfile.h>
 
 #include "json.hpp"
@@ -100,6 +102,7 @@ int main(int argc, char* argv[]){
         " -d\tfile for dead and noisy channels \n"
         " -a\tdirectory of amplification scan \n"
         " -m\tfile for efficiency and charge maps \n"
+        " additional option for maps (-m)"
         " -e\texclude sector in maps \n"
         "\n"
         " output will be stored in "<< outputDir <<"\n"
@@ -356,7 +359,8 @@ void amplificationScan(){
         for( auto det : layer ){
             
             TString histname = det.first;
-            histname += "_coincidenceEffi";
+//             histname += "_coincidenceEffi";
+            histname += "_nearEfficiency";
             
             TH2D * readhist = (TH2D*)infile->Get(histname);
         
@@ -440,6 +444,110 @@ void amplificationScan(){
             d++;
             
         }
+        
+    }
+            
+    gROOT->SetStyle("Plain");
+    gStyle->SetPalette(kRainBow);
+    gStyle->SetTitleX(0.5);
+    gStyle->SetTitleAlign(23);
+    gStyle->SetOptStat(0);
+    gStyle->SetOptTitle(1);
+//     gStyle->SetPadTopMargin(    0.020 );
+    gStyle->SetPadTopMargin(    0.080 );
+    gStyle->SetPadRightMargin(  0.010 );
+    gStyle->SetPadBottomMargin( 0.110 );
+    gStyle->SetPadLeftMargin(   0.105 );
+    double labelSize = 0.05;
+    gStyle->SetLabelSize( labelSize , "x" );
+    gStyle->SetTitleSize( labelSize , "x" );
+    gStyle->SetLabelSize( labelSize , "y" );
+    gStyle->SetTitleSize( labelSize , "y" );
+    gStyle->SetLabelSize( labelSize , "z" );
+    gStyle->SetTitleSize( labelSize , "z" );
+    gStyle->SetTitleOffset( 1.0 , "x" );
+    gStyle->SetTitleOffset( 1.0 , "y" );
+//     gStyle->SetTitleOffset( 1.2 , "z" );
+    gROOT->ForceStyle();
+    
+    TCanvas * can = new TCanvas( "can" , "can" );
+
+    unsigned int plotStyle[6][2] = {
+            { 20 , 1 } ,
+            { 24 , 2 } ,
+            { 22 , 4 } ,
+            { 26 , 6 } ,
+            { 21 , 9 } ,
+            { 25 , 46 } 
+        };
+    
+    map< string , TMultiGraph* > overLayered;
+    map< string , bool > firstFilled;
+    for( auto l : layer ){ 
+        firstFilled[ l.first ] = false;
+        overLayered[ l.first ] = new TMultiGraph();
+    }
+    
+//     TFile * testOut = new TFile( "testOut.root" , "RECREATE" );
+    
+    for( auto l : layer ){
+        
+        for( auto g : effiVSamp ){
+            
+            TString sectorID = g.first;
+            sectorID.ReplaceAll( "efficiency" , "" );
+        
+            if( sectorID.Contains( l.second ) ){
+                
+                g.second->SetTitle( sectorID );
+                g.second->SetName( sectorID );
+                
+                unsigned int n = 0;
+                if( firstFilled[ l.first ] ) n = overLayered[ l.first ]->GetListOfGraphs()->GetEntries();
+                else firstFilled[ l.first ] = true;
+                g.second->SetMarkerStyle( plotStyle[n][0] );
+                g.second->SetMarkerColor( plotStyle[n][1] );
+                g.second->SetMarkerSize( 1.5 );
+                g.second->SetLineColor( plotStyle[n][1] );
+                overLayered[ l.first ]->Add( g.second , "P" );
+                
+            }
+            
+            sectorID = g.first;
+            sectorID.ReplaceAll( "efficiency" , "" );
+            g.second->SetTitle( sectorID );
+            g.second->SetName( sectorID );
+            
+        }
+        
+        TString name = moduleName;
+        name += "_";
+        name += l.second;
+        
+        overLayered[ l.first ]->SetTitle( name );
+        overLayered[ l.first ]->GetXaxis()->SetTitle( "amplification voltage [V]" );
+//         overLayered[ l.first ]->GetXaxis()->SetRangeUser( 500. , 600. );
+        overLayered[ l.first ]->GetYaxis()->SetTitle( "efficiency" );
+//         overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0.3 , 1. );
+        overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0. , 1. );
+        overLayered[ l.first ]->Draw("APL");
+        
+//         can->BuildLegend( 0.13 , 0.64 , 0.25 , 0.96 );
+        can->BuildLegend( 0.85 , 0.15 , 0.98 , 0.45 );
+        gPad->SetGridy();
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
+        
+        name = outputDir;
+        name += "/M";
+        name += moduleNumber;
+        name += "_";
+        name += l.first;
+        name += "_ampScan.png";
+        gPad->Print(name);
+        name.ReplaceAll( ".png" , ".pdf" );
+        gPad->Print(name);
         
     }
     
