@@ -540,11 +540,10 @@ void amplificationScan(){
         gPad->WaitPrimitive();
         
         name = outputDir;
-        name += "/M";
-        name += moduleNumber;
-        name += "_";
-        name += l.first;
-        name += "_ampScan.png";
+        name += "/";
+        name += moduleName;
+        name += l.second;
+        name += "ampScan.png";
         gPad->Print(name);
         name.ReplaceAll( ".png" , ".pdf" );
         gPad->Print(name);
@@ -674,7 +673,7 @@ void effiNchargeMaps(){
                     
                     if( content < -1e2 ) continue;
                     
-                    if( toExclude( l.first , x ,y ) ) continue;
+                    if( toExclude( l.first , x , y ) ) continue;
                     
                     counts++;
                     mean += content;
@@ -725,12 +724,26 @@ void effiNchargeMaps(){
                 readhist->GetZaxis()->SetRangeUser( 0. , max );
                 readhist->GetZaxis()->SetTitle( "MPV cluster charge [ADC channel]" );
             }
-            readhist->SetTitle( specifier.c_str() );
+            histname = moduleName;
+            histname += "_";
+            histname += l.second;
+            histname += "_";
+            histname += m.second;
+            readhist->SetTitle( histname );
             readhist->Draw("COLZ");
             gPad->Modified();
             gPad->Update();
             gPad->WaitPrimitive();
             padle->Print( histname );
+            
+            histname = outputDir;
+            histname += "/";
+            histname += moduleName;
+            histname += l.second;
+            histname += m.second;
+            histname += ".png";
+            padle->Print( histname );
+            
             
         }
         
