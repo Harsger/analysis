@@ -267,6 +267,8 @@ void analysis::investigateCRF(){
     TH2D** inefficiencies = new TH2D*[ndetectors];
     TH2D** CRFhits = new TH2D*[ndetectors];
     TH2D** clusterChargeSum = new TH2D*[ndetectors];
+    TH2D** residualHits = new TH2D*[ndetectors];
+    TH2D** resNearHits = new TH2D*[ndetectors];
     TH2I** maxQstripVSstrip = new TH2I*[ndetectors];
     TH1D*** centralAreaHits = new TH1D**[ndetectors];
     TH2I** chargeVSstrip_near;
@@ -497,6 +499,26 @@ void analysis::investigateCRF(){
         clusterChargeSum[d]->SetXTitle("x [mm]");
         clusterChargeSum[d]->SetYTitle("y [mm]");
         clusterChargeSum[d]->SetZTitle("cluster charge sum [ADC channel]");
+    
+        histname = "residualHits";
+        if(ndetectors>1){ 
+            histname += "_";
+            histname += detectornames.at(d);
+        }
+        residualHits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+        residualHits[d]->SetXTitle("x [mm]");
+        residualHits[d]->SetYTitle("y [mm]");
+        residualHits[d]->SetZTitle("mean residual [mm]");
+    
+        histname = "resNearHits";
+        if(ndetectors>1){ 
+            histname += "_";
+            histname += detectornames.at(d);
+        }
+        resNearHits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+        resNearHits[d]->SetXTitle("x [mm]");
+        resNearHits[d]->SetYTitle("y [mm]");
+        resNearHits[d]->SetZTitle("mean residual [mm]");
                 
         histname = "maxQstripVSstrip";
         if(ndetectors>1){ 
@@ -518,10 +540,10 @@ void analysis::investigateCRF(){
                 histname += "_";
                 histname += detectornames.at(d);
             }
-            if( detstrips.at(d).at(1) > 0 ) centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(1)/128, 0.5, 0.5+detstrips.at(d).at(1));
-            else centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(0)/128, 0.5, 0.5+detstrips.at(d).at(0));
-//             if( detstrips.at(d).at(1) > 0 ) centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(1), 0.5, 0.5+detstrips.at(d).at(1));
-//             else centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(0), 0.5, 0.5+detstrips.at(d).at(0));
+//             if( detstrips.at(d).at(1) > 0 ) centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(1)/128, 0.5, 0.5+detstrips.at(d).at(1));
+//             else centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(0)/128, 0.5, 0.5+detstrips.at(d).at(0));
+            if( detstrips.at(d).at(1) > 0 ) centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(1), 0.5, 0.5+detstrips.at(d).at(1));
+            else centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(0), 0.5, 0.5+detstrips.at(d).at(0));
             centralAreaHits[d][m]->SetXTitle("stripnumber");
             centralAreaHits[d][m]->SetYTitle("hits"); 
         
@@ -1904,12 +1926,14 @@ void analysis::investigateCRF(){
             double xRes =  hitposition.at(0) - intersection.at(0);
             
             if(debug && verbose) cout << " x residual " << xRes << endl;
-            
+    
             resXvsMDTy[d]->Fill( intersection.at(1), xRes);
             if(useAngle) resXvsSlopeX[d]->Fill( scinangle, xRes);
             else resXvsSlopeX[d]->Fill( track[0][1], xRes);
             
             if( abs( xRes ) > 100. ) continue;
+            
+            if( onlyXstrips ) resNearHits[d]->Fill( intersection.at(0), intersection.at(1), xRes);
                 
             tPoint.push_back( hitposition.at(2) );
             tPoint.push_back( hitposition.at(0) );
@@ -2321,6 +2345,8 @@ void analysis::investigateCRF(){
             leadCentroid[d][1] = hitposition.at(1);
             leadResidual[d][1] = resMaxQ;
             
+            residualHits[d]->Fill( intersection.at(0), intersection.at(1), resMaxQ);
+            
             double mdtDifference =  ( interceptY[0] - slopeY[0] * position.at(d).at(2) ) - ( interceptY[1] - slopeY[1] * position.at(d).at(2) ) ;
             
             if(debug && verbose) cout << " centroid " << centroid->at( leading[d][1] ) << " \t centered position " << clusterposition << " \t reconstruction " << hitposition.at(1) << " \t MDT reference " << mdtposition << endl;
@@ -2642,6 +2668,7 @@ void analysis::investigateCRF(){
             
             if( nearest > -1 ){
                 if( near < effiRange.at(d) ){ 
+                    resNearHits[d]->Fill( intersection.at(0), intersection.at(1), near);
                     inEffiRange[d] = true;
                     effi[d][xpart][ypart]->Fill(4.);
                     clusterQvsNstrips_near_board[d][nearboard]->Fill( size->at( nearest ), chargesum->at(nearest));
@@ -2904,6 +2931,8 @@ void analysis::investigateCRF(){
         nearHits[d]->Write();
         CRFhits[d]->Write();
         clusterChargeSum[d]->Write();
+        residualHits[d]->Write();
+        resNearHits[d]->Write();
         maxQstripVSstrip[d]->Write();
         for(unsigned int m=0; m<2; m++) centralAreaHits[d][m]->Write();
         
