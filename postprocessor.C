@@ -95,6 +95,7 @@ int main(int argc, char* argv[]){
     cout << endl;
     
     if( 
+        mode != "coarse" && 
         mode != "align" && 
         mode != "resolution" &&
         mode != "inclined" && 
@@ -135,12 +136,12 @@ int main(int argc, char* argv[]){
     }
     outname += inname.Insert(inname.Last('.'),"_"+mode);
     
-    cout << " results are writen to \"" << outname << "\"" << endl;
+    if( !mode.Contains("coarse") ) cout << " results are writen to \"" << outname << "\"" << endl;
     cout << endl;
     
     poster->setAnaParams( requiredHits, fitRange, outname, parametername, true, debug);
     
-    poster->outfile = new TFile(outname,"RECREATE");
+    if( !mode.Contains("coarse") ) poster->outfile = new TFile(outname,"RECREATE");
     
     if(mode == "align"){ 
         poster->align();
@@ -166,9 +167,11 @@ int main(int argc, char* argv[]){
     }
     
     else if(mode == "precision") poster->precision();
+    
+    else if(mode == "coarse") poster->coarse();
      
     poster->infile->Close();
-    poster->outfile->Close();
+    if( !mode.Contains("coarse") ) poster->outfile->Close();
 
     return 0;
 }
@@ -2794,4 +2797,134 @@ void analysis::precision(){
         
     }
 
+}
+
+void analysis::coarse(){
+    
+    TString title;
+    TH2I * readhist;
+    TH1D * projection;
+    TProfile * profile;
+    TF1 * linear;
+    
+    double defaultResidualWidth = 200.;
+    double slopeRange = 0.4;
+    double moduleHalfLength = 500.;
+    
+    cout << " \t \t  -Y \t \t  +Z \t \t  -angleZ " << endl;
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+        
+        cout << " " << detectornames.at(d) << " \t ";
+        
+        title = "resVSslope_full";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        readhist = (TH2I*)infile->Get(title);
+        
+        projection = readhist->ProjectionY();
+        
+        double maximumPosition = projection->GetBinCenter( projection->GetMaximumBin() );
+        
+        readhist->GetYaxis()->SetRangeUser( maximumPosition-defaultResidualWidth , maximumPosition+defaultResidualWidth );
+        
+        double meanPosition = readhist->GetMean(2);
+        
+        cout << " " << meanPosition << " \t ";
+        
+        readhist->Draw("colz");
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
+        
+        profile = readhist->ProfileX();
+        
+        linear = new TF1( "linear" , "pol1" , -slopeRange , slopeRange );
+        
+        profile->Fit( linear , "RQB" );
+        
+        double meanHeight = linear->GetParameter(1);
+        
+        cout << " " << meanHeight << " \t ";
+        
+        profile->Draw();
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
+        
+        title = "resVSscinX_full";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        readhist = (TH2I*)infile->Get(title);
+        
+        readhist->GetYaxis()->SetRangeUser( maximumPosition-defaultResidualWidth , maximumPosition+defaultResidualWidth );
+        
+        projection = readhist->ProjectionX();
+        
+        maximumPosition = projection->GetBinCenter( projection->GetMaximumBin() );
+        
+        projection->GetXaxis()->SetRangeUser( maximumPosition-moduleHalfLength , maximumPosition+moduleHalfLength );
+        
+        meanPosition = projection->GetMean();
+        
+        profile = readhist->ProfileX();
+        
+        linear = new TF1( "linear" , "pol1" , meanPosition-moduleHalfLength , meanPosition+moduleHalfLength );
+        
+        profile->Fit( linear , "RQB" );
+        
+        double averageRotation = linear->GetParameter(1);
+        
+        cout << " " << averageRotation << endl;
+        
+    }
+    
+    unsigned int nstereo = stereoLayer.size()/2;
+    double stereoRange = 60.;
+    
+    if( nstereo > 0 ){
+        
+        cout << " ***************  +X" << endl;
+        
+        for(unsigned int s=0; s<nstereo; s++){
+            
+            cout << " STEREO \t ";
+        
+            title = "posDifVSscinX";
+            title += s;
+            readhist = (TH2I*)infile->Get(title);
+            
+            readhist->GetYaxis()->SetRangeUser( -stereoRange , stereoRange );
+        
+            readhist->Draw("colz");
+            gPad->Modified();
+            gPad->Update();
+            gPad->WaitPrimitive();
+        
+            projection = readhist->ProjectionX();
+            
+            double maximumPosition = projection->GetBinCenter( projection->GetMaximumBin() );
+            
+            projection->GetXaxis()->SetRangeUser( maximumPosition-moduleHalfLength , maximumPosition+moduleHalfLength );
+            
+            double meanPosition = projection->GetMean();
+        
+            profile = readhist->ProfileX();
+            
+            linear = new TF1( "linear" , "[1]*(x-[0])" , meanPosition-moduleHalfLength , meanPosition+moduleHalfLength );
+            
+            profile->Fit( linear  , "RQB" );
+            
+            double stereoCenter = linear->GetParameter(0);
+            
+            cout << " " << stereoCenter << endl;
+            
+        }
+        
+    }
+    
 }

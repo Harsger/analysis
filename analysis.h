@@ -322,6 +322,7 @@ public:
     void study();
     void precision();
     void crfResolution(int det = -1);
+    void coarse();
     
 };
 
@@ -377,7 +378,7 @@ void analysis::setAnaParams( int start, int end, TString writename, TString para
     readParameter();
     
     if(post){
-        outfile = new TFile(outname,"RECREATE");
+//         outfile = new TFile(outname,"RECREATE");
         requiredHits = start;
         if( end > 0. ) fitrange = end;
     }
