@@ -315,8 +315,10 @@ void effiPerPart(){
 //     TString times[measurements] = { "V_20181022_1758", "V_20181020_0859", "V_20181019_1401", "V_20181019_1637", "V_20181018_2010", "V_20181019_1854", "V_20181022_1355"};
 //     double voltages[measurements] = { 540., 545., 550., 555., 560., 565., 570.};
     
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/ampScan/oldParser/m6_eta3_";
     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/ampScan/m6_";
 //     TString endPhrase = "_2s_16x24_properties.root";
+//     TString endPhrase = "_5x7_coinPanel_properties.root";
 //     TString endPhrase = "_5x7_coinPanel_properties.root";
     TString endPhrase = "_coinNext_5x7_properties.root";
     
@@ -364,8 +366,8 @@ void effiPerPart(){
         for(unsigned int d=0; d<ndetectors; d++){
             
             TString histname = detectornames[d];
-//             histname += "_coincidenceEffi";
-            histname += "_nearEfficiency";
+            histname += "_coincidenceEffi";
+//             histname += "_nearEfficiency";
         
             cout << " reading hist " << histname << " ... ";
             
@@ -505,16 +507,34 @@ void chargePerPart(){
 // //     TString times[measurements] = { "V_C150V_ZS2_20180603_0146", "V_C150V_ZS2_20180602_1133", "V_C150V_ZS2_20180602_0230", "V_C150V_ZS2_20180603_1051"};
 // //     double voltages[measurements] = { 540., 550., 560., 570.};
     
-    TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/withEta5/sm2_m3_eta5_";
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/withEta5/sm2_m3_eta5_";
+// //     TString endPhrase = "_2s_16x24_properties.root";
+//     TString endPhrase = "_r01_properties.root";
+//     
+//     const unsigned int ndetectors = 6;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out", "etaBot", "etaTop"};
+//     
+//     const unsigned int measurements = 7;
+//     TString times[measurements] = { "V_20181022_1758", "V_20181020_0859", "V_20181019_1401", "V_20181019_1637", "V_20181018_2010", "V_20181019_1854", "V_20181022_1355"};
+//     double voltages[measurements] = { 540., 545., 550., 555., 560., 565., 570.};
+    
+        TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/ampScan/oldParser/m6_eta3_";
+//     TString startPhrase = "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/ampScan/m6_";
 //     TString endPhrase = "_2s_16x24_properties.root";
-    TString endPhrase = "_r01_properties.root";
+    TString endPhrase = "_5x7_coinPanel_properties.root";
+//     TString endPhrase = "_coinNext_5x7_properties.root";
     
-    const unsigned int ndetectors = 6;
-    TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out", "etaBot", "etaTop"};
+//     const unsigned int ndetectors = 6;
+//     TString detectornames[ndetectors] = { "eta_out", "eta_in", "stereo_in", "stereo_out", "etaBot", "etaTop"};
+    const unsigned int ndetectors = 2;
+    TString detectornames[ndetectors] = { "etaBot", "etaTop"};
     
-    const unsigned int measurements = 7;
-    TString times[measurements] = { "V_20181022_1758", "V_20181020_0859", "V_20181019_1401", "V_20181019_1637", "V_20181018_2010", "V_20181019_1854", "V_20181022_1355"};
-    double voltages[measurements] = { 540., 545., 550., 555., 560., 565., 570.};
+    const unsigned int measurements = 4;
+    TString times[measurements] = { "V_20181213_1833", "V_20181212_1519", "V_20181207_1613", "V_20181214_1001"};
+    double voltages[measurements] = { 540., 550., 560., 570.};
+//     TString midPhrase[measurements] = { "560V_eta3_" , "530V_eta3_" , "545V_eta3_" , "570V_eta3_" };
+//     TString times[measurements] = { "V_C350V_20190115_1023", "V_C450V_20190118_1817", "V_C450V_20190119_0727", "V_C450V_20190119_2209"};
+//     double voltages[measurements] = { 630., 640., 650., 660.};
     
     vector<unsigned int> nbins { 0, 0};
     vector<double> lowEdge { 0., 0.};
@@ -529,10 +549,17 @@ void chargePerPart(){
     for(unsigned int m=0; m<measurements; m++){
         
         TString readname = startPhrase;
+//         readname += midPhrase[m];
         readname += voltages[m];
 //         readname += datePhrase;
         readname += times[m];
         readname += endPhrase;
+        
+//         TString readname = startPhrase;
+//         readname += voltages[m];
+// //         readname += datePhrase;
+//         readname += times[m];
+//         readname += endPhrase;
         
         cout << " reading file " << readname << " ... ";
         
@@ -1417,6 +1444,8 @@ void getRotation(TString filename = "/project/etp3/mherrmann/analysis/results/h8
     
     vector< vector<double> > results;
     vector<vector<string> > detOrder;
+    
+    cout << " detector \t slope +/- error \t intercept +/- error \t Chi^2 / NDF " << endl;
         
     while ( ( key = (TKey*)next() ) ) {
         
@@ -1463,11 +1492,6 @@ void getRotation(TString filename = "/project/etp3/mherrmann/analysis/results/h8
         
         profile->Fit( linear , "Q" );
         
-        profile->Draw();
-        gPad->Modified();
-        gPad->Update();
-        gPad->WaitPrimitive();
-        
         vector<double> dvecdummy;
         
         dvecdummy.push_back( linear->GetParameter(0) );
@@ -1481,16 +1505,26 @@ void getRotation(TString filename = "/project/etp3/mherrmann/analysis/results/h8
         
         results.push_back( dvecdummy );
         
+        cout << " " << strdummy.at(0) << " " << strdummy.at(1) << " : \t ";
+        cout << dvecdummy.at(0) << " +/- " << dvecdummy.at(1) << " \t ";
+        cout << dvecdummy.at(2) << " +/- " << dvecdummy.at(3) << " \t ";
+        cout << dvecdummy.at(4) << " / " << dvecdummy.at(5) << " = " << dvecdummy.at(4)/dvecdummy.at(5) << endl;
+        
+        profile->Draw();
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
+        
     }
     
-    cout << " detector \t slope +/- error \t intercept +/- error \t Chi^2 / NDF " << endl;
-    
-    for(unsigned int d=0; d<detOrder.size(); d++){
-        cout << " " << detOrder.at(d).at(0) << " " << detOrder.at(d).at(1) << " : \t ";
-        cout << results.at(d).at(0) << " +/- " << results.at(d).at(1) << " \t ";
-        cout << results.at(d).at(2) << " +/- " << results.at(d).at(3) << " \t ";
-        cout << results.at(d).at(4) << " / " << results.at(d).at(5) << " = " << results.at(d).at(4)/results.at(d).at(5) << endl;
-    }
+//     cout << " detector \t slope +/- error \t intercept +/- error \t Chi^2 / NDF " << endl;
+//     
+//     for(unsigned int d=0; d<detOrder.size(); d++){
+//         cout << " " << detOrder.at(d).at(0) << " " << detOrder.at(d).at(1) << " : \t ";
+//         cout << results.at(d).at(0) << " +/- " << results.at(d).at(1) << " \t ";
+//         cout << results.at(d).at(2) << " +/- " << results.at(d).at(3) << " \t ";
+//         cout << results.at(d).at(4) << " / " << results.at(d).at(5) << " = " << results.at(d).at(4)/results.at(d).at(5) << endl;
+//     }
     
     readfile->Close();
 
@@ -2278,7 +2312,7 @@ void driftPlots(){
 void tester(TString filename="test.dat", bool bugger=false){
 //     getNoisy(filename);
 //     effiPerPart();
-//     chargePerPart();
+    chargePerPart();
 //     chargePerBoard();
 //     uTPCtime();
 //     startNendTimes();
@@ -2292,7 +2326,7 @@ void tester(TString filename="test.dat", bool bugger=false){
 //     newtonMethod( cosFunc, cosPrimeFunc);
 //     getResMean(filename, bugger);
 //     getResMean();
-    getRotation();
+//     getRotation();
 //     tracking();
 //     driftPlots();
 }
