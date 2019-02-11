@@ -32,7 +32,7 @@ int main(int argc, char* argv[]){
         cout << "USAGE:\n"
         "       postprocessor [options]\n"
         "\n"
-        " -m\tanalysis mode          \t(default:  \"" << mode << "\" ; other: \"resolution\", \"properties\", \"study\", \"compare\", \"precision\")\n"
+        " -m\tanalysis mode          \t(default:  \"" << mode << "\" ; other: \"resolution\", \"properties\", \"study\", \"compare\", \"precision\" , \"uTPCpp\" , \"coarse\" , \"fine\" )\n"
         " -i\tname of inputfile      \t(default:  \"" << inname << "\")\n"
         " -d\tinput directory        \t(default:  \"" << indirectory << "\")\n"
         " -o\toutput directory       \t(default:  \"" << outdirectory << "\")\n"
