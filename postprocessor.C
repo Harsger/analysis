@@ -96,6 +96,7 @@ int main(int argc, char* argv[]){
     
     if( 
         mode != "coarse" && 
+        mode != "fine" && 
         mode != "align" && 
         mode != "resolution" &&
         mode != "inclined" && 
@@ -136,12 +137,12 @@ int main(int argc, char* argv[]){
     }
     outname += inname.Insert(inname.Last('.'),"_"+mode);
     
-    if( !mode.Contains("coarse") ) cout << " results are writen to \"" << outname << "\"" << endl;
+    if( !mode.Contains("coarse") && !mode.Contains("fine") ) cout << " results are writen to \"" << outname << "\"" << endl;
     cout << endl;
     
     poster->setAnaParams( requiredHits, fitRange, outname, parametername, true, debug);
     
-    if( !mode.Contains("coarse") ) poster->outfile = new TFile(outname,"RECREATE");
+    if( !mode.Contains("coarse") && !mode.Contains("fine") ) poster->outfile = new TFile(outname,"RECREATE");
     
     if(mode == "align"){ 
         poster->align();
@@ -168,10 +169,18 @@ int main(int argc, char* argv[]){
     
     else if(mode == "precision") poster->precision();
     
-    else if(mode == "coarse") poster->coarse();
+    else if(mode == "coarse"){ 
+        poster->specifier = "full";
+        poster->coarse();
+    }
+    
+    else if(mode == "fine"){ 
+        poster->specifier = "area";
+        poster->coarse();
+    }
      
     poster->infile->Close();
-    if( !mode.Contains("coarse") ) poster->outfile->Close();
+    if( !mode.Contains("coarse") && !mode.Contains("fine") ) poster->outfile->Close();
 
     return 0;
 }
@@ -2811,13 +2820,19 @@ void analysis::coarse(){
     double slopeRange = 0.4;
     double moduleHalfLength = 500.;
     
+    if( specifier.Contains("area") ){
+        defaultResidualWidth = 10.;
+        slopeRange = 0.45;
+    }
+    
     cout << " \t \t  -Y \t \t  +Z \t \t  -angleZ " << endl;
     
     for(unsigned int d=0; d<ndetectors; d++){
         
         cout << " " << detectornames.at(d) << " \t ";
         
-        title = "resVSslope_full";
+        title = "resVSslope_";
+        title += specifier;
         if(ndetectors>1){ 
             title += "_";
             title += detectornames.at(d);
@@ -2854,7 +2869,8 @@ void analysis::coarse(){
         gPad->Update();
         gPad->WaitPrimitive();
         
-        title = "resVSscinX_full";
+        title = "resVSscinX_";
+        title += specifier;
         if(ndetectors>1){ 
             title += "_";
             title += detectornames.at(d);
@@ -2862,6 +2878,11 @@ void analysis::coarse(){
         readhist = (TH2I*)infile->Get(title);
         
         readhist->GetYaxis()->SetRangeUser( maximumPosition-defaultResidualWidth , maximumPosition+defaultResidualWidth );
+        
+        readhist->Draw("colz");
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
         
         projection = readhist->ProjectionX();
         
@@ -2881,12 +2902,17 @@ void analysis::coarse(){
         
         cout << " " << averageRotation << endl;
         
+        profile->Draw();
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
+        
     }
     
     unsigned int nstereo = stereoLayer.size()/2;
     double stereoRange = 60.;
     
-    if( nstereo > 0 ){
+    if( nstereo > 0 && specifier.Contains("full") ){
         
         cout << " ***************  +X" << endl;
         
@@ -2922,6 +2948,11 @@ void analysis::coarse(){
             double stereoCenter = linear->GetParameter(0);
             
             cout << " " << stereoCenter << endl;
+        
+            profile->Draw();
+            gPad->Modified();
+            gPad->Update();
+            gPad->WaitPrimitive();
             
         }
         
