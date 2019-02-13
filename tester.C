@@ -2309,10 +2309,266 @@ void driftPlots(){
     
 }
 
+void extensiveAlignment( 
+    TString filename = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/sm2_m3_560V_0911to30_f00_align.root",
+    bool bugger = true
+){
+        
+    TFile * infile = new TFile( filename , "READ" );
+    TFile * outfile = new TFile( "extensiveAlignment.root" , "RECREATE" );
+    
+    vector<string> detectornames = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+    unsigned int ndetectors = detectornames.size();
+//     ndetectors = 1;
+    
+    TString title;
+    TH2I * readhist;
+    TH1D * projection;
+    TProfile * profile;
+    TF1 * linear;
+    
+    TGraphErrors * fitGraph;
+    TGraphErrors * resultGraph;
+    
+    vector<unsigned int> nbins { 0, 0};
+    vector<double> lowEdge { 0., 0.};
+    vector<double> highEdge { 0., 0.};
+    vector<double> step { 0., 0.};
+    
+    unsigned int nBoards = 3;
+    
+    double rasmaskRange[2] = { 665.69 , 887.15 };
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+        
+        title = detectornames.at(d);
+        title += "_deltaY";
+        readhist = (TH2I*)infile->Get(title);
+                
+        nbins.at(0) = readhist->GetXaxis()->GetNbins();
+        lowEdge.at(0) = readhist->GetXaxis()->GetXmin();
+        highEdge.at(0) = readhist->GetXaxis()->GetXmax();
+        step.at(0) = (highEdge.at(0)-lowEdge.at(0))/(double)(nbins.at(0));
+    
+        nbins.at(1) = readhist->GetYaxis()->GetNbins();
+        lowEdge.at(1) = readhist->GetYaxis()->GetXmin();
+        highEdge.at(1) = readhist->GetYaxis()->GetXmax();
+        step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
+        
+        step = { 100. , 54.4 };
+        
+        double centerPosition = 0.5 * ( lowEdge.at(0) + highEdge.at(0) ) * step.at(0);
+        
+        for(unsigned int b=0; b<nBoards; b++){
+        
+            resultGraph = new TGraphErrors();
+            
+            unsigned int startBin = 1 + nbins.at(1) / (double)nBoards * b;
+            unsigned int endBin = nbins.at(1) / (double)nBoards * ( b + 1 );
+        
+            for(unsigned int x=1; x<=nbins.at(0); x++){
+                
+                double xPos = lowEdge.at(0) + step.at(0) * ( 0.5 + x );
+            
+                fitGraph = new TGraphErrors();
+            
+                for(unsigned int y=startBin; y<=endBin; y++){
+                    
+                    double binContent = readhist->GetBinContent( x , y );
+                    if( binContent < -1e2 ) continue;
+                    double binError = readhist->GetBinError( x , y );
+                    if( binError > 1e-1 ) continue;
+                    double yPos = lowEdge.at(1) + step.at(1) * ( 0.5 + y );
+                    
+                    fitGraph->SetPoint( fitGraph->GetN() , yPos , binContent );
+                    fitGraph->SetPointError( fitGraph->GetN()-1 , step.at(1)*0.5 , binError );
+                    
+                }
+                
+                if( fitGraph->GetN() < 6 ) continue;
+            
+                fitGraph->RemovePoint( 0 );
+                fitGraph->RemovePoint( fitGraph->GetN()-1 );
+                
+                TF1 * linear = new TF1( "linear" , "pol1" , lowEdge.at(1) + step.at(1) * ( 0.5 + startBin ) , lowEdge.at(1) + step.at(1) * ( 0.5 + endBin ) );
+                
+                double endPoints[2][2];
+                
+                fitGraph->GetPoint( 0 , endPoints[0][0] , endPoints[0][1] );
+                fitGraph->GetPoint( fitGraph->GetN()-1 , endPoints[1][0] , endPoints[1][1] );
+                
+                double interceptEstimate = ( endPoints[1][1] * endPoints[0][0] - endPoints[0][1] * endPoints[1][0] ) / ( endPoints[0][0] - endPoints[1][0] ) ;
+                double slopeEstimate = ( endPoints[0][1] - endPoints[1][1] ) / ( endPoints[0][0] - endPoints[1][0] ) ;
+                
+                linear->SetParameter( 0 , interceptEstimate );
+                linear->SetParameter( 1 , slopeEstimate );
+                
+                fitGraph->Fit( linear , "RQB" );
+                
+//                 fitGraph->GetYaxis()->SetRangeUser( -0.3 , 0.3 );
+//                 fitGraph->Draw("AP");
+//                 gPad->Modified();
+//                 gPad->Update();
+//                 gPad->WaitPrimitive();
+                
+                resultGraph->SetPoint( resultGraph->GetN() , xPos , linear->GetParameter(1) );
+                resultGraph->SetPointError( resultGraph->GetN()-1 , step.at(0)*0.5 , linear->GetParError(1) );
+                
+            }
+        
+            outfile->cd();
+            
+            title = "pitchDeviationVSpositionAlongStrips_";
+            title += detectornames.at(d);
+            title += "_board";
+            unsigned int boardID = 6+b;
+            title += boardID;
+            
+            resultGraph->SetTitle(title);
+            resultGraph->SetName(title);
+            resultGraph->Write();
+            
+        }
+        
+        resultGraph = new TGraphErrors();
+        TGraphErrors * otherSide = new TGraphErrors();
+            
+        for(unsigned int y=1; y<=nbins.at(1); y++){
+            
+            double yPos = lowEdge.at(1) + step.at(1) * ( 0.5 + y );
+            
+            fitGraph = new TGraphErrors();
+            
+            for(unsigned int x=1; x<=nbins.at(0); x++){
+                    
+                double binContent = readhist->GetBinContent( x , y );
+                if( binContent < -1e2 ) continue;
+                double binError = readhist->GetBinError( x , y );
+                if( binError > 1e-1 ) continue;
+                double xPos = lowEdge.at(0) + step.at(0) * ( 0.5 + x );
+                    
+                fitGraph->SetPoint( fitGraph->GetN() , xPos , binContent );
+                fitGraph->SetPointError( fitGraph->GetN()-1 , step.at(0)*0.5 , binError );
+                
+            }
+                
+            if( fitGraph->GetN() < 7 ) continue;
+            
+            fitGraph->RemovePoint( 0 );
+            fitGraph->RemovePoint( fitGraph->GetN()-1 );
+            
+//             TF1 * quadratic = new TF1( "quadratic" , "pol2" , lowEdge.at(0) + step.at(0) * ( 0.5 + 1 ) , lowEdge.at(0) + step.at(0) * ( 0.5 + nbins.at(0) ) );
+            
+            TF1 * quadratic = new TF1( "quadratic" , "[0]*(x-[1])*(x-[1])+[2]" , lowEdge.at(0) + step.at(0) * ( 0.5 + 1 ) , lowEdge.at(0) + step.at(0) * ( 0.5 + nbins.at(0) ) );
+            quadratic->SetParameter( 1 , centerPosition );
+            quadratic->SetParLimits( 0 , -1e-6 , 1e-6 );
+            
+            double centerValue[2];
+            fitGraph->GetPoint( fitGraph->GetN()/2 , centerValue[0] , centerValue[1] );
+            quadratic->SetParameter( 2 , centerValue[1] );
+//             quadratic->SetParLimits( 2 , -1. , 1. );
+            
+            fitGraph->Fit( quadratic , "RQB" );
+            
+            double chi2NDF = quadratic->GetChisquare() / quadratic->GetNDF();
+            unsigned int count = 0;
+            if( chi2NDF > 5. ){
+                
+                while( chi2NDF > 5. ){
+                    
+                    if( count > 14 ) break;
+            
+                    if( count > 4 ) quadratic->SetParameter( 1 , -1000. );
+                    if( count > 9 ) quadratic->SetParameter( 1 , 2000. );
+                    quadratic->SetParLimits( 1 , -20000. , 20000. );
+                    quadratic->SetParameter( 0 , 1e-7 );
+                    
+                    while( chi2NDF > 5. ){
+                        
+                        fitGraph->Fit( quadratic , "RQB" );
+                        chi2NDF = quadratic->GetChisquare() / quadratic->GetNDF();
+                        count++;
+                        if( count % 5 == 0 && count != 0 ) break;
+                        
+                    }
+                    
+                }
+            
+            }
+            count++;
+            
+            cout << " #iterrations " << count;
+            cout << " \t slope " << quadratic->GetParameter(0) << " \t center " << quadratic->GetParameter(1);
+            cout << " \t chi^2 / NDF = " << quadratic->GetChisquare() << " / " << quadratic->GetNDF();
+            cout << " = " << quadratic->GetChisquare() / quadratic->GetNDF() << endl;
+            
+//             fitGraph->GetYaxis()->SetRangeUser( -0.3 , 0.3 );
+            fitGraph->Draw("AP");
+            gPad->Modified();
+            gPad->Update();
+            gPad->WaitPrimitive();
+            
+            double interpolation = rasmaskRange[0] + ( y - 1. ) / (double)( nbins.at(1) - 1 ) * ( rasmaskRange[1] - rasmaskRange[0] );
+            
+            double evaluateAT = centerPosition - interpolation;
+            double extrapolation = quadratic->Eval( evaluateAT );
+            resultGraph->SetPoint( resultGraph->GetN() , yPos , extrapolation );
+            double extraError = sqrt( 
+//                                         quadratic->GetParError(0) * quadratic->GetParError(0) +
+//                                         quadratic->GetParError(1) * quadratic->GetParError(1) * evaluateAT * evaluateAT +
+//                                         quadratic->GetParError(2) * quadratic->GetParError(2) * pow( evaluateAT , 4 )
+                                        pow( quadratic->GetParError(0) * pow( evaluateAT - quadratic->GetParameter(1) , 2 ) , 2 ) +
+                                        pow( quadratic->GetParError(1) * 2. * quadratic->GetParameter(0) * ( evaluateAT - quadratic->GetParameter(1) ) , 2 ) +
+                                        pow( quadratic->GetParError(2) , 2 )
+                                    );
+            resultGraph->SetPointError( resultGraph->GetN()-1 , step.at(1)*0.5 , extraError );
+            
+            evaluateAT = centerPosition + interpolation;
+            extrapolation = quadratic->Eval( evaluateAT );
+            otherSide->SetPoint( otherSide->GetN() , yPos , extrapolation );
+            extraError = sqrt( 
+//                                         quadratic->GetParError(0) * quadratic->GetParError(0) +
+//                                         quadratic->GetParError(1) * quadratic->GetParError(1) * evaluateAT * evaluateAT +
+//                                         quadratic->GetParError(2) * quadratic->GetParError(2) * pow( evaluateAT , 4 )
+                                        pow( quadratic->GetParError(0) * pow( evaluateAT - quadratic->GetParameter(1) , 2 ) , 2 ) +
+                                        pow( quadratic->GetParError(1) * 2. * quadratic->GetParameter(0) * ( evaluateAT - quadratic->GetParameter(1) ) , 2 ) +
+                                        pow( quadratic->GetParError(2) , 2 )
+                            );
+            otherSide->SetPointError( otherSide->GetN()-1 , step.at(1)*0.5 , extraError );
+            
+        }
+        
+        outfile->cd();
+            
+        title = "extrapolationTOrasmaskVSpositionPerpendicualTOstrips_";
+        title += detectornames.at(d);
+        title += "_left";
+            
+        resultGraph->SetTitle(title);
+        resultGraph->SetName(title);
+        resultGraph->Write();
+            
+        title = "extrapolationTOrasmaskVSpositionPerpendicualTOstrips_";
+        title += detectornames.at(d);
+        title += "_right";
+            
+        otherSide->SetTitle(title);
+        otherSide->SetName(title);
+        otherSide->Write();
+        
+    }
+    
+    infile->Close();
+    
+    outfile->Write();
+    outfile->Close();
+    
+}
+
 void tester(TString filename="test.dat", bool bugger=false){
 //     getNoisy(filename);
 //     effiPerPart();
-    chargePerPart();
+//     chargePerPart();
 //     chargePerBoard();
 //     uTPCtime();
 //     startNendTimes();
@@ -2329,5 +2585,6 @@ void tester(TString filename="test.dat", bool bugger=false){
 //     getRotation();
 //     tracking();
 //     driftPlots();
+    extensiveAlignment();
 }
 
