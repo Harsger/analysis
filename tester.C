@@ -2309,8 +2309,50 @@ void driftPlots(){
     
 }
 
+void chargeNstripsPerBoard(TString filename){
+    TFile * infile = new TFile( filename , "READ" );
+    TH2I * readhist;
+    vector<string> detectornames = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+    map< string , unsigned int > gluingSide = {
+        { "eta_out"    , 2 } ,
+        { "eta_in"     , 1 } ,
+        { "stereo_in"  , 2 } ,
+        { "stereo_out" , 1 }
+    };
+    map< string , string > boardType = {
+        { "eta_out"    , "se" } ,
+        { "eta_in"     , "se" } ,
+        { "stereo_in"  , "ss" } ,
+        { "stereo_out" , "ss" }
+    };
+    unsigned int ndetectors = detectornames.size();
+    unsigned int nboards = 3;
+    cout << " layer \t mean charge \t stdv charge \t mean strips \t stdv strips " << endl;
+    for(unsigned int d=0; d<ndetectors; d++){
+        for(unsigned int b=0; b<nboards; b++){
+            
+            TString histname = "clusterQvsNstrips_near";
+            histname += "_board";
+            histname += b+6;
+            histname += "_";
+            histname += detectornames.at(d);
+            readhist = (TH2I*)infile->Get(histname);
+            
+            cout << boardType[detectornames.at(d)] << b+6 << " KS" << gluingSide[detectornames.at(d)];
+            cout << " " << readhist->GetMean(2) << " " << readhist->GetStdDev(2);
+            cout << " " << readhist->GetMean(1) << " " << readhist->GetStdDev(1);
+            cout << endl;
+            
+//             readhist->Draw("colz");
+//             gPad->Modified();
+//             gPad->Update();
+//             gPad->WaitPrimitive();
+        }
+    }
+}
+
 void extensiveAlignment( 
-    TString filename = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/sm2_m3_560V_0911to30_f00_align.root",
+    TString filename = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/m3_560V_0920to30_f01_align.root",
     bool bugger = true
 ){
         
@@ -2342,7 +2384,7 @@ void extensiveAlignment(
     for(unsigned int d=0; d<ndetectors; d++){
         
         title = detectornames.at(d);
-        title += "_deltaY";
+        title += "_deltaY_mean";
         readhist = (TH2I*)infile->Get(title);
                 
         nbins.at(0) = readhist->GetXaxis()->GetNbins();
@@ -2586,5 +2628,6 @@ void tester(TString filename="test.dat", bool bugger=false){
 //     tracking();
 //     driftPlots();
     extensiveAlignment();
+//     chargeNstripsPerBoard(filename);
 }
 
