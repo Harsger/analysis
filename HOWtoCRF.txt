@@ -134,6 +134,7 @@ cd /project/etp4/etpdaq/CRFmicromegas
 #### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
 cp -r /project/etp3/mherrmann/analysis/parameterfiles/defaultParaSM2nDoublet ${moduleNumber} 
 parameterfile="/project/etp4/etpdaq/CRFmicromegas/${moduleNumber}/parameter_SM2nDoublet.txt"
+# => this file has to be adjusted later on
 #### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
 
 mlm
@@ -199,7 +200,7 @@ mlm
 #   -> add Z values in ${parameterfile} for all layers individual
 #   -> subtracte angleZ values in ${parameterfile} for all layers as eta_out (for doublet layer as etaBot)
 
-# => redo this until angleZ in order of 1e-5
+# => redo this until angleZ in order of 1e-5 (below 1e-4)
 
 ####################################
 # further alignemnt could be skipped => only described shortly
@@ -224,10 +225,11 @@ mlm
 
 # => offers three analysis modes
 # => will produce in /project/etpdaq/NSW_QAQC/QC_App/cosmics a directory and a json file in this directory for the database with the module number specified after the -n option 
-#    !!! be aware old results can be overwritten so do not use old module numbers !!!
+#    !!! be aware old results can be overwritten, so do not use old module numbers !!!
 # -d option requires a "_inCRF.root" file (full path) produced with ...investigateCRF... with -O option (this takes longer because of iteration over all strips) => hists called dead_<layer> and noisy_<layer>
 # -a requires a directory with "_properties.root" files for different amplification voltages specified as _<voltage>V_ in the beginning
-# -m optin requires in "_properties.root" file for the gain and efficiency maps -> 570V run
+#    these files have to be run ...investigateCRF... as well as ...postprocessor... (with -m properties) with 5 #divisionsX and 7 #divisionsY in the parameterfile (for all layers)
+# -m optin requires a "_properties.root" file for gain and efficiency maps -> 570V run
 #    for the average of the maps sectors can be excluded with the -e option (can be use multiple times -e ... -e ... -e ...)
 #    sectors are specified: <layer><board><side>
 #                     e.g.: eta_inB7R , stereo_outB8L
