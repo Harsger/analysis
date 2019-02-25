@@ -709,21 +709,16 @@ void effiNchargeMaps(){
             
             cout << " " << specifier << " \t mean " << mean << " \t stdv " << stdv << " \t min " << min << " \t max " << max << endl;
             
-            histname = outputDir;
-            histname += "/";
-            histname += m.second;
-            histname += "_";
-            histname += l.second;
-            histname += ".pdf";
-            
             if( m.second == "efficiency" ){ 
                 readhist->GetZaxis()->SetRangeUser( 0.3 , 1. );
                 readhist->GetZaxis()->SetTitle( m.second.c_str() );
             }
             else{ 
-                readhist->GetZaxis()->SetRangeUser( 0. , max );
+//                 readhist->GetZaxis()->SetRangeUser( 0. , max );
+                readhist->GetZaxis()->SetRangeUser( 0. , 2500. );
                 readhist->GetZaxis()->SetTitle( "MPV cluster charge [ADC channel]" );
             }
+            
             histname = moduleName;
             histname += "_";
             histname += l.second;
@@ -734,6 +729,13 @@ void effiNchargeMaps(){
             gPad->Modified();
             gPad->Update();
             gPad->WaitPrimitive();
+            
+            histname = outputDir;
+            histname += "/";
+            histname += m.second;
+            histname += "_";
+            histname += l.second;
+            histname += ".pdf";
             padle->Print( histname );
             
             histname = outputDir;
