@@ -1,6 +1,6 @@
 # instruction for measurements and analysis of data with SM2 modules in CRF
 # 
-#####################################################################################33
+#####################################################################################
 # make SM2 quadruplett ready 
 # => grounding screws (small at tapared boarders and large with batch at parallel boarders)
 # => compression bars (alternating orientation!) -> check for patches on cathode HV plugs
@@ -108,6 +108,7 @@ runName=${runSpecifier}<date>
 #    -> check in srs_dump screen
 
 ./stopCRF
+
 ##################################################################################
 # MDT tracking and datastream merging
 # => in screen on fast machine (e.g. gar-ws-etp02)
@@ -118,6 +119,10 @@ cd ~/etpdaqsvn/CRFscripts
 ./startCRFanalysis.sh ~/etpdaqsvn/CRFscripts/mts <writeableDirectory>/${runName} ${dataPath}/CRF_data/MDT_data ${runName} ~/etpdaqsvn/CRFscripts/.ts_analysis/mm_combined_setup_wTrigtag_woADC.mt_setup ${dataPath}/CRF_data/MM_data ${dataPath}/CRF_data/TDC_data ${dataPath}/CRF_data/merged_data
 
 #    should produce in merged_data directory files named ${runName}_mergedAll_<number>.root
+
+###################################################################################
+# the code for the following analysis can be found at
+git clone https://github.com/Harsger/analysis.git
 ##################################################################################
 # fitting and tracking
 # => generate two files (after hadd) per run , one with trees , other with basic histogramms
@@ -132,6 +137,7 @@ parameterfile="/project/etp4/etpdaq/CRFmicromegas/${moduleNumber}/parameter_SM2n
 #### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
 
 mlm
+mlo slurm
 
 python executor.py -c '/project/etp3/mherrmann/analysis/fitNclust -o /project/etpdaq3/mherrmann/fitteddata -p ${parameterfile}' -i ${dataPath}/CRF_data/merged_data/${runName}_mergedAll -t raw_merged -e 3000
 
@@ -144,6 +150,7 @@ mlm
 cd /project/etpdaq3/mherrmann/fitteddata
 
 ./basicNtrees ${runName}_mergedAll ${runName}
+#    this can take up to half an hour
 
 #### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
 cd /project/etp4/mherrmann/fitteddata
@@ -152,7 +159,6 @@ mkdir ${moduleNumber}
 
 mv ${runName}* ${moduleNumber}
 
-#    this can take up to half an hour
 #################################################################################
 # alignment
 # => parameters X , Y , Z , angleX , angleY , angleZ have to determined
@@ -193,5 +199,35 @@ mlm
 #   -> add Z values in ${parameterfile} for all layers individual
 #   -> subtracte angleZ values in ${parameterfile} for all layers as eta_out (for doublet layer as etaBot)
 
-
 # => redo this until angleZ in order of 1e-5
+
+####################################
+# further alignemnt could be skipped => only described shortly
+# sign conventions found in /project/etp3/mherrmann/analysis/HOWTOAlign.txt
+# after each step redo ...investigateCRF...
+# then ...postprocessor... with the resulting "_inCRF.root" file
+# => alignemnt parameter found in console output
+# => fits and alignment plots can be found in "_align.root" file
+
+#####################################################################################
+# efficiency
+# same command as during alignment with ...postprocessor... except with "properties" [instead of align or fine] (behind -m)
+# in the resulting "_properties.root" file look at the "nearEfficiency" (5mm efficiency) and the "coincidenceEffi" (5mm efficiency with required coincidence hit in other layer) plots
+# for debugging also "efficiencies" is usefull => this is "hardware efficiency"
+
+####################################################################################
+# QAQC
+
+mlm
+
+/project/etp3/mherrmann/analysis/qaqc
+
+# => offers three analysis modes
+# => will produce in /project/etpdaq/NSW_QAQC/QC_App/cosmics a directory and a json file in this directory for the database with the module number specified after the -n option 
+#    !!! be aware old results can be overwritten so do not use old module numbers !!!
+# -d option requires a "_inCRF.root" file (full path) produced with ...investigateCRF... with -O option (this takes longer because of iteration over all strips) => hists called dead_<layer> and noisy_<layer>
+# -a requires a directory with "_properties.root" files for different amplification voltages specified as _<voltage>V_ in the beginning
+# -m optin requires in "_properties.root" file for the gain and efficiency maps -> 570V run
+#    for the average of the maps sectors can be excluded with the -e option (can be use multiple times -e ... -e ... -e ...)
+#    sectors are specified: <layer><board><side>
+#                     e.g.: eta_inB7R , stereo_outB8L
