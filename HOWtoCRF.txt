@@ -1,0 +1,197 @@
+# instruction for measurements and analysis of data with SM2 modules in CRF
+# 
+#####################################################################################33
+# make SM2 quadruplett ready 
+# => grounding screws (small at tapared boarders and large with batch at parallel boarders)
+# => compression bars (alternating orientation!) -> check for patches on cathode HV plugs
+# => HV cable (banana to module) for cathodes (easier now for central ones)
+# => APV-adapter-boards (to be found and returned to aluminum box in front of CRF): 
+#    paper with aceton for footprints , 
+#    gloves with isopropanol for zebra-connectors , 
+#    afterwards duster for both surfaces
+#    labeling:
+#              stereo out/in     -> so/si
+#              eta out/in        -> eo/ei
+#              board             -> b6/b7/b8
+#              side of trapezoid -> long/short
+# after lifting of module on CRF :
+# => connect gas and check flow on slowcontrol webpage
+# => white HV distribution boxes on top of module and connect HV cables
+#    layer.sector => layer 1 = stereo out
+#                    layer 2 = stereo in
+#                    layer 3 = eta    in
+#                    layer 4 = eta    out
+#                    sector left  = odd
+#                           right = even
+#                           ascending from short to long (side of trapezoid)
+# => connect HDMI cable to APV
+#    mapping file (with eta doublet) : /project/etpdaq2/SM2_data/mappings/SM2_etaDoublet_CRF.config
+#    mapping file (without  doublet) : /project/etpdaq2/SM2_data/mappings/SM2_M1_CRF.config
+
+mapfilename="/project/etpdaq2/SM2_data/mappings/SM2_etaDoublet_CRF.config"
+withDoublet="_eta3"
+
+#
+#    *****************************************************************************************
+#    *rule of thumb for APV cabling :                                                        *
+#    *ascending from short to long side of trapezoid                                         *
+#    *ascending from top (stereo_out) to bottom (eta_out) layer                              *
+#    *one layer has only four numbers of APV from different FECs (e.g. stereo_out APV0,1,2,3)*
+#    *****************************************************************************************
+#
+#    schemes for cabeling : TO-BE-ADDED (drawn on papers on Ferrari in front of CRF)
+#
+##############################################################################
+# make readout ready : (as etpdaq)
+# => powerCRF (alias in .bashrc) -> will start new tab in firefox with connection to network-power-supply
+#    switch SRU and FECs on
+# => on gar-ex-etp04atl (fast connection via sshe6->ssha4 [in .bashrc of etpdaq] ):
+
+cd ~/etpdaqsvn/SRS_tools_trunk
+./config_SRS_v10 CRF_9FECs.config ALL
+
+# => check if all APVs are "OK"
+
+lm www
+gwenview www/<newest folder>
+
+# => debug APV problems with this
+#
+# redo this with HV on -> CAENGECO2020 (on gar-ex-etp04atl)
+##############################################################################
+# pedestal data taking:
+# => comment in ~/etpdaqsvn/CRFscripts/startCRF.sh passage with startMMreadout.sh (afterwards needed)
+# => on gar-ex-etp04atl :
+#    change passage  in ~/etpdaqsvn/CRFscripts/startSRUdump.sh from "parse" to "raw" (three rows for both)
+
+cd ~/etpdaqsvn/CRFscripts
+moduleNumber="m9"
+dataPath="/project/etpdaq4"
+./startCRF.sh 20000000 ${moduleNumber}${withDoublet}_raw SRU 0 CRF_9FECs.config ${dataPath} standard_TDCcommonStart.MT-Online
+
+#    after 10000 events in screen -r srs_dump
+
+./stopCRF.sh
+
+#    on fast machine (e.g. gar-ws-etp02)
+
+mlm
+./parser -i ${moduleNumber}${withDoublet}_raw_<date>.dat -d ${dataPath}/CRF_data/MM_data -m ${mapfilename} -o ${moduleNumber}${withDoublet}_raw_<date>_parsed.root -p /project/etpdaq3/CRF_data/pedestals -W
+
+#    look at sigma distributions with copy of /project/etp3/mherrmann/parser/plotPedestal.C (needs writing permission in current directory)
+
+root -q -x 'plotPedestal.C("/project/etpdaq3/CRF_data/pedestals/'${moduleNumber}${withDoublet}'_raw_<date>_parsed.root","'${mapfilename}'")'
+
+#    new root file created in current directory with <inname>"PED.root"
+#    adjust grounding if required
+#    afterwards change ~/etpdaqsvn/CRFscripts/startCRF.sh and gar-ex-etp04atl:~/etpdaqsvn/CRFscripts/startSRUdump.sh back
+################################################################################
+# data taking
+# => check on gar-ex-etp04atl if 4 screens are active with names
+#    srs_dump , MMreadout , SRS_config , monitoring
+#    -> monitoring screen with four tabs to log HV and switch on tripped channels
+
+cd ~/etpdaqsvn/CRFscripts
+
+doubletAdd="_620V_8515"
+runSpecifier=${moduleNumber}${moduleVoltage}${withDoublet}${doubletAdd}
+
+./startCRF.sh 20000000 ${runSpecifier} SRU 0 CRF_9FECs.config ${dataPath} standard_TDCcommonStart.MT-Online
+
+# date is added by script to filename in format _YYYYMMDD_hhmm
+
+runName=${runSpecifier}<date>
+
+#    runName can be found in MM_data directory -> add to logfile
+#    -> /project/etpdaq3/CRF_data/CRFlogbook.ods
+#    one run should have at least 2M events (~6 hours)
+#    -> check in srs_dump screen
+
+./stopCRF
+##################################################################################
+# MDT tracking and datastream merging
+# => in screen on fast machine (e.g. gar-ws-etp02)
+#    second screen dispatched required -> named "merging"
+
+cd ~/etpdaqsvn/CRFscripts
+
+./startCRFanalysis.sh ~/etpdaqsvn/CRFscripts/mts <writeableDirectory>/${runName} ${dataPath}/CRF_data/MDT_data ${runName} ~/etpdaqsvn/CRFscripts/.ts_analysis/mm_combined_setup_wTrigtag_woADC.mt_setup ${dataPath}/CRF_data/MM_data ${dataPath}/CRF_data/TDC_data ${dataPath}/CRF_data/merged_data
+
+#    should produce in merged_data directory files named ${runName}_mergedAll_<number>.root
+##################################################################################
+# fitting and tracking
+# => generate two files (after hadd) per run , one with trees , other with basic histogramms
+#    needs new parameterfiles for each module (or after alignment is changed)
+#    -> as etpdaq in screen on reliable machine
+
+cd /project/etp4/etpdaq/CRFmicromegas
+
+#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
+cp -r /project/etp3/mherrmann/analysis/parameterfiles/defaultParaSM2nDoublet ${moduleNumber} 
+parameterfile="/project/etp4/etpdaq/CRFmicromegas/${moduleNumber}/parameter_SM2nDoublet.txt"
+#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
+
+mlm
+
+python executor.py -c '/project/etp3/mherrmann/analysis/fitNclust -o /project/etpdaq3/mherrmann/fitteddata -p ${parameterfile}' -i ${dataPath}/CRF_data/merged_data/${runName}_mergedAll -t raw_merged -e 3000
+
+#    this will run for each mergedALL-file two jobs
+#    each job takes about 20 min (for quadruplett with doublet data)
+#    after all jobs are finished (see with squeue) add them in screen
+
+mlm
+
+cd /project/etpdaq3/mherrmann/fitteddata
+
+./basicNtrees ${runName}_mergedAll ${runName}
+
+#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
+cd /project/etp4/mherrmann/fitteddata
+mkdir ${moduleNumber}
+#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
+
+mv ${runName}* ${moduleNumber}
+
+#    this can take up to half an hour
+#################################################################################
+# alignment
+# => parameters X , Y , Z , angleX , angleY , angleZ have to determined
+#    after each adjustment step the investigateCRF analysis have to be run again
+
+#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
+cd /project/etp4/mherrmann/analysis/results/CRF
+mkdir ${moduleNumber}
+#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
+
+mlm
+
+/project/etp3/mherrmann/analysis/investigateCRF -o /project/etp4/mherrmann/analysis/results/CRF/${moduleNumber} -p ${parameterfile} -d /project/etp4/mherrmann/fitteddata/${moduleNumber} -i ${runName}_fitNclust.root
+
+#   this should take about 2 to 5 minutes
+# => first step is coarse alignment of X , Y , Z , angleZ
+
+/project/etp3/mherrmann/analysis/postprocessor -m coarse -p ${parameterfile} -d /project/etp4/mherrmann/analysis/results/CRF/${moduleNumber} -i ${runName}_fitNclust_inCRF.root
+
+#   interactive ! -> check if fit works
+#   -> plug in X values (+) in ${parameterfile} for all layers as STEREO
+#   -> plug in Y values (-) in ${parameterfile} for all layer as eta_out (for doublet all layer as etaBot)
+#   -> plug in Z values (+) in ${parameterfile} for all layers individual
+#   -> plug in angleZ values (-) in ${parameterfile} for all layers as eta_out (for doublet all layer as etaBot)
+#                                                        -> stere_in  -0.026186
+#                                                        -> stere_out +0.026186
+
+# redo investigateCRF
+
+/project/etp3/mherrmann/analysis/investigateCRF -o /project/etp4/mherrmann/analysis/results/CRF/${moduleNumber} -p ${parameterfile} -d /project/etp4/mherrmann/fitteddata/${moduleNumber} -i ${runName}_fitNclust.root
+
+# => finer alignment
+
+/project/etp3/mherrmann/analysis/postprocessor -m fine -p ${parameterfile} -d /project/etp4/mherrmann/analysis/results/CRF/${moduleNumber} -i ${runName}_fitNclust_inCRF.root
+
+#   interactive ! -> check if fit works
+#   -> subtracte Y values in ${parameterfile} for all layer as eta_out (for doublet layer as etaBot)
+#   -> add Z values in ${parameterfile} for all layers individual
+#   -> subtracte angleZ values in ${parameterfile} for all layers as eta_out (for doublet layer as etaBot)
+
+
+# => redo this until angleZ in order of 1e-5
