@@ -116,7 +116,7 @@ runName=${runSpecifier}<date>
 
 cd ~/etpdaqsvn/CRFscripts
 
-./startCRFanalysis.sh ~/etpdaqsvn/CRFscripts/mts <writeableDirectory>/${runName} ${dataPath}/CRF_data/MDT_data ${runName} ~/etpdaqsvn/CRFscripts/.ts_analysis/mm_combined_setup_wTrigtag_woADC.mt_setup ${dataPath}/CRF_data/MM_data ${dataPath}/CRF_data/TDC_data ${dataPath}/CRF_data/merged_data
+./startCRFanalysis.sh ~/etpdaqsvn/CRFscripts/mts ${dataPath}/tracksMDT/${runName} ${dataPath}/CRF_data/MDT_data ${runName} ~/etpdaqsvn/CRFscripts/.ts_analysis/mm_combined_setup_wTrigtag_woADC.mt_setup ${dataPath}/CRF_data/MM_data ${dataPath}/CRF_data/TDC_data ${dataPath}/CRF_data/merged_data
 
 #    should produce in merged_data directory files named ${runName}_mergedAll_<number>.root
 
@@ -150,7 +150,7 @@ mlm
 
 cd /project/etpdaq3/mherrmann/fitteddata
 
-./basicNtrees ${runName}_mergedAll ${runName}
+./basicsNtrees ${runName}_mergedAll ${runName}
 #    this can take up to half an hour
 
 #### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
@@ -180,9 +180,9 @@ mlm
 /project/etp3/mherrmann/analysis/postprocessor -m coarse -p ${parameterfile} -d /project/etp4/mherrmann/analysis/results/CRF/${moduleNumber} -i ${runName}_fitNclust_inCRF.root
 
 #   interactive ! -> check if fit works
-#   -> plug in X values (+) in ${parameterfile} for all layers as STEREO
-#   -> plug in Y values (-) in ${parameterfile} for all layer as eta_out (for doublet all layer as etaBot)
-#   -> plug in Z values (+) in ${parameterfile} for all layers individual
+#   -> plug in X      values (+) in ${parameterfile} for all layers as STEREO
+#   -> plug in Y      values (-) in ${parameterfile} for all layer as eta_out (for doublet all layer as etaBot)
+#   -> plug in Z      values (+) in ${parameterfile} for all layers individual
 #   -> plug in angleZ values (-) in ${parameterfile} for all layers as eta_out (for doublet all layer as etaBot)
 #                                                        -> stere_in  -0.026186
 #                                                        -> stere_out +0.026186
@@ -196,9 +196,11 @@ mlm
 /project/etp3/mherrmann/analysis/postprocessor -m fine -p ${parameterfile} -d /project/etp4/mherrmann/analysis/results/CRF/${moduleNumber} -i ${runName}_fitNclust_inCRF.root
 
 #   interactive ! -> check if fit works
-#   -> subtracte Y values in ${parameterfile} for all layer as eta_out (for doublet layer as etaBot)
-#   -> add Z values in ${parameterfile} for all layers individual
+#   -> subtracte Y      values in ${parameterfile} for all layer as eta_out (for doublet layer as etaBot)
+#   -> add       Z      values in ${parameterfile} for all layers individual
 #   -> subtracte angleZ values in ${parameterfile} for all layers as eta_out (for doublet layer as etaBot)
+#                                                        -> stere_in  -0.026186
+#                                                        -> stere_out +0.026186
 
 # => redo this until angleZ in order of 1e-5 (below 1e-4)
 
@@ -206,7 +208,7 @@ mlm
 # further alignemnt could be skipped => only described shortly
 # sign conventions found in /project/etp3/mherrmann/analysis/HOWTOAlign.txt
 # after each step redo ...investigateCRF...
-# then ...postprocessor... with the resulting "_inCRF.root" file
+# then ...postprocessor... with -m align for the resulting "_inCRF.root" file
 # => alignemnt parameter found in console output
 # => fits and alignment plots can be found in "_align.root" file
 

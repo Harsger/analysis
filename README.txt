@@ -13,7 +13,7 @@ this header file provide all needed variables and basic functions
 
 for compilation root and opencv is required (opencv can be removed if two functions are removed manually)
 
-the main functions are in the fitter.C , investigateCRF.C and postprocessor.C files
+the main functions are in the fitter.C , investigator.C and postprocessor.C files
 
 the executables will display their usage on commandline (for executable names look into the Makefile)
 
@@ -25,3 +25,7 @@ the analysis highly depends on these parameterfiles
 
 other scripts are mainly for distribution of slurm jobs on local grid and for making summary plots
 
+
+manuel for measurements and evalution of SM2 Micromegas Module in CRF data can be found in HOWtoCRF.txt
+
+sign conventions for alignment are found in HOWTOAlign.txt
