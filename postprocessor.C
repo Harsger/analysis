@@ -501,7 +501,8 @@ void analysis::align(){
                 
                 prof = resVSslope->ProfileX();
                 if( specifier.Contains("uTPCresVSuTPCslope_pp") ) linfit = new TF1("linfit","pol1",-3.,3.);
-                else linfit = new TF1("linfit","pol1",-0.5,0.5);
+//                 else linfit = new TF1("linfit","pol1",-0.5,0.5);
+                else linfit = new TF1("linfit","pol1",-0.176,0.176);
                 if(debug){ 
                     prof->Fit(linfit,"R");
                     prof->Draw();
@@ -570,11 +571,17 @@ void analysis::align(){
 //                 deltaY_zero->SetBinContent(cx+1,cy+1,projection->GetRMS());
 //                 deltaY_zero->SetBinError(cx+1,cy+1,projection->GetRMSError());
 
-                projection = resVSslope->ProjectionY();
-                if( specifier.Contains("resVSslope") ) projection->GetXaxis()->SetRangeUser( -1.5, 1.5);
+//                 projection = resVSslope->ProjectionY();
+//                 if( specifier.Contains("resVSslope") ) projection->GetXaxis()->SetRangeUser( -1.5, 1.5);
+//                 
+//                 deltaY_mean->SetBinContent(cx+1,cy+1,projection->GetMean());
+//                 deltaY_mean->SetBinError(cx+1,cy+1,projection->GetMeanError());
+
+                resVSslope->GetXaxis()->SetRangeUser( -0.176, 0.176);
+                if( specifier.Contains("resVSslope") ) resVSslope->GetYaxis()->SetRangeUser( -2., 2.);
                 
-                deltaY_mean->SetBinContent(cx+1,cy+1,projection->GetMean());
-                deltaY_mean->SetBinError(cx+1,cy+1,projection->GetMeanError());
+                deltaY_mean->SetBinContent(cx+1,cy+1,resVSslope->GetMean(2));
+                deltaY_mean->SetBinError(cx+1,cy+1,resVSslope->GetMeanError(2));
                 
             }
 //             if( specifier.Contains("uTPCresVSuTPCslope_pp") ) cout << endl;
