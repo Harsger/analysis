@@ -279,6 +279,7 @@ void analysis::investigateCRF(){
     TH2I** interceptDifVSslope_at = new TH2I*[ndetectors];
     TH2I** interceptDifVSmdtY_at = new TH2I*[ndetectors];
     TH2I*** interceptDifVSscinX_at = new TH2I**[ndetectors];
+    TH2I*** interceptDifVSslopeDif_at = new TH2I**[ndetectors];
     
     TH2I** resVSstrip_full = new TH2I*[ndetectors];
     TH2I** resVSstrip_area = new TH2I*[ndetectors];
@@ -292,6 +293,7 @@ void analysis::investigateCRF(){
     TH2I** difVSslope_coincident = new TH2I*[ndetectors];
     TH2I** resVSslopeX_area = new TH2I*[ndetectors];
     TH2I** resVSdifMDT_area = new TH2I*[ndetectors];
+    TH2I** resVSslopeDif_area = new TH2I*[ndetectors];
     
     TH2I** resXvsMDTy = new TH2I*[ndetectors];
     TH2I** resXvsSlopeX = new TH2I*[ndetectors];
@@ -313,6 +315,8 @@ void analysis::investigateCRF(){
         risetimeVScharge_near_board = new TH2I**[ndetectors];
         starttimeVSslope_near_board = new TH2I**[ndetectors];
     }
+    
+    TH2I*** firstTimeDifVSscinXperYpart = new TH2I**[ndetectors];
     
     TH2I** uTPCslopeVSslope = new TH2I*[ndetectors];
     TH2I** uTPCresVSslope = new TH2I*[ndetectors];
@@ -563,6 +567,20 @@ void analysis::investigateCRF(){
             
         }
         
+        firstTimeDifVSscinXperYpart[d] = new TH2I*[divisions.at(d).at(1)];
+        
+        for(unsigned int y=0; y<divisions.at(d).at(1); y++){
+            histname = "firstTimeDifVSscinXperYpart";
+            histname += y;
+            if(ndetectors>1){ 
+                histname += "_";
+                histname += detectornames.at(d);
+            }
+            firstTimeDifVSscinXperYpart[d][y] = new TH2I(histname, histname, 40, -2000., 2000., 540, -27., 27);
+            firstTimeDifVSscinXperYpart[d][y]->SetXTitle("position along strips (by scintillators) [mm]");
+            firstTimeDifVSscinXperYpart[d][y]->SetYTitle("time difference earliest signals [25 ns]"); 
+        }
+        
         fastestVSslope_board[d] = new TH2I*[nboards.at(d)];
         slowestVSslope_board[d] = new TH2I*[nboards.at(d)];
         timeDifVSslope_board[d] = new TH2I*[nboards.at(d)];
@@ -779,7 +797,7 @@ void analysis::investigateCRF(){
         }
         resVSslopeX_area[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -100., 100.);
         resVSslopeX_area[d]->SetXTitle("slope x (scintillators)");
-        resVSslopeX_area[d]->SetYTitle("residual y [mm]");  
+        resVSslopeX_area[d]->SetYTitle("residual y [mm]");
                 
         histname = "resVSdifMDT_area";
         if(ndetectors>1){ 
@@ -789,6 +807,28 @@ void analysis::investigateCRF(){
         resVSdifMDT_area[d] = new TH2I(histname, histname, 2000, -10., 10., 2000, -10., 10.);
         resVSdifMDT_area[d]->SetXTitle("difference of MDT tracks [mm]");
         resVSdifMDT_area[d]->SetYTitle("residual y [mm]");  
+                
+        histname = "resVSslopeDif_area";
+        if(ndetectors>1){ 
+            histname += "_";
+            histname += detectornames.at(d);
+        }
+        resVSslopeDif_area[d] = new TH2I(histname, histname, 200, 0., 0.1, 2000, -10., 10.);
+        resVSslopeDif_area[d]->SetXTitle("difference of MDTs slopes [mm]");
+        resVSslopeDif_area[d]->SetYTitle("residual y [mm]");  
+        
+        interceptDifVSslopeDif_at[d] = new TH2I*[2];
+        
+        for(unsigned int m=0; m<2; m++){ 
+                
+            histname = "interceptDifVSslopeDif_at";
+            if(m==0) histname += "NOT";
+            if(ndetectors>1) histname += detectornames.at(d);
+            interceptDifVSslopeDif_at[d][m] = new TH2I(histname, histname, 200, 0., 0.1, 2000, -10., 10.);
+            interceptDifVSslopeDif_at[d][m]->SetXTitle("difference of MDTs slopes [mm]");
+            interceptDifVSslopeDif_at[d][m]->SetYTitle("difference of MDTs positions [mm]"); 
+            
+        }
         
         interceptDifVSscinX_at[d] = new TH2I*[nboards.at(d)];
         resVSscinX_board[d] = new TH2I*[nboards.at(d)];
@@ -1787,6 +1827,7 @@ void analysis::investigateCRF(){
         unsigned int usedCluster[ndetectors][2];
         double leadResidual[ndetectors][2];
         double leadCentroid[ndetectors][2];
+        short nearCluster[ndetectors][2];
         
         for(unsigned int d=0; d<ndetectors; d++){
             for(unsigned int r=0; r<2; r++){ 
@@ -1796,6 +1837,7 @@ void analysis::investigateCRF(){
                 usedCluster[d][r] = 0;
                 leadResidual[d][r] = -1e6;
                 leadCentroid[d][r] = -1e6;
+                nearCluster[d][r] = -1;
             }
         }
         
@@ -2189,6 +2231,7 @@ void analysis::investigateCRF(){
         vector<double> uTPCpoints(ndetectors);
         bool inEffiRange[ndetectors];
         int partition[ndetectors][2];
+        double scinX[ndetectors];
         
         for(unsigned int d=0; d<ndetectors; d++){
             
@@ -2201,6 +2244,8 @@ void analysis::investigateCRF(){
             vector<double> intersection = CalcIntersection( track, d);
             
             if(debug && verbose) cout << " track through ( " << intersection.at(0) << " / " << intersection.at(1) << " ) " << endl;
+            
+            scinX[d] = intersection.at(0);
             
             int xpart = (int)( ( intersection.at(0) - position.at(d).at(0) + length.at(d).at(0) * 0.5 ) / length.at(d).at(0) * divisions.at(d).at(0) ); 
             int ypart = (int)( ( intersection.at(1) - position.at(d).at(1) + length.at(d).at(1) * 0.5 ) / length.at(d).at(1) * divisions.at(d).at(1) );  
@@ -2219,6 +2264,8 @@ void analysis::investigateCRF(){
                 
                 numberOfCluster[d]->Fill( foundCluster[d][1], usedCluster[d][1]);
                 effi[d][xpart][ypart]->Fill(1.);
+                
+                interceptDifVSslopeDif_at[d][0]->Fill( abs( slopeY[0] - slopeY[1] ) , interceptY[0] - interceptY[1] );
                 
                 if( xpart > 0.3 * divisions.at(d).at(0) && xpart < 0.7 * divisions.at(d).at(0) ){
                     centralHit = true;
@@ -2245,6 +2292,7 @@ void analysis::investigateCRF(){
                 }
             }
             else if( xpart < -1 || xpart > divisions.at(d).at(0) || ypart < -1 || ypart > divisions.at(d).at(1) ){
+                interceptDifVSslopeDif_at[d][1]->Fill( abs( slopeY[0] - slopeY[1] ) , interceptY[0] - interceptY[1] );
 //                 if( !onlyCluster && leading[d][1] > -1 ){
 //                     int clusterindex = leading[d][1];
 //                     for(unsigned int s=0; s<strips->at(clusterindex).size(); s++){
@@ -2344,6 +2392,7 @@ void analysis::investigateCRF(){
             double resMaxQ = hitposition.at(1) - mdtposition;
             leadCentroid[d][1] = hitposition.at(1);
             leadResidual[d][1] = resMaxQ;
+            nearCluster[d][1] = leading[d][1];
             
             residualHits[d]->Fill( intersection.at(0), intersection.at(1), resMaxQ);
             
@@ -2443,6 +2492,7 @@ void analysis::investigateCRF(){
             else interceptDifVSslope_at[d]->Fill( mdtslope, mdtDifference );
             
             resVSdifMDT_area[d]->Fill( mdtDifference , resMaxQ );
+            resVSslopeDif_area[d]->Fill( abs( slopeY[0] - slopeY[1] ) , resMaxQ );
             
             if( d > 0 && firstLayerPosition > -1 ){ 
                 if(useAngle) difVSslope[d][xpart][ypart]->Fill( mdtangle, centroid->at( leading[d][1] ) * detpitch - detshift - firstLayerPosition);
@@ -2664,6 +2714,7 @@ void analysis::investigateCRF(){
             if( nearResidual > -1e5 && nearPosition > -1e5 ){
                 leadCentroid[d][1] = nearPosition;
                 leadResidual[d][1] = nearResidual;
+                nearCluster[d][1] = nearest;
             }
             
             if( nearest > -1 ){
@@ -2747,7 +2798,12 @@ void analysis::investigateCRF(){
         
         for(unsigned int d=0; d<ndetectors; d++){
             if( detstrips.at(d).at(1) < 1 ) continue;
-            if( partition[d][0] < 0 || partition[d][0] >= divisions.at(d).at(0) || partition[d][1] < 0 || partition[d][1] >= divisions.at(d).at(1) ) continue;
+            if( 
+                partition[d][0] < 0 || 
+                partition[d][0] >= divisions.at(d).at(0) || 
+                partition[d][1] < 0 || 
+                partition[d][1] >= divisions.at(d).at(1) 
+            ) continue;
             
             bool otherNotHitAll = false;
             
@@ -2790,9 +2846,20 @@ void analysis::investigateCRF(){
             }
             
             if( leadCentroid[d][1] > -1e5 && leadCentroid[other][1] > -1e5 ){ 
+                
                 double detDifference = leadCentroid[d][1] - leadCentroid[other][1];
                 if(useAngle) difVSslope_coincident[d]->Fill( mdtangle , detDifference );
                 else difVSslope_coincident[d]->Fill( mdtslope , detDifference );
+                
+                unsigned int nextDet = d+1;
+                if( nextDet >= ndetectors ) nextDet = 0;
+                
+                if(
+                    inEffiRange[nextDet] &&
+                    partition[d][0] == partition[nextDet][0] &&
+                    partition[d][1] == partition[nextDet][1]
+                ) firstTimeDifVSscinXperYpart[d][partition[d][1]]->Fill( scinX[d] , earliest->at( nearCluster[d][1] ) - earliest->at( nearCluster[nextDet][1] ) );
+                
             }
             
         }
@@ -2960,6 +3027,8 @@ void analysis::investigateCRF(){
         
         interceptDifVSslope_at[d]->Write();
         interceptDifVSmdtY_at[d]->Write();
+        
+        for(unsigned int m=0; m<2; m++) interceptDifVSslopeDif_at[d][m]->Write();
     
         resVSstrip_full[d]->Write();
         resVSstrip_area[d]->Write();
@@ -3145,6 +3214,16 @@ void analysis::investigateCRF(){
         
         for(unsigned int h=0; h<2; h++){
             trackIntersectionYZ[h]->Write();
+        }
+        
+    }
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+            
+        for(unsigned int cy=0; cy<divisions.at(d).at(1); cy++){
+    
+            firstTimeDifVSscinXperYpart[d][cy]->Write();
+            
         }
         
     }
