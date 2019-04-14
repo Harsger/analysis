@@ -545,7 +545,11 @@ void amplificationScan(){
         name += l.second;
         name += "ampScan.png";
         gPad->Print(name);
-        name.ReplaceAll( ".png" , ".pdf" );
+        
+        name = outputDir;
+        name += "/";
+        name += l.second;
+        name += "ampScan.pdf";
         gPad->Print(name);
         
     }
@@ -580,7 +584,7 @@ void amplificationScan(){
         
         writer[ halfTag.Data() ] = halfEfficient;
         
-        g.second->GetYaxis()->SetRangeUser( 0.3 , 1. );
+        g.second->GetYaxis()->SetRangeUser( 0. , 1. );
         
         g.second->Draw("AP");
         gPad->Modified();
@@ -715,7 +719,7 @@ void effiNchargeMaps(){
             }
             else{ 
 //                 readhist->GetZaxis()->SetRangeUser( 0. , max );
-                readhist->GetZaxis()->SetRangeUser( 0. , 2500. );
+                readhist->GetZaxis()->SetRangeUser( 0. , 1500. );
                 readhist->GetZaxis()->SetTitle( "MPV cluster charge [ADC channel]" );
             }
             
