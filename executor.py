@@ -41,7 +41,7 @@ def main(argv):
         
         filename = ''
         commandPrefix = "sbatch -x gar-ws-etp05,gar-ws-etp06,gar-ws-etp18,gar-ws-etp22,gar-ws-etp23,gar-ws-etp24,gar-ws-etp26,gar-ws-etp28,gar-ws-etp57,gar-ws-etp65,gar-ws-etp68,gar-ws-etp73,gar-ws-etp79,gar-ws-etp77,gar-ws-etp86,gar-ws-etp88,gar-ws-etp93 /project/etp4/mherrmann/analysis/starter.sh "
-        usage = 'runner.py -c <\'command\'> -i <inputfile> -d <datapath> -t <treename> -s <specifier> -n <notuse> -e <eventsPerJob> -W -L -D'
+        usage = 'executor.py -c <\'command\'> -i <inputfile> -d <datapath> -t <treename> -s <specifier> -n <notuse> -e <eventsPerJob> -W -L -D'
         
         try:
                 opts, args = getopt.getopt(argv,"hc:i:d:t:s:n:e:WLD",["command=","inputfile=","datapath=","treename=","specifier=","notuse=","eventsPerJob=","wholeFiles","localMode","defaultMode"])
