@@ -187,6 +187,9 @@ void analysis::study(){
     
 //     outfile->cd();
     
+    TH3D * intersect = new TH3D( "intersect" , "intersect" , binning[0] , range[0][0] , range[0][1] , binning[1] , range[1][0] , range[1][1] , binning[2] , range[2][0] , range[2][1] );
+    TH3D * intersectWeight = new TH3D( "intersectWeight" , "intersectWeight" , binning[0] , range[0][0] , range[0][1] , binning[1] , range[1][0] , range[1][1] , binning[2] , range[2][0] , range[2][1] );
+    
     TH2D *** intersection = new TH2D**[3]; 
     TH2D *** intersectionWeighted = new TH2D**[3]; 
     
@@ -320,6 +323,9 @@ void analysis::study(){
         }
         if(outOFrange) continue;
         
+        intersect->Fill( hit[0] , hit[1] , hit[2] );
+        intersectWeight->Fill( hit[0] , hit[1] , hit[2] , slopeDif );
+        
         unsigned int div[3];
         
         for(unsigned int c=0; c<3; c++) div[c] = ( hit[c] - range[c][0] ) / width[c];
@@ -349,6 +355,9 @@ void analysis::study(){
     cout << " writing results ... ";
     
     outfile->cd();
+    
+    intersect->Write();
+    intersectWeight->Write();
     
     for(unsigned int c=0; c<3; c++){
     
