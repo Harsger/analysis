@@ -184,6 +184,7 @@ public:
     int startevent = 0;
     int endevent = -1;
     
+    double extrapolateTO = 0.;
     double extrapolationfactor = (log(81)/1.6);
     double requiredForuTPC = 2;
     double defaultNumberOfTimeBins = 21.;
@@ -984,6 +985,9 @@ void analysis::readParameter(){
                     else continue;
                     c += 2;
                 }
+            }
+            else if( corrections.at(r).at(0).compare("extrapolateTO") == 0 ){ 
+                if( corrections.at(r).size() > 1 ) extrapolateTO = atof( corrections.at(r).at(1).c_str() );
             }
             else if( corrections.at(r).at(0).compare("fullCoincidence") == 0 ) fullCoincidence = true;
             else if( corrections.at(r).at(0).compare("noPartitions") == 0 ) noPartitions = true;

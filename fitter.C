@@ -884,8 +884,13 @@ void analysis::fitNclust(){
             else turntime->push_back( inverseFermi->GetParameter(1) );
             risetime->push_back( inverseFermi->GetParameter(2) );
             chi2ndf->push_back( inverseFermi->GetChisquare()/inverseFermi->GetNDF() );
-//             timeFitError.push_back( sqrt( inverseFermi->GetParError(1) * inverseFermi->GetParError(1) + extrapolationfactor * extrapolationfactor * inverseFermi->GetParError(2) * inverseFermi->GetParError(2) ) );
-            timeFitError.push_back( inverseFermi->GetParError(1) );
+            timeFitError.push_back( 
+                sqrt( 
+                    inverseFermi->GetParError(1) * inverseFermi->GetParError(1) + 
+                    extrapolateTO * extrapolateTO * extrapolationfactor * extrapolationfactor * inverseFermi->GetParError(2) * inverseFermi->GetParError(2) 
+                ) 
+            );
+//             timeFitError.push_back( inverseFermi->GetParError(1) );
             chargeOffset.push_back( inverseFermi->GetParError(3) );
             
             inverseFermi->Delete();
@@ -954,8 +959,11 @@ void analysis::fitNclust(){
 //                 else turntime->at( stripindex ) = skewGausTime;
                 risetime->at( stripindex ) = inverseFermi->GetParameter(2);
                 chi2ndf->at( stripindex ) = inverseFermi->GetChisquare()/inverseFermi->GetNDF();
-//                 timeFitError.at( stripindex) = sqrt( inverseFermi->GetParError(1) * inverseFermi->GetParError(1) + extrapolationfactor * extrapolationfactor * inverseFermi->GetParError(2) * inverseFermi->GetParError(2) );
-                timeFitError.at( stripindex) = inverseFermi->GetParError(1);
+                timeFitError.at( stripindex) = sqrt( 
+                    inverseFermi->GetParError(1) * inverseFermi->GetParError(1) + 
+                    extrapolateTO * extrapolateTO * extrapolationfactor * extrapolationfactor * inverseFermi->GetParError(2) * inverseFermi->GetParError(2) 
+                );
+//                 timeFitError.at( stripindex) = inverseFermi->GetParError(1);
                 chargeOffset.at( stripindex) = inverseFermi->GetParError(3);
                 
                 inverseFermi->Delete();
@@ -1082,9 +1090,7 @@ void analysis::fitNclust(){
                 unsigned int stripindex = clusters.at(c).at(s);
                 thisCluster.push_back( stripindex );
                 sumQ += maxcharge->at( stripindex );
-//                 sumTime += ( turntime->at( stripindex ) - extrapolationfactor * risetime->at( stripindex ) ) * maxcharge->at( stripindex );
-//                 sumTime += ( turntime->at( stripindex ) + extrapolationfactor * risetime->at( stripindex ) ) * maxcharge->at( stripindex );
-                sumTime += turntime->at( stripindex ) * maxcharge->at( stripindex );
+                sumTime += ( turntime->at( stripindex ) + extrapolateTO * extrapolationfactor * risetime->at( stripindex ) ) * maxcharge->at( stripindex );
                 sumPos += number->at( stripindex ) * maxcharge->at( stripindex );
                 
             }
@@ -1118,13 +1124,17 @@ void analysis::fitNclust(){
             short lateIndex = -1;
             double latestTime = -27.;
             
+//             vector< vector<double> > stripNtime;
+//             vector<double> dvecdummy;
+            
+            double starttimes[clusterSize];
+            
             for(unsigned int s=0; s<strips->at(c).size(); s++){
                 
                 short stripindex = strips->at(c).at(s);
                 short stripnumber = number->at(stripindex);
-//                 double starttime = turntime->at(stripindex) - extrapolationfactor * risetime->at(stripindex);
-//                 double starttime = turntime->at(stripindex) + extrapolationfactor * risetime->at(stripindex);
-                double starttime = turntime->at(stripindex);
+                double starttime = turntime->at(stripindex) + extrapolateTO * extrapolationfactor * risetime->at(stripindex);
+                starttimes[s] = starttime;
                 
                 if(debug && verbose) cout << " stripindex " << stripindex << " stripnumber " << stripnumber << " starttime " << starttime << endl;
                 
@@ -1183,24 +1193,24 @@ void analysis::fitNclust(){
                 continue;
             }
             
-            double starttimes[clusterSize];
-            
-//             vector< vector<double> > stripNtime;
-//             vector<double> dvecdummy;
-            
-            if(debug && verbose) cout << " starttimes ";
-            for(unsigned int s=0; s<clusterSize; s++){
-//                 starttimes[s] = turntime->at( thisCluster.at(s) ) - extrapolationfactor * risetime->at( thisCluster.at(s) );
-//                 starttimes[s] = turntime->at( thisCluster.at(s) ) + extrapolationfactor * risetime->at( thisCluster.at(s) );
-                starttimes[s] = turntime->at( thisCluster.at(s) );
-                if(debug && verbose) cout << " " << starttimes[s];
-//                 dvecdummy.push_back( number->at( thisCluster.at(s) ) * 10. );
-//                 dvecdummy.push_back( starttimes[s] * 10. );
-// //                 dvecdummy.push_back( maxcharge->at( thisCluster.at(s) ) );
-//                 stripNtime.push_back( dvecdummy );
-//                 dvecdummy.clear();
-            }
-            if(debug && verbose) cout << endl;
+//             double starttimes[clusterSize];
+//             
+// //             vector< vector<double> > stripNtime;
+// //             vector<double> dvecdummy;
+//             
+//             if(debug && verbose) cout << " starttimes ";
+//             for(unsigned int s=0; s<clusterSize; s++){
+// //                 starttimes[s] = turntime->at( thisCluster.at(s) ) - extrapolationfactor * risetime->at( thisCluster.at(s) );
+// //                 starttimes[s] = turntime->at( thisCluster.at(s) ) + extrapolationfactor * risetime->at( thisCluster.at(s) );
+//                 starttimes[s] = turntime->at( thisCluster.at(s) );
+//                 if(debug && verbose) cout << " " << starttimes[s];
+// //                 dvecdummy.push_back( number->at( thisCluster.at(s) ) * 10. );
+// //                 dvecdummy.push_back( starttimes[s] * 10. );
+// // //                 dvecdummy.push_back( maxcharge->at( thisCluster.at(s) ) );
+// //                 stripNtime.push_back( dvecdummy );
+// //                 dvecdummy.clear();
+//             }
+//             if(debug && verbose) cout << endl;
             
 //             if( clusterSize > 5 ){
 //                 unsigned int requiredForHough = 2;
@@ -1308,6 +1318,19 @@ void analysis::fitNclust(){
                 else timeVSstrip->Fit(linearFit,"Q");
             }
             
+//             if(inCRF){
+//                 double sign = 1.;
+//                 if( CCCfactor.at(cdet) < 0. ) sign = -1.;
+//                 double mdtslope = 0.5 * ( slopeY[0] + slopeY[1] );
+//                 double expectedSlope = pitch.at(cdet) / driftVelocity.at(cdet) / 25. * sign ;
+//                 if( abs( mdtslope ) < 1e-6 ){ 
+//                     if( mdtslope < 0. ) expectedSlope *= (-1e6);
+//                     else expectedSlope *= 1e6;
+//                 }
+//                 else expectedSlope *= mdtslope;
+//                 linearFit->FixParameter( 1 , expectedSlope );
+//             }
+            
             uTPCintercept->push_back( linearFit->GetParameter(0) );
             uTPCslope->push_back( linearFit->GetParameter(1) );
             
@@ -1356,13 +1379,13 @@ void analysis::fitNclust(){
                 if( n==1 && !( sortOut.at(s) ) ) n = 2;
             
                 chargeVSstrip[det][dir][n]->Fill( number->at(s), maxcharge->at(s));
-//                 timeVSstrip[det][dir][n]->Fill( number->at(s), turntime->at(s) - extrapolationfactor*risetime->at(s));
-                timeVSstrip[det][dir][n]->Fill( number->at(s), turntime->at(s) );
+                timeVSstrip[det][dir][n]->Fill( number->at(s), turntime->at(s) + extrapolateTO * extrapolationfactor*risetime->at(s));
+//                 timeVSstrip[det][dir][n]->Fill( number->at(s), turntime->at(s) );
                 variationVSstrip[det][dir][n]->Fill( number->at(s), variation->at(s));
                 risetimeVSturntime[det][dir][n]->Fill( turntime->at(s), risetime->at(s));
                 chargeVSvariation[det][dir][n]->Fill( variation->at(s), maxcharge->at(s));
-//                 timeVSvariation[det][dir][n]->Fill( variation->at(s), turntime->at(s) - extrapolationfactor*risetime->at(s));
-                timeVSvariation[det][dir][n]->Fill( variation->at(s), turntime->at(s) );
+                timeVSvariation[det][dir][n]->Fill( variation->at(s), turntime->at(s) + extrapolateTO * extrapolationfactor*risetime->at(s));
+//                 timeVSvariation[det][dir][n]->Fill( variation->at(s), turntime->at(s) );
                 variationVSmean[det][dir][n]->Fill( chargeMean.at(s), variation->at(s));
                 risetimeVScharge[det][dir][n]->Fill( maxcharge->at(s), risetime->at(s));
                 risetimeVSvaritation[det][dir][n]->Fill( variation->at(s), risetime->at(s));
