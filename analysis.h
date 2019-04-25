@@ -929,14 +929,15 @@ void analysis::readParameter(){
             for(unsigned int c=0; c<corrections.at(r).size(); c++){
                 if( corrections.at(r).at(c).compare("FEC") == 0 ){
                     int cfec = atoi( corrections.at(r).at(c+1).c_str() );
+                    c += 1;
                     if( cfec < 0 || cfec > napv.size()-1 ) continue;
-                    if( corrections.at(r).at(c+2).compare("triggerOffset") == 0 ){
-                        triggerOffset.at(cfec) = atof( corrections.at(r).at(c+3).c_str() );
-                        c += 3;
+                    if( corrections.at(r).at(c+1).compare("triggerOffset") == 0 ){
+                        triggerOffset.at(cfec) = atof( corrections.at(r).at(c+2).c_str() );
+                        c += 2;
                     }
-                    if( corrections.at(r).at(c).compare("TDC") == 0 ){
-                        TDCforFEC.at(cfec) = atoi( corrections.at(r).at(c+3).c_str() );
-                        c += 3;
+                    if( corrections.at(r).size() > c+2 && corrections.at(r).at(c+1).compare("TDC") == 0 ){
+                        TDCforFEC.at(cfec) = atoi( corrections.at(r).at(c+2).c_str() );
+                        c += 2;
                     }
                 }
                 else if( corrections.at(r).at(c).compare("unix") == 0 ){
