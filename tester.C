@@ -35,20 +35,6 @@ const unsigned short apv_sending_order_table[128] = {0,32,64,96,8,40,72,104,16,4
     13,45,77,109,21,53,85,117,29,61,93,125,6,38,70,102,14,46,78,110,22,54,86,118,
     30,62,94,126,7,39,71,103,15,47,79,111,23,55,87,119,31,63,95,127};
 
-vector< vector<string> > getInput(string filename);
-
-void printFile(string filename){
-    vector< vector<string> > input = getInput(filename);
-    cout << " # rows " << input.size() << endl;
-    for(unsigned int r=0; r<input.size(); r++){
-        cout << " # columns " << input.at(r).size();
-        for(unsigned int c=0; c<input.at(r).size(); c++){
-            cout << "\t" << input.at(r).at(c);
-        }
-        cout << endl;
-    }
-}
-
 vector< vector<string> > getInput(string filename){
     vector< vector<string> > input;
     if(filename.compare("")==0) return input;
@@ -68,6 +54,70 @@ vector< vector<string> > getInput(string filename){
     }
     ifile.close();
     return input;
+}
+
+void printFile(string filename){
+    vector< vector<string> > input = getInput(filename);
+    cout << " # rows " << input.size() << endl;
+    for(unsigned int r=0; r<input.size(); r++){
+        cout << " # columns " << input.at(r).size();
+        for(unsigned int c=0; c<input.at(r).size(); c++){
+            cout << "\t" << input.at(r).at(c);
+        }
+        cout << endl;
+    }
+}
+
+bool statsSpecen( vector<double> input , double &mean , double &stdv , unsigned int &min , unsigned int &max ){
+    
+    unsigned int inputSize = input.size();
+    
+    if( inputSize < 1){
+        cout << " WARNING : empty vector for statsSpecen " << endl;
+        return false;
+    }
+    
+    if( inputSize == 1){
+        mean = input.at(0);
+        stdv = 0.;
+        min = 0;
+        max = 0;
+        return true;
+    }
+    
+    mean = 0.;
+    stdv = 0.;
+    
+    double dodummy;
+    min = 0;
+    double minValue = input.at(0);
+    max = 0;
+    double maxValue = input.at(0);
+    
+    for(unsigned int i=0; i<inputSize; i++){
+        
+        dodummy = input.at(i);
+        
+        mean += dodummy;
+        stdv += dodummy * dodummy;
+        
+        if( minValue > dodummy ){
+            minValue = dodummy;
+            min = i;
+        }
+        
+        if( maxValue < dodummy ){
+            maxValue = dodummy;
+            max = i;
+        }
+        
+    }
+    
+    stdv = sqrt( ( stdv - mean * mean / (double)inputSize ) / ( (double)inputSize - 1. ) );
+    mean /= (double)inputSize;
+    
+    return true;
+    
 }
 
 vector<double> fitDoubleGaussian(TH1I * hist, bool bugger){
@@ -1732,7 +1782,8 @@ void simpleStripAna(){
 
 void muontomo(){
     
-    TString inname = "/project/etp4/mherrmann/analysis/results/CRF/study/sm2_m1_2018_0530to0616_r02.root";
+//     TString inname = "/project/etp4/mherrmann/analysis/results/CRF/study/sm2_m1_2018_0530to0616_r02.root";
+    TString inname = "/project/etp4/mherrmann/analysis/anafiles/m7studyCRF.root";
     TFile * infile = new TFile( inname,"READ");
     TString outname = inname;
     outname.ReplaceAll(".root","_tomo.root");
@@ -2607,7 +2658,135 @@ void extensiveAlignment(
     
 }
 
-void tester(TString filename="test.dat", bool bugger=false){
+void clusterProperties( TString filename ){
+        
+    TFile * infile = new TFile( filename , "READ" );
+    
+//     TString replacement = "_pro";
+//     replacement += mode;
+//     replacement += ".root";
+    TString replacement = "_cluPro.root";
+    TString name = filename;
+//     if( name.Contains('/') ) name = name( name.Last('/')+1 , name.Sizeof() );
+    name.ReplaceAll( ".root" , replacement );
+    
+    TFile * outfile = new TFile( name , "RECREATE" );
+    
+    vector<string> detectornames;
+    detectornames.push_back("eta_out");
+    detectornames.push_back("eta_in");
+    detectornames.push_back("stereo_in");
+    detectornames.push_back("stereo_out");
+    unsigned int ndetectors = detectornames.size();
+    
+    vector<string> boardnames;
+    boardnames.push_back("board6");
+    boardnames.push_back("board7");
+    boardnames.push_back("board8");
+    unsigned int nboards = boardnames.size();
+    
+    map< unsigned int , TString > mode = {
+        { 1 , "clusterQvsNstrips_near" } ,
+        { 2 , "nStripsVSslope" } ,
+        { 3 , "fastestVSslope" } ,
+        { 4 , "slowestVSslope" } ,
+        { 5 , "timeDifVSslope" } 
+    };
+    
+    vector<unsigned int> nbins { 0, 0};
+    vector<double> lowEdge { 0., 0.};
+    vector<double> highEdge { 0., 0.};
+    vector<double> step { 0., 0.};
+    
+    TH2I * readhist;
+    TH1D * slice;
+    TProfile * profile;
+    TGraphErrors * meanGraph;
+    TGraphErrors * stdvGraph;
+    
+    for( auto m : mode ){
+    
+        for(unsigned int d=0; d<ndetectors; d++){
+            
+            for(unsigned int b=0; b<nboards; b++){
+        
+                name = m.second;
+                
+                if(nboards>1){
+                    name += "_board";
+                    if( nboards == 3 ) name += b+6;
+                    else name += b;
+                }
+                if(ndetectors>1){ 
+                    name += "_";
+                    name += detectornames.at(d);
+                }
+                
+                readhist = (TH2I*)infile->Get(name);
+                
+                if( readhist == NULL ){
+                    cout << " ERROR : can not find " << name << " => skipped " << endl;
+                    continue;
+                }
+                    
+                nbins.at(0) = readhist->GetXaxis()->GetNbins();
+                lowEdge.at(0) = readhist->GetXaxis()->GetXmin();
+                highEdge.at(0) = readhist->GetXaxis()->GetXmax();
+                step.at(0) = (highEdge.at(0)-lowEdge.at(0))/(double)(nbins.at(0));
+            
+                nbins.at(1) = readhist->GetYaxis()->GetNbins();
+                lowEdge.at(1) = readhist->GetYaxis()->GetXmin();
+                highEdge.at(1) = readhist->GetYaxis()->GetXmax();
+                step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
+                
+                meanGraph = new TGraphErrors();
+                stdvGraph = new TGraphErrors();
+                
+                for(unsigned int b=1; b<=nbins.at(0); b++){
+                    
+                    replacement = name;
+                    replacement += "_";
+                    replacement += b;
+                    slice = readhist->ProjectionY( replacement , b , b );
+                    
+                    double xValue = lowEdge.at(0) + step.at(0) * ( (double)b - 0.5 );
+                    
+                    meanGraph->SetPoint( meanGraph->GetN() , xValue , slice->GetMean() );
+                    meanGraph->SetPointError( meanGraph->GetN()-1 , 0.5*step.at(0) , slice->GetMeanError() );
+                    
+                    stdvGraph->SetPoint( stdvGraph->GetN() , xValue , slice->GetStdDev() );
+                    stdvGraph->SetPointError( stdvGraph->GetN()-1 , 0.5*step.at(0) , slice->GetStdDevError() );
+                    
+                }
+                
+                outfile->cd();
+                replacement = name;
+                replacement += "_mean";
+                meanGraph->SetTitle(replacement);
+                meanGraph->SetName(replacement);
+                meanGraph->Write();
+                
+                outfile->cd();
+                replacement = name;
+                replacement += "_stdv";
+                stdvGraph->SetTitle(replacement);
+                stdvGraph->SetName(replacement);
+                stdvGraph->Write();
+                
+            }
+            
+        }
+    
+    }
+    
+    infile->Close();
+    
+//     outfile->Write();
+    outfile->Close();
+    
+}
+
+void tester( TString filename="test.dat" , bool bugger=false ){
 //     getNoisy(filename);
 //     effiPerPart();
 //     chargePerPart();
@@ -2627,7 +2806,8 @@ void tester(TString filename="test.dat", bool bugger=false){
 //     getRotation();
 //     tracking();
 //     driftPlots();
-    extensiveAlignment();
+//     extensiveAlignment();
 //     chargeNstripsPerBoard(filename);
+    clusterProperties( filename );
 }
 
