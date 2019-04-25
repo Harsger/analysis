@@ -40,7 +40,7 @@ def main(argv):
         defaultAna = False
         
         filename = ''
-        commandPrefix = "sbatch -x gar-ws-etp05,gar-ws-etp06,gar-ws-etp18,gar-ws-etp22,gar-ws-etp23,gar-ws-etp24,gar-ws-etp26,gar-ws-etp28,gar-ws-etp57,gar-ws-etp65,gar-ws-etp68,gar-ws-etp73,gar-ws-etp79,gar-ws-etp77,gar-ws-etp86,gar-ws-etp88,gar-ws-etp93 /project/etp4/mherrmann/analysis/starter.sh "
+        commandPrefix = "sbatch -x gar-ws-etp05,gar-ws-etp06,gar-ws-etp18,gar-ws-etp22,gar-ws-etp23,gar-ws-etp24,gar-ws-etp26,gar-ws-etp28,gar-ws-etp57,gar-ws-etp65,gar-ws-etp68,gar-ws-etp73,gar-ws-etp79,gar-ws-etp77,gar-ws-etp86,gar-ws-etp88,gar-ws-etp93,gar-ws-etp94 /project/etp4/mherrmann/analysis/starter.sh "
         usage = 'executor.py -c <\'command\'> -i <inputfile> -d <datapath> -t <treename> -s <specifier> -n <notuse> -e <eventsPerJob> -W -L -D'
         
         try:
