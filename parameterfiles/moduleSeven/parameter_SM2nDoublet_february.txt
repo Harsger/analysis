@@ -1,6 +1,6 @@
 properties_SM2nDoublet.txt
 fecmap_SM2nDoublet.txt
-corrections_SM2nDoublet.txt
+corrections_SM2nDoublet_it.txt
 boardmap_SM2nDoublet.txt
 detectorname    #xstrips    #ystrips   pitch   xlength    ylength   #divisionsX   #divisionsY    positionX    positionY  positionZ    angleX    angleY    angleZ    layer   flip    uTPCtime   CCCfactor   driftVelocity  cluTime
 eta_out            0          3072     0.425    1600       1305.6        16           24         -586.        -278.73    125.47      -0.0117     0.00804   0.00626    3       0         0.        -0.3        0.047        0.
