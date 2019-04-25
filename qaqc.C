@@ -102,16 +102,17 @@ int main(int argc, char* argv[]){
         " -d\tfile for dead and noisy channels \n"
         " -a\tdirectory of amplification scan \n"
         " -m\tfile for efficiency and charge maps \n"
-        " additional option for maps (-m)"
+        "\n"
+        " additional option for maps (-m) \n"
         " -e\texclude sector in maps \n"
         "\n"
-        " output will be stored in "<< outputDir <<"\n"
+        " -o\toutput will be stored in "<< outputDir <<"\n"
         "\n";
         return 0;
     }
     
     char c;
-    while ( ( c = getopt( argc , argv , "n:d:a:m:e:" ) ) != -1 ){
+    while ( ( c = getopt( argc , argv , "n:d:a:m:e:o:" ) ) != -1 ){
         switch( c ){
             case 'n':
                 moduleNumber = atoi( optarg );
@@ -127,6 +128,9 @@ int main(int argc, char* argv[]){
                 break;
             case 'e':
                 exclusions.push_back( optarg );
+                break;
+            case 'o':
+                outputDir = optarg;
                 break;
             case '?':
                 if( isprint( optopt ) ) fprintf( stderr , " Unknown option `-%c'.\n" , optopt );
