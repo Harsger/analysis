@@ -304,6 +304,7 @@ void analysis::investigateCRF(){
     TH2I*** clusterQvsTime_board = new TH2I**[ndetectors];
     TH2I*** maxStripQvsClusterQ_board = new TH2I**[ndetectors];
     TH2I*** nStripsVSslope_board = new TH2I**[ndetectors];
+    TH2I*** clusterQvsSlope_board = new TH2I**[ndetectors];
     TH2I*** resVSscinX_board = new TH2I**[ndetectors];
     TH2I*** resVSslope_board = new TH2I**[ndetectors];
     TH2I*** difVSscinX_board = new TH2I**[ndetectors];
@@ -311,9 +312,11 @@ void analysis::investigateCRF(){
     TH2I*** clusterQvsNstrips_near_board = new TH2I**[ndetectors];
     TH2I*** risetimeVScharge_near_board;
     TH2I*** starttimeVSslope_near_board;
+    TH2I*** chargeVSvariation_near_board;
     if(!onlyCluster){ 
         risetimeVScharge_near_board = new TH2I**[ndetectors];
         starttimeVSslope_near_board = new TH2I**[ndetectors];
+        chargeVSvariation_near_board = new TH2I**[ndetectors];
     }
     
     TH2I*** firstTimeDifVSscinXperYpart = new TH2I**[ndetectors];
@@ -328,6 +331,7 @@ void analysis::investigateCRF(){
     TH2I** uTPCdifCentroidVSres = new TH2I*[ndetectors];
     TH2I** uTPCdifCentroidVScluTime = new TH2I*[ndetectors];
     TH2I** uTPCdifCentroidVSslope = new TH2I*[ndetectors];
+    TH2I*** uTPCslopeVSslope_nStrips = new TH2I**[ndetectors];
     
     TH2I** houghTracksVSnStrips;
     TH2I** houghTracksVSslope;
@@ -587,6 +591,7 @@ void analysis::investigateCRF(){
         clusterQvsTime_board[d] = new TH2I*[nboards.at(d)];
         maxStripQvsClusterQ_board[d] = new TH2I*[nboards.at(d)];
         nStripsVSslope_board[d] = new TH2I*[nboards.at(d)];
+        clusterQvsSlope_board[d] = new TH2I*[nboards.at(d)];
         
         for(unsigned int b=0; b<nboards.at(d); b++){
                 
@@ -673,6 +678,20 @@ void analysis::investigateCRF(){
             nStripsVSslope_board[d][b] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, maxSize.at(d)-minSize.at(d)+1, minSize.at(d)-0.5, maxSize.at(d)+0.5);
             nStripsVSslope_board[d][b]->SetXTitle("slope y (average MDTs)");
             nStripsVSslope_board[d][b]->SetYTitle("strips in leading cluster"); 
+                
+            histname = "clusterQvsSlope";
+            if(nboards.at(d)>1){
+                histname += "_board";
+                if( nboards.at(d) == 3 ) histname += b+6;
+                else histname += b;
+            }
+            if(ndetectors>1){ 
+                histname += "_";
+                histname += detectornames.at(d);
+            }
+            clusterQvsSlope_board[d][b] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange,  500, 0, 10000);
+            clusterQvsSlope_board[d][b]->SetXTitle("slope y (average MDTs)");
+            clusterQvsSlope_board[d][b]->SetYTitle("cluster charge [ADC channel]"); 
             
         }
         
@@ -839,6 +858,7 @@ void analysis::investigateCRF(){
         if(!onlyCluster){ 
             risetimeVScharge_near_board[d] = new TH2I*[nboards.at(d)];
             starttimeVSslope_near_board[d] = new TH2I*[nboards.at(d)];
+            chargeVSvariation_near_board[d] = new TH2I*[nboards.at(d)];
         }
         
         for(unsigned int b=0; b<nboards.at(d); b++){
@@ -959,6 +979,20 @@ void analysis::investigateCRF(){
                 else starttimeVSslope_near_board[d][b] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 145, -2.*25., 27.*25.);
                 starttimeVSslope_near_board[d][b]->SetXTitle("slope y (average MDTs)");
                 starttimeVSslope_near_board[d][b]->SetYTitle("strip signal starttime [ns]");  
+                
+                histname = "chargeVSvariation_near_board";
+                if(nboards.at(d)>1){
+                    if( nboards.at(d) == 3 ) histname += b+6;
+                    else histname += b;
+                }
+                if(ndetectors>1){ 
+                    histname += "_";
+                    histname += detectornames.at(d);
+                }
+                if(useAngle) chargeVSvariation_near_board[d][b] = new TH2I(histname, histname, 100, 0., 10., 500, 0, 2500);
+                else chargeVSvariation_near_board[d][b] = new TH2I(histname, histname, 100, 0., 10., 500, 0, 2500);
+                chargeVSvariation_near_board[d][b]->SetXTitle("signal variation [25 ns]");
+                chargeVSvariation_near_board[d][b]->SetYTitle("strip charge [ADC channel]");  
             
             }
             
@@ -1085,6 +1119,30 @@ void analysis::investigateCRF(){
         uTPCresVScluTimeVSslope[d]->SetXTitle("slope y (average MDTs)");
         uTPCresVScluTimeVSslope[d]->SetYTitle("charge averaged clustertime [ns]"); 
         uTPCresVScluTimeVSslope[d]->SetZTitle("uTPC residual [mm]"); 
+        
+        uTPCslopeVSslope_nStrips[d] = new TH2I*[maxSize.at(d)];
+        
+        for(unsigned int n=0; n<maxSize.at(d); n++){
+                
+            histname = "uTPCslopeVSslope_nStrips";
+            if(ndetectors>1){ 
+                histname += "_";
+                histname += detectornames.at(d);
+            }
+            histname += "_";
+            histname += n+1;
+            if(useAngle){ 
+                uTPCslopeVSslope_nStrips[d][n] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 90, -90., 90.);
+                uTPCslopeVSslope_nStrips[d][n]->SetXTitle("angle reference track [#circ]");
+                uTPCslopeVSslope_nStrips[d][n]->SetYTitle("reconstructed angle [#circ]");  
+            }
+            else{ 
+                uTPCslopeVSslope_nStrips[d][n] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 1000, -5., 5.);
+                uTPCslopeVSslope_nStrips[d][n]->SetXTitle("slope y (average MDTs)");
+                uTPCslopeVSslope_nStrips[d][n]->SetYTitle("1 / uTPC slope [strip / 25 ns]");  
+            }
+            
+        }
         
         if(!onlyCluster){
                 
@@ -1989,17 +2047,18 @@ void analysis::investigateCRF(){
                 fastestVSslope_board[d][board]->Fill( mdtangle, earliest->at( leading[d][0] ) );
                 slowestVSslope_board[d][board]->Fill( mdtangle, latest->at( leading[d][0] ) );
                 timeDifVSslope_board[d][board]->Fill( mdtangle, latest->at( leading[d][0] ) - earliest->at( leading[d][0] ));
+                nStripsVSslope_board[d][board]->Fill( mdtangle, size->at(leading[d][0]));
+                clusterQvsSlope_board[d][board]->Fill( mdtangle, chargesum->at( leading[d][0] ));
             }
             else{ 
                 fastestVSslope_board[d][board]->Fill( mdtslope, earliest->at( leading[d][0] ) );
                 slowestVSslope_board[d][board]->Fill( mdtslope, latest->at( leading[d][0] ) );
                 timeDifVSslope_board[d][board]->Fill( mdtslope, latest->at( leading[d][0] ) - earliest->at( leading[d][0] ));
+                nStripsVSslope_board[d][board]->Fill( mdtslope, size->at(leading[d][0]));
+                clusterQvsSlope_board[d][board]->Fill( mdtslope, chargesum->at( leading[d][0] ));
             }
             maxStripQvsClusterQ_board[d][board]->Fill( chargesum->at(leading[d][0]), maxStripQ->at(leading[d][0]));
-            if(useAngle) nStripsVSslope_board[d][board]->Fill( mdtangle, size->at(leading[d][0]));
-            else nStripsVSslope_board[d][board]->Fill( mdtslope, size->at(leading[d][0]));
             clusterQvsUnixtime[d][board]->Fill( unixtime, chargesum->at( leading[d][0] ));
-            
             
         }
         
@@ -2177,7 +2236,7 @@ void analysis::investigateCRF(){
         
         if( debug && verbose && nXtracker > 0 ) cout << " found # Xtracker " << trackXpoints.size() << endl;
             
-        if( trackXpoints.size() == nXtracker ){
+        if( nXtracker > 0 &&  trackXpoints.size() == nXtracker ){
             
             double scinZ = 1350.;
             double scinPosition = track[0][0] + track[0][1] * scinZ;
@@ -2432,7 +2491,7 @@ void analysis::investigateCRF(){
                         thisClusterBad = true;
                         continue;
                     }
-                    double starttime = turntime->at(stripindex) - extrapolationfactor * risetime->at(stripindex);
+                    double starttime = turntime->at(stripindex) + extrapolateTO * extrapolationfactor * risetime->at(stripindex);
                     if(debug && verbose) cout << " t " << starttime;
                     if( starttime < fastestTime ){
                         fastestTime = starttime;
@@ -2524,15 +2583,15 @@ void analysis::investigateCRF(){
                         fastestVSslope_board[d][board]->Fill( mdtangle, earliest->at( leading[d][1] ) );
                         slowestVSslope_board[d][board]->Fill( mdtangle, latest->at( leading[d][1] ) );
                         timeDifVSslope_board[d][board]->Fill( mdtangle, latest->at( leading[d][1] ) - earliest->at( leading[d][1] ));
+                        nStripsVSslope_board[d][board]->Fill( mdtangle, size->at(leading[d][1]));
                     }
                     else{ 
                         fastestVSslope_board[d][board]->Fill( mdtslope, earliest->at( leading[d][1] ) );
                         slowestVSslope_board[d][board]->Fill( mdtslope, latest->at( leading[d][1] ) );
                         timeDifVSslope_board[d][board]->Fill( mdtslope, latest->at( leading[d][1] ) - earliest->at( leading[d][1] ));
+                        nStripsVSslope_board[d][board]->Fill( mdtslope, size->at(leading[d][1]));
                     }
                     maxStripQvsClusterQ_board[d][board]->Fill( chargesum->at(leading[d][1]), maxStripQ->at(leading[d][1]));
-                    if(useAngle) nStripsVSslope_board[d][board]->Fill( mdtangle, size->at(leading[d][1]));
-                    else nStripsVSslope_board[d][board]->Fill( mdtslope, size->at(leading[d][1]));
                     
                 }
                 
@@ -2568,6 +2627,11 @@ void analysis::investigateCRF(){
                 
                 if(useAngle) uTPCslopeVSslope[d]->Fill( mdtangle, atan( detpitch / 25. / uTPC_slope / driftVelocity.at(d) ) * 180. / TMath::Pi() );
                 else uTPCslopeVSslope[d]->Fill( mdtslope, 1./uTPC_slope );
+                
+                if( size->at( leading[d][1] ) <= maxSize.at(d) ){
+                    if(useAngle) uTPCslopeVSslope_nStrips[d][size->at( leading[d][1] )-1]->Fill( mdtangle, atan( detpitch / 25. / uTPC_slope / driftVelocity.at(d) ) * 180. / TMath::Pi() );
+                    else uTPCslopeVSslope_nStrips[d][size->at( leading[d][1] )-1]->Fill( mdtslope, 1./uTPC_slope );
+                }
                 
                 detshift -= cluTimeCor;
                 double uTPCposition = 
@@ -2723,6 +2787,8 @@ void analysis::investigateCRF(){
                     inEffiRange[d] = true;
                     effi[d][xpart][ypart]->Fill(4.);
                     clusterQvsNstrips_near_board[d][nearboard]->Fill( size->at( nearest ), chargesum->at(nearest));
+                    if(useAngle) clusterQvsSlope_board[d][nearboard]->Fill( mdtangle,  chargesum->at(nearest));
+                    else clusterQvsSlope_board[d][nearboard]->Fill( mdtslope,  chargesum->at(nearest));
 //                     maxQstripVSstrip[d]->Fill( centroid->at( nearest ), maxStripQ->at( nearest ) );
                     if( size->at(nearest) < 2 ) effi[d][xpart][ypart]->Fill(5.);
 //                     inefficiencies[d]->Fill( intersection.at(0), intersection.at(1));
@@ -2732,9 +2798,10 @@ void analysis::investigateCRF(){
                         for(unsigned int s=0; s<size->at(nearest); s++){
                             stripindex = strips->at(nearest).at(s);
                             risetimeVScharge_near_board[d][nearboard]->Fill( maxcharge->at(stripindex), risetime->at(stripindex) * 25.);
+                            chargeVSvariation_near_board[d][nearboard]->Fill( variation->at(stripindex) , maxcharge->at(stripindex) );
                             chargeVSstrip_near[d]->Fill( number->at(stripindex) , maxcharge->at(stripindex) );
-                            if(useAngle) starttimeVSslope_near_board[d][nearboard]->Fill( mdtslope, ( turntime->at(stripindex) - extrapolationfactor * risetime->at(stripindex) ) * 25.);
-                            else starttimeVSslope_near_board[d][nearboard]->Fill( mdtslope, ( turntime->at(stripindex) - extrapolationfactor * risetime->at(stripindex) ) * 25.);
+                            if(useAngle) starttimeVSslope_near_board[d][nearboard]->Fill( mdtangle, ( turntime->at(stripindex) + extrapolateTO * extrapolationfactor * risetime->at(stripindex) ) * 25.);
+                            else starttimeVSslope_near_board[d][nearboard]->Fill( mdtslope, ( turntime->at(stripindex) + extrapolateTO * extrapolationfactor * risetime->at(stripindex) ) * 25.);
                         }
                     }
                 }
@@ -3015,10 +3082,12 @@ void analysis::investigateCRF(){
             clusterQvsTime_board[d][b]->Write(); 
             maxStripQvsClusterQ_board[d][b]->Write();
             nStripsVSslope_board[d][b]->Write();
+            clusterQvsSlope_board[d][b]->Write();
             clusterQvsNstrips_near_board[d][b]->Write();
             if(!onlyCluster){ 
                 risetimeVScharge_near_board[d][b]->Write();
                 starttimeVSslope_near_board[d][b]->Write();
+                chargeVSvariation_near_board[d][b]->Write();
             }
             
         }
@@ -3214,6 +3283,16 @@ void analysis::investigateCRF(){
         
         for(unsigned int h=0; h<2; h++){
             trackIntersectionYZ[h]->Write();
+        }
+        
+    }
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+        
+        for(unsigned int n=0; n<maxSize.at(d); n++){
+            
+            uTPCslopeVSslope_nStrips[d][n]->Write();
+        
         }
         
     }
