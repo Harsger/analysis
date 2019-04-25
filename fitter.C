@@ -498,6 +498,10 @@ void analysis::fitNclust(){
             condition += TDCforFEC.at(f);
             data->Draw( "time_correction_ns" , condition );
             TH1F * htemp = (TH1F*)gPad->GetPrimitive("htemp");
+            if( htemp == NULL ){
+                cout << " ERROR : for FEC " << f << " at TDC channel " << TDCforFEC.at(f) << " no entries found " << endl;
+                continue;
+            }
             if( htemp->GetEntries() < 0.9 * entries ){
                 cout << " WARNING : for FEC " << f << " at TDC channel " << TDCforFEC.at(f) << " only " << htemp->GetEntries() << " entries were found " << endl;
                 continue;
