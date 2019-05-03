@@ -2218,6 +2218,11 @@ void analysis::properties(){
         
         bool firstHist[2] = { true, true};
         
+        double chargeStats[5] = { 0. , 0. , 0. , 1e6 , -1e6 };
+        double effiStats[5] = { 0. , 0. , 0. , 1e6 , -1e6 };
+        unsigned int usedPartitions = 0;
+        unsigned int entriesSum = 0;
+        
         for(unsigned int cx=0; cx<divisions.at(d).at(0); cx++){
             for(unsigned int cy=0; cy<divisions.at(d).at(1); cy++){
                 
@@ -2234,126 +2239,13 @@ void analysis::properties(){
                 
                 hits->SetBinContent( cx+1, cy+1, resVSslope->GetEntries());
                 
-                if( resVSslope->GetEntries() < requiredHits ) continue;
-                
-                title = "fastestTime";
-                if(ndetectors>1){ 
-                    title += "_";
-                    title += detectornames.at(d);
-                }
-                title += "_x";
-                title += cx;
-                title += "_y";
-                title += cy;
-                fastestTime = (TH1I*)infile->Get(title);
-                
-                if( fastestTime->GetEntries() < requiredHits ){
+                if( resVSslope->GetEntries() < requiredHits ){ 
                     fastTimings->SetBinContent( cx+1, cy+1, -1e6);
                     fastTimings->SetBinError( cx+1, cy+1, 1e7);
-                }
-                else{
-//                     vector<double> fitTimeFast = fitDoubleGaussian( fastestTime, debug);
-//                     fastTimings->SetBinContent( cx+1, cy+1, fitTimeFast.at(1));
-//                     fastTimings->SetBinError( cx+1, cy+1, fitTimeFast.at(7));
-                    singleGaus->SetParameters( fastestTime->GetBinContent(fastestTime->GetMaximumBin()), fastestTime->GetMean(), fastestTime->GetRMS());
-                    fastestTime->Fit( singleGaus, "RQB");
-                    fastTimings->SetBinContent( cx+1, cy+1, singleGaus->GetParameter(1)-singleGaus->GetParameter(2));
-                    fastTimings->SetBinError( cx+1, cy+1, singleGaus->GetParError(1));
-                    if(debug){ 
-                        fastestTime->Draw();
-                        gPad->Modified();
-                        gPad->Update();
-                        gPad->WaitPrimitive();
-                    }
-                    
-                    if( firstHist[0] ){ 
-                        earliestTime = (TH1I*)fastestTime->Clone();
-                        firstHist[0] = false;
-                    }
-                    else earliestTime->Add( fastestTime );
-                    
-                }
-                
-                title = "slowestTime";
-                if(ndetectors>1){ 
-                    title += "_";
-                    title += detectornames.at(d);
-                }
-                title += "_x";
-                title += cx;
-                title += "_y";
-                title += cy;
-                slowestTime = (TH1I*)infile->Get(title);
-                
-                if( slowestTime->GetEntries() < requiredHits ){
                     slowTimings->SetBinContent( cx+1, cy+1, -1e6);
                     slowTimings->SetBinError( cx+1, cy+1, 1e7);
-                }
-                else{
-//                     vector<double> fitTimeSlow = fitDoubleGaussian( slowestTime, debug);
-//                     slowTimings->SetBinContent( cx+1, cy+1, fitTimeSlow.at(1));
-//                     slowTimings->SetBinError( cx+1, cy+1, fitTimeSlow.at(7));
-                    singleGaus->SetParameters( slowestTime->GetBinContent(slowestTime->GetMaximumBin()), slowestTime->GetMean(), slowestTime->GetRMS());
-                    slowestTime->Fit( singleGaus, "RQB");
-                    slowTimings->SetBinContent( cx+1, cy+1, singleGaus->GetParameter(1)+singleGaus->GetParameter(2));
-                    slowTimings->SetBinError( cx+1, cy+1, singleGaus->GetParError(1));
-                    if(debug){ 
-                        slowestTime->Draw();
-                        gPad->Modified();
-                        gPad->Update();
-                        gPad->WaitPrimitive();
-                    }
-                    
-                    if( firstHist[1] ){ 
-                        latestTime = (TH1I*)slowestTime->Clone();
-                        firstHist[1] = false;
-                    }
-                    else latestTime->Add( slowestTime );
-                    
-                }
-                
-                title = "clusterQ";
-                if(ndetectors>1){ 
-                    title += "_";
-                    title += detectornames.at(d);
-                }
-                title += "_x";
-                title += cx;
-                title += "_y";
-                title += cy;
-                clusterQ = (TH1I*)infile->Get(title);
-                
-                if( clusterQ->GetEntries() < requiredHits ){
                     clusterChargeMPV->SetBinContent( cx+1, cy+1, -1e6);
                     clusterChargeMPV->SetBinError( cx+1, cy+1, 1e7);
-                }
-                else{
-//                     landau->SetRange();
-                    landau->SetParameters( clusterQ->GetRMS(), clusterQ->GetMaximumBin());
-//                     landau->SetParLimits( 1, 0., 1e4);
-                    clusterQ->Fit( landau, "RQ");
-                    clusterChargeMPV->SetBinContent( cx+1, cy+1, landau->GetParameter(1));
-                    clusterChargeMPV->SetBinError( cx+1, cy+1, landau->GetParError(1));
-                    if(debug){ 
-                        clusterQ->Draw();
-                        gPad->Modified();
-                        gPad->Update();
-                        gPad->WaitPrimitive();
-                    }
-                }
-                
-                title = "effi";
-                if(ndetectors>1){ 
-                    title += "_";
-                    title += detectornames.at(d);
-                }
-                title += "_x";
-                title += cx;
-                title += "_y";
-                title += cy;
-                effi = (TH1I*)infile->Get(title);
-                
-                if( effi->GetEntries() < requiredHits ){
                     hitEffi->SetBinContent( cx+1, cy+1, -1e6);
                     hitEffi->SetBinError( cx+1, cy+1, 1e7);
                     efficiency->SetBinContent( cx+1, cy+1, -1e6);
@@ -2368,31 +2260,227 @@ void analysis::properties(){
                     mulitplicity->SetBinError( cx+1, cy+1, 1e7);
                     coincidenceEffi->SetBinContent( cx+1, cy+1, -1e6);
                     coincidenceEffi->SetBinError( cx+1, cy+1, 1e7);
+                    continue;
                 }
-                else{ // r = u / l  with delta u = sqrt(u) [also for l]  =>   delta r = sqrt(u) / l * sqrt( 1 + u / l )
-//                     hits->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(6));
-                    hitEffi->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(2) / (double)effi->GetBinContent(1) );
-                    hitEffi->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(2) ) / (double)effi->GetBinContent(1) * sqrt( 1. + (double)effi->GetBinContent(2) / (double)effi->GetBinContent(1) ) );
-                    efficiency->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(3) / (double)effi->GetBinContent(1) );
-                    efficiency->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(3) ) / (double)effi->GetBinContent(1) * sqrt( 1. + (double)effi->GetBinContent(3) / (double)effi->GetBinContent(1) ) );
-                    nearEfficiency->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(4) / (double)effi->GetBinContent(1) );
-                    nearEfficiency->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(4) ) / (double)effi->GetBinContent(1) * sqrt( 1. + (double)effi->GetBinContent(4) / (double)effi->GetBinContent(1) ) );
-                    leadingNearRatio->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(10) / (double)effi->GetBinContent(2) );
-                    leadingNearRatio->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(10) ) / (double)effi->GetBinContent(2) * sqrt( 1. + (double)effi->GetBinContent(10) / (double)effi->GetBinContent(2) ) );
-                    oneStripCluster->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(5) / (double)effi->GetBinContent(4) );
-                    oneStripCluster->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(5) ) / (double)effi->GetBinContent(4) * sqrt( 1. + (double)effi->GetBinContent(5) / (double)effi->GetBinContent(4) ) );
-                    mulitplicity->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(8) / (double)effi->GetBinContent(3) );
-                    mulitplicity->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(8) ) / (double)effi->GetBinContent(3) * sqrt( 1. + (double)effi->GetBinContent(8) / (double)effi->GetBinContent(3) ) );
-                    coincidenceEffi->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(7) / (double)effi->GetBinContent(6) );
-                    coincidenceEffi->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(7) ) / (double)effi->GetBinContent(6) * sqrt( 1. + (double)effi->GetBinContent(7) / (double)effi->GetBinContent(6) ) );
-//                     efficiency->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(3) -  (double)effi->GetBinContent(9) ) / (double)effi->GetBinContent(1) );
-//                     nearEfficiency->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(4) -  (double)effi->GetBinContent(9) ) / (double)effi->GetBinContent(1) );
-//                     leadingNearRatio->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(10) -  (double)effi->GetBinContent(9) ) / ( (double)effi->GetBinContent(2) -  (double)effi->GetBinContent(9) ) );
-//                     oneStripCluster->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(9) );
+                
+                title = "fastestTime";
+                if(ndetectors>1){ 
+                    title += "_";
+                    title += detectornames.at(d);
                 }
+                title += "_x";
+                title += cx;
+                title += "_y";
+                title += cy;
+                fastestTime = (TH1I*)infile->Get(title);
+                
+//                 if( fastestTime->GetEntries() < requiredHits ){
+//                     fastTimings->SetBinContent( cx+1, cy+1, -1e6);
+//                     fastTimings->SetBinError( cx+1, cy+1, 1e7);
+//                 }
+//                 else{
+//                 vector<double> fitTimeFast = fitDoubleGaussian( fastestTime, debug);
+//                 fastTimings->SetBinContent( cx+1, cy+1, fitTimeFast.at(1));
+//                 fastTimings->SetBinError( cx+1, cy+1, fitTimeFast.at(7));
+                singleGaus->SetParameters( fastestTime->GetBinContent(fastestTime->GetMaximumBin()), fastestTime->GetMean(), fastestTime->GetRMS());
+                fastestTime->Fit( singleGaus, "RQB");
+                fastTimings->SetBinContent( cx+1, cy+1, singleGaus->GetParameter(1)-singleGaus->GetParameter(2));
+                fastTimings->SetBinError( cx+1, cy+1, singleGaus->GetParError(1));
+                if(debug){ 
+                    fastestTime->Draw();
+                    gPad->Modified();
+                    gPad->Update();
+                    gPad->WaitPrimitive();
+                }
+                
+                if( firstHist[0] ){ 
+                    earliestTime = (TH1I*)fastestTime->Clone();
+                    firstHist[0] = false;
+                }
+                else earliestTime->Add( fastestTime );
+                    
+//                 }
+                
+                title = "slowestTime";
+                if(ndetectors>1){ 
+                    title += "_";
+                    title += detectornames.at(d);
+                }
+                title += "_x";
+                title += cx;
+                title += "_y";
+                title += cy;
+                slowestTime = (TH1I*)infile->Get(title);
+                
+//                 if( slowestTime->GetEntries() < requiredHits ){
+//                     slowTimings->SetBinContent( cx+1, cy+1, -1e6);
+//                     slowTimings->SetBinError( cx+1, cy+1, 1e7);
+//                 }
+//                 else{
+//                 vector<double> fitTimeSlow = fitDoubleGaussian( slowestTime, debug);
+//                 slowTimings->SetBinContent( cx+1, cy+1, fitTimeSlow.at(1));
+//                 slowTimings->SetBinError( cx+1, cy+1, fitTimeSlow.at(7));
+                singleGaus->SetParameters( slowestTime->GetBinContent(slowestTime->GetMaximumBin()), slowestTime->GetMean(), slowestTime->GetRMS());
+                slowestTime->Fit( singleGaus, "RQB");
+                slowTimings->SetBinContent( cx+1, cy+1, singleGaus->GetParameter(1)+singleGaus->GetParameter(2));
+                slowTimings->SetBinError( cx+1, cy+1, singleGaus->GetParError(1));
+                if(debug){ 
+                    slowestTime->Draw();
+                    gPad->Modified();
+                    gPad->Update();
+                    gPad->WaitPrimitive();
+                }
+                
+                if( firstHist[1] ){ 
+                    latestTime = (TH1I*)slowestTime->Clone();
+                    firstHist[1] = false;
+                }
+                else latestTime->Add( slowestTime );
+                    
+//                 }
+                
+                title = "clusterQ";
+                if(ndetectors>1){ 
+                    title += "_";
+                    title += detectornames.at(d);
+                }
+                title += "_x";
+                title += cx;
+                title += "_y";
+                title += cy;
+                clusterQ = (TH1I*)infile->Get(title);
+                
+//                 if( clusterQ->GetEntries() < requiredHits ){
+//                     clusterChargeMPV->SetBinContent( cx+1, cy+1, -1e6);
+//                     clusterChargeMPV->SetBinError( cx+1, cy+1, 1e7);
+//                 }
+//                 else{
+//                 landau->SetRange();
+                landau->SetParameters( clusterQ->GetRMS(), clusterQ->GetMaximumBin());
+//                 landau->SetParLimits( 1, 0., 1e4);
+                clusterQ->Fit( landau, "RQ");
+                clusterChargeMPV->SetBinContent( cx+1, cy+1, landau->GetParameter(1));
+                clusterChargeMPV->SetBinError( cx+1, cy+1, landau->GetParError(1));
+                if(debug){ 
+                    clusterQ->Draw();
+                    gPad->Modified();
+                    gPad->Update();
+                    gPad->WaitPrimitive();
+                }
+//                 }
+                
+                title = "effi";
+                if(ndetectors>1){ 
+                    title += "_";
+                    title += detectornames.at(d);
+                }
+                title += "_x";
+                title += cx;
+                title += "_y";
+                title += cy;
+                effi = (TH1I*)infile->Get(title);
+                
+//                 if( effi->GetEntries() < requiredHits ){
+//                     hitEffi->SetBinContent( cx+1, cy+1, -1e6);
+//                     hitEffi->SetBinError( cx+1, cy+1, 1e7);
+//                     efficiency->SetBinContent( cx+1, cy+1, -1e6);
+//                     efficiency->SetBinError( cx+1, cy+1, 1e7);
+//                     nearEfficiency->SetBinContent( cx+1, cy+1, -1e6);
+//                     nearEfficiency->SetBinError( cx+1, cy+1, 1e7);
+//                     leadingNearRatio->SetBinContent( cx+1, cy+1, -1e6);
+//                     leadingNearRatio->SetBinError( cx+1, cy+1, 1e7);
+//                     oneStripCluster->SetBinContent( cx+1, cy+1, -1e6);
+//                     oneStripCluster->SetBinError( cx+1, cy+1, 1e7);
+//                     mulitplicity->SetBinContent( cx+1, cy+1, -1e6);
+//                     mulitplicity->SetBinError( cx+1, cy+1, 1e7);
+//                     coincidenceEffi->SetBinContent( cx+1, cy+1, -1e6);
+//                     coincidenceEffi->SetBinError( cx+1, cy+1, 1e7);
+//                 }
+//                 else{ 
+                    // r = u / l  with delta u = sqrt(u) [also for l]  =>   delta r = sqrt(u) / l * sqrt( 1 + u / l )
+//                 hits->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(6));
+                hitEffi->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(2) / (double)effi->GetBinContent(1) );
+                hitEffi->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(2) ) / (double)effi->GetBinContent(1) * sqrt( 1. + (double)effi->GetBinContent(2) / (double)effi->GetBinContent(1) ) );
+                efficiency->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(3) / (double)effi->GetBinContent(1) );
+                efficiency->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(3) ) / (double)effi->GetBinContent(1) * sqrt( 1. + (double)effi->GetBinContent(3) / (double)effi->GetBinContent(1) ) );
+                nearEfficiency->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(4) / (double)effi->GetBinContent(1) );
+                nearEfficiency->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(4) ) / (double)effi->GetBinContent(1) * sqrt( 1. + (double)effi->GetBinContent(4) / (double)effi->GetBinContent(1) ) );
+                leadingNearRatio->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(10) / (double)effi->GetBinContent(2) );
+                leadingNearRatio->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(10) ) / (double)effi->GetBinContent(2) * sqrt( 1. + (double)effi->GetBinContent(10) / (double)effi->GetBinContent(2) ) );
+                oneStripCluster->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(5) / (double)effi->GetBinContent(4) );
+                oneStripCluster->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(5) ) / (double)effi->GetBinContent(4) * sqrt( 1. + (double)effi->GetBinContent(5) / (double)effi->GetBinContent(4) ) );
+                mulitplicity->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(8) / (double)effi->GetBinContent(3) );
+                mulitplicity->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(8) ) / (double)effi->GetBinContent(3) * sqrt( 1. + (double)effi->GetBinContent(8) / (double)effi->GetBinContent(3) ) );
+                coincidenceEffi->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(7) / (double)effi->GetBinContent(6) );
+                coincidenceEffi->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(7) ) / (double)effi->GetBinContent(6) * sqrt( 1. + (double)effi->GetBinContent(7) / (double)effi->GetBinContent(6) ) );
+//                 efficiency->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(3) -  (double)effi->GetBinContent(9) ) / (double)effi->GetBinContent(1) );
+//                 nearEfficiency->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(4) -  (double)effi->GetBinContent(9) ) / (double)effi->GetBinContent(1) );
+//                 leadingNearRatio->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(10) -  (double)effi->GetBinContent(9) ) / ( (double)effi->GetBinContent(2) -  (double)effi->GetBinContent(9) ) );
+//                 oneStripCluster->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(9) );
+                    
+                    if(
+                        cx > divisions.at(d).at(0) * 0.3 &&
+                        cx < divisions.at(d).at(0) * 0.7 &&
+                        cy > 1 &&
+                        cy < divisions.at(d).at(0) - 1 &&
+                        landau->GetParameter(1) > 0. &&
+                        landau->GetParameter(1) < 1e4
+                    ){
+                        
+                        usedPartitions++;
+                        entriesSum += effi->GetBinContent(4);
+                        
+                        double partCharge = landau->GetParameter(1);
+                        
+                        chargeStats[0] += partCharge;
+                        chargeStats[1] += landau->GetParError(1);
+                        
+                        chargeStats[2] += partCharge * partCharge;
+                        
+                        if( chargeStats[3] > partCharge ) chargeStats[3] = partCharge;
+                        if( chargeStats[4] < partCharge ) chargeStats[4] = partCharge;
+                        
+                        double partNearEffi = (double)effi->GetBinContent(4) / (double)effi->GetBinContent(1);
+                        if(debug) cout << " " << (double)effi->GetBinContent(4) << " / " << (double)effi->GetBinContent(1) << " = " << partNearEffi << endl;
+                        
+                        effiStats[0] += partNearEffi;
+                        effiStats[1] += sqrt( (double)effi->GetBinContent(4) ) / (double)effi->GetBinContent(1) * sqrt( 1. + (double)effi->GetBinContent(4) / (double)effi->GetBinContent(1) );
+                        
+                        effiStats[2] += partNearEffi * partNearEffi;
+                        
+                        if( effiStats[3] > partNearEffi ) effiStats[3] = partNearEffi;
+                        if( effiStats[4] < partNearEffi ) effiStats[4] = partNearEffi;
+                        
+                    }
+                    
+//                 }
                 
             }
         }
+        
+        cout << endl << " " << detectornames.at(d) << " \t usedPartitions " << usedPartitions << " \t total entries " << entriesSum << endl;
+        
+        chargeStats[2] = sqrt( ( chargeStats[2] - chargeStats[0] * chargeStats[0] / (double)usedPartitions ) / ( (double)usedPartitions - 1. ) );
+        chargeStats[0] /= (double)usedPartitions;
+        chargeStats[1] /= (double)usedPartitions;
+        
+        cout << " charge"; 
+        cout << " \t mean " << chargeStats[0] << " +/- " << chargeStats[1];
+        cout << " \t stdv " << chargeStats[2];
+        cout << " \t min "  << chargeStats[3];
+        cout << " \t max "  << chargeStats[4];
+        cout << endl;
+        
+        effiStats[2] = sqrt( ( effiStats[2] - effiStats[0] * effiStats[0] / (double)usedPartitions ) / ( (double)usedPartitions - 1. ) );
+        effiStats[0] /= (double)usedPartitions;
+        effiStats[1] /= (double)usedPartitions;
+        
+        cout << " efficiency"; 
+        cout << " \t mean " << effiStats[0] << " +/- " << effiStats[1];
+        cout << " \t stdv " << effiStats[2];
+        cout << " \t min "  << effiStats[3];
+        cout << " \t max "  << effiStats[4];
+        cout << endl;
         
         if(debug) cout << " writing histograms" << endl;
         
