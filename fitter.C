@@ -1509,6 +1509,7 @@ void analysis::fitNclust(){
                 variationVSmean[d][r][n]->Write();
                 risetimeVScharge[d][r][n]->Write();
                 risetimeVSvaritation[d][r][n]->Write();
+                offsetVScharge[d][r][n]->Write();
             
             }
             
