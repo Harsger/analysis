@@ -10,7 +10,7 @@ from ROOT import gStyle
 from ROOT import gPad
 from ROOT import TLegend
 from ROOT import TMultiGraph
-#from ROOT import HistStack
+#from rootpy.plotting import HistStack
 
 from array import array
     
@@ -33,24 +33,86 @@ from array import array
         #[ "400" , "cluTime_uTPCres_SlopeVSslope_eta_in" , "400 V" ] ,
     #]
     
-preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/ampScan/m6_eta3_ampScan_5x7_coinPanel.root" , "" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/ampScan/eta3_ArCO2_80-20_ampScan_coinNextEffi.root" , "" ]
+##preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/ampScan/oldParser/m6_eta3_ampScan_5x7_clusterQ.root" , "" ]
+
+#plotTags = [
+        #[ "" , "etaBot_coincidenceEffiVSamplificationVoltage_2_2" , "board 6 left"  ] ,
+        #[ "" , "etaBot_coincidenceEffiVSamplificationVoltage_4_2" , "board 6 right" ] ,
+        #[ "" , "etaBot_coincidenceEffiVSamplificationVoltage_2_4" , "board 7 left"  ] ,
+        #[ "" , "etaBot_coincidenceEffiVSamplificationVoltage_4_4" , "board 7 right" ] ,
+        #[ "" , "etaBot_coincidenceEffiVSamplificationVoltage_2_6" , "board 8 left"  ] ,
+        #[ "" , "etaBot_coincidenceEffiVSamplificationVoltage_4_6" , "board 8 right" ] ,
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/ampScan/sm2_m3_eta5_" , "_woCCC_fitNclust_inCRF_cluPro.root" ]
+
+#plotTags = [
+        #[ "540V_20181022_1758" , "maxStripQvsSlope_board7_eta_in_stdv" , "540 V" ] ,
+        #[ "545V_20181021_0916" , "maxStripQvsSlope_board7_eta_in_stdv" , "545 V" ] ,
+        #[ "550V_20181019_1401" , "maxStripQvsSlope_board7_eta_in_stdv" , "550 V" ] ,
+        #[ "555V_20181019_1637" , "maxStripQvsSlope_board7_eta_in_stdv" , "555 V" ] ,
+        #[ "560V_20181018_2010" , "maxStripQvsSlope_board7_eta_in_stdv" , "560 V" ] ,
+        #[ "565V_20181019_1854" , "maxStripQvsSlope_board7_eta_in_stdv" , "565 V" ] ,
+        #[ "570V_20181022_2152" , "maxStripQvsSlope_board7_eta_in_stdv" , "570 V" ] 
+    #]
+    
+preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/driftScan/sm2_m3_560V_C" , "V_woCCC_cluPro.root" ]
 
 plotTags = [
-        [ "" , "eta_in_coincidenceEffiVSamplificationVoltage_2_2" , "board 6 left"  ] ,
-        [ "" , "eta_in_coincidenceEffiVSamplificationVoltage_4_2" , "board 6 right" ] ,
-        [ "" , "eta_in_coincidenceEffiVSamplificationVoltage_2_4" , "board 7 left"  ] ,
-        [ "" , "eta_in_coincidenceEffiVSamplificationVoltage_4_4" , "board 7 right" ] ,
-        [ "" , "eta_in_coincidenceEffiVSamplificationVoltage_2_6" , "board 8 left"  ] ,
-        [ "" , "eta_in_coincidenceEffiVSamplificationVoltage_4_6" , "board 8 right" ] ,
+        [ "100" , "nStripsVSslope_board7_eta_in_stdv" , "100 V" ] ,
+        [ "150" , "nStripsVSslope_board7_eta_in_stdv" , "150 V" ] ,
+        [ "200" , "nStripsVSslope_board7_eta_in_stdv" , "200 V" ] ,
+        [ "250" , "nStripsVSslope_board7_eta_in_stdv" , "250 V" ] ,
+        [ "300" , "nStripsVSslope_board7_eta_in_stdv" , "300 V" ] ,
+        [ "350" , "nStripsVSslope_board7_eta_in_stdv" , "350 V" ] ,
+        [ "400" , "nStripsVSslope_board7_eta_in_stdv" , "400 V" ] 
     ]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/uTPCstudy/sm2_m1_570V_ZS2_20180601_0928_" , "_wouTPCt0_cluPro.root" ]
+
+#plotTags = [
+        #[ "woCCC_tt" , "timeDifVSslope_board7_eta_in_stdv" , "without CCC" ] ,
+        #[ "tt_CCC20" , "timeDifVSslope_board7_eta_in_stdv" , "20%" ] ,
+        #[ "tt_CCC25" , "timeDifVSslope_board7_eta_in_stdv" , "25%" ] ,
+        #[ "tt"       , "timeDifVSslope_board7_eta_in_stdv" , "30%" ] ,
+        #[ "tt_CCC35" , "timeDifVSslope_board7_eta_in_stdv" , "35%" ] ,
+        #[ "tt_CCC40" , "timeDifVSslope_board7_eta_in_stdv" , "40%" ] 
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/uTPCstudy/sm2_m1_570V_ZS2_20180601_0928_" , "_wouTPCt0_cluPro.root" ]
+
+#plotTags = [
+        #[ "tt"       , "timeDifVSslope_board7_eta_in_stdv" , "inflection" ] ,
+        #[ "moreFits" , "timeDifVSslope_board7_eta_in_stdv" , "baseline"   ] ,
+        #[ "up"       , "timeDifVSslope_board7_eta_in_stdv" , "maximum"    ] 
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/" , "_cluPro.root" ]
+
+#plotTags = [
+        #[ "m5/m5_570V_eta3_620V_8515_20190220_2035_fitNclust_inCRF" , "timeDifVSslope_board7_etaBot_mean" , "etaBot old" ] ,
+        #[ "m5/m5_570V_eta3_620V_8515_20190220_2035_fitNclust_inCRF" , "timeDifVSslope_board7_etaTop_mean" , "etaTop old" ] ,
+        #[ "eta3doublet/single/eta3_8515_620V_CJatB8shortET_20190425_0909_fitNclust_inCRF" , "timeDifVSslope_board7_etaBot_mean" , "etaBot new" ] ,
+        #[ "eta3doublet/single/eta3_8515_620V_CJatB8shortET_20190425_0909_fitNclust_inCRF" , "timeDifVSslope_board7_etaTop_mean" , "etaTop new" ] 
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m5/qaqc/m5_" , "_fitNclust_inCRF.root" ]
+
+#plotTags = [
+        #[ "540V_eta3_610V_8515_20190306_1036" , "clusterQ_eta_out_x1_y2" , "L1L6 at 550 V" ] ,
+        #[ "540V_eta3_610V_8515_20190306_1036" , "clusterQ_eta_out_x3_y2" , "L1R6 at 550 V" ] ,
+        #[ "570V_eta3_590V_8515_20190307_1109" , "clusterQ_eta_out_x1_y2" , "L1L6 at 570 V" ] ,
+        #[ "570V_eta3_590V_8515_20190307_1109" , "clusterQ_eta_out_x3_y2" , "L1R6 at 570 V" ] 
+    #]
 
 def main(argv):
     
     can = ROOT.TCanvas("can","can")
     
     gStyle.SetOptStat(0)
-    gStyle.SetOptTitle(1)
-    gStyle.SetPadTopMargin(0.5);
+    #gStyle.SetOptTitle(1)
+    #gStyle.SetPadTopMargin(0.5);
 
     #plotStyle=[
             #[ 20 , 1 ] ,
@@ -64,7 +126,8 @@ def main(argv):
             [ 22 , 4 ] ,
             [ 26 , 6 ] ,
             [ 21 , 9 ] ,
-            [ 25 , 46 ] 
+            [ 25 , 46 ] ,
+            [ 5 , 28 ] 
         ]
 
     #plotStyle=[
@@ -108,18 +171,20 @@ def main(argv):
     #plotter.GetXaxis().SetTitle( "drift voltage [V]" )
     #plotter.GetYaxis().SetTitle( "mean angle reconstruction [#circ]" )
     
-    plotter.GetXaxis().SetTitle( "amplification voltage [V]" )
-    plotter.GetYaxis().SetTitle( "coincidence efficiency" )
+    plotter.GetXaxis().SetTitle( "slope reference track" )
+    plotter.GetYaxis().SetTitle( "st. dev. number of strips in cluster" )
     
-    plotter.GetYaxis().SetRangeUser( 0.3 , 1. )
+    plotter.GetXaxis().SetRangeUser( -0.5 , 0.5 )
+    #plotter.GetYaxis().SetRangeUser( 0.7 , 1. )
     
-    plotter.SetTitle("eta_in")
     
-    plotter.Draw("AP")
-    ###can.BuildLegend()
+    plotter.Draw("APL")
+    plotter.SetTitle("eta in")
+    #plotter.Draw("APL")
+    can.BuildLegend()
     #legend.Draw()
     
-    #gPad.SetGridx()
+    gPad.SetGridx()
     gPad.SetGridy()
       
     gPad.Modified()
