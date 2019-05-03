@@ -606,7 +606,8 @@ void analysis::align(){
         vecdodummy.push_back(yerr);
         corrections.push_back(vecdodummy);
         vecdodummy.clear();
-        cout << fixed << setprecision(4) << " zcor \t = \t " << zcor << " \t +- " << zerr << endl;
+        if( specifier.Contains("uTPCresVSuTPCslope_pp") ) cout << fixed << setprecision(4) << " uTPCtime \t = \t " << -zcor/pitch.at(d) << " \t +- " << zerr/pitch.at(d) << endl;
+        else cout << fixed << setprecision(4) << " zcor \t = \t " << zcor << " \t +- " << zerr << endl;
         vecdodummy.push_back(zcor);
         vecdodummy.push_back(zerr);
         corrections.push_back(vecdodummy);
@@ -1238,6 +1239,9 @@ void analysis::resolution(){
             
             centroidBroad->SetPoint(centroidBroad->GetN(),lowEdge+step*(b-0.5),fitresults.at(5));
             centroidBroad->SetPointError(centroidBroad->GetN()-1,0.5*step,fitresults.at(11));
+            
+//             cout << " " << fitresults.at(2) << " +/- " << fitresults.at(8) << "\t" << fitresults.at(0) << " +/- " << fitresults.at(6) << endl;
+//             cout << " " << fitresults.at(5) << " +/- " << fitresults.at(11) << "\t" << fitresults.at(3) << " +/- " << fitresults.at(9) << endl;
         
             if( fitresults.at(0) > 0. ){
                 centroidBroadNarrowRatio->SetPoint( centroidBroadNarrowRatio->GetN(), lowEdge+step*(b-0.5), fitresults.at(3) / fitresults.at(0));
@@ -2519,7 +2523,12 @@ void analysis::study(){
                 if( slice->GetMaximum() < 30 ) slice->Rebin2D(2,4);
                 
                 slice->GetYaxis()->SetRangeUser( -fitrange, fitrange);
-                slice->GetXaxis()->SetRangeUser( firstTime.at(d), lastTime.at(d));
+                
+                double timeMean = slice->GetMean(1);
+                double timeSTDV = slice->GetStdDev(1);
+                
+//                 slice->GetXaxis()->SetRangeUser( firstTime.at(d), lastTime.at(d));
+                slice->GetXaxis()->SetRangeUser( timeMean+2.*timeSTDV, timeMean-2.*timeSTDV);
                 
                 if( d==1 && m==1 ){
                     slice->Draw("colz");
@@ -2544,10 +2553,12 @@ void analysis::study(){
                 profile->GetXaxis()->SetRangeUser( firstTime.at(d), lastTime.at(d));
                 
 //                 TF1 * linearfit = new TF1( "linearfit", "pol1", firstTime.at(d), lastTime.at(d));
-                TF1 * linearfit = new TF1( "linearfit", "[1]*(x-[0])", firstTime.at(d), lastTime.at(d));
+//                 TF1 * linearfit = new TF1( "linearfit", "[1]*(x-[0])", firstTime.at(d), lastTime.at(d));
+                TF1 * linearfit = new TF1( "linearfit", "[1]*(x-[0])", timeMean+2.*timeSTDV, timeMean-2.*timeSTDV);
                 
-                if( m == 0 ) linearfit->SetParameter( 0, meanTime.at(d));
-                else linearfit->SetParameter( 0, meanTime.at(d));
+//                 if( m == 0 ) linearfit->SetParameter( 0, meanTime.at(d));
+//                 else linearfit->SetParameter( 0, meanTime.at(d));
+                linearfit->SetParameter( 0, timeMean);
                 
                 for(unsigned int i=0; i<3; i++) profile->Fit(linearfit, "RQB");
                 
