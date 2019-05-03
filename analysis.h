@@ -1990,7 +1990,8 @@ vector<vector<double> > analysis::getCorrectedSignal(vector<unsigned int> channe
     for(int cs=0; cs<stripsInCluster; cs++){ 
         maxTimes[cs] = maxtimebin->at( channels.at(cs) );
         maxCharges[cs] = maxcharge->at( channels.at(cs) );
-        starttimes[cs] = turntime->at( channels.at(cs) ) - extrapolationfactor * risetime->at( channels.at(cs) );
+//         starttimes[cs] = turntime->at( channels.at(cs) ) + extrapolateTO * extrapolationfactor * risetime->at( channels.at(cs) );
+        starttimes[cs] = 0.;
     }
     
     double ratio = abs( CCCfactor.at(det) );
