@@ -1316,11 +1316,6 @@ void analysis::fitNclust(){
 //             uTPCslope->push_back( linearFit->GetParameter(0) );
             
             TF1 * linearFit = new TF1("linear","[0]+[1]*x");
-            timeVSstrip->Fit(linearFit,"QW");
-            for(unsigned int i=0; i<3; i++){
-                if(debug && verbose) timeVSstrip->Fit(linearFit,"");
-                else timeVSstrip->Fit(linearFit,"Q");
-            }
             
 //             if(inCRF){
 //                 double sign = 1.;
@@ -1328,12 +1323,19 @@ void analysis::fitNclust(){
 //                 double mdtslope = 0.5 * ( slopeY[0] + slopeY[1] );
 //                 double expectedSlope = pitch.at(cdet) / driftVelocity.at(cdet) / 25. * sign ;
 //                 if( abs( mdtslope ) < 1e-6 ){ 
-//                     if( mdtslope < 0. ) expectedSlope *= (-1e6);
-//                     else expectedSlope *= 1e6;
+//                     if( mdtslope < 0. ) expectedSlope /= (-1e6);
+//                     else expectedSlope /= 1e6;
 //                 }
-//                 else expectedSlope *= mdtslope;
+//                 else expectedSlope /= mdtslope;
 //                 linearFit->FixParameter( 1 , expectedSlope );
 //             }
+            
+            timeVSstrip->Fit(linearFit,"QW");
+            
+            for(unsigned int i=0; i<3; i++){
+                if(debug && verbose) timeVSstrip->Fit(linearFit,"");
+                else timeVSstrip->Fit(linearFit,"Q");
+            }
             
             uTPCintercept->push_back( linearFit->GetParameter(0) );
             uTPCslope->push_back( linearFit->GetParameter(1) );
