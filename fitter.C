@@ -188,9 +188,9 @@ void analysis::fitNclust(){
     
     TString histname, histtitle, axetitle;
     
-    int stripChargeBins = 800;
+    int stripChargeBins = 600;
     double stripChargeStart = 0.;
-    double stripsChargeEnd = 4000.;
+    double stripsChargeEnd = 3000.;
     
     TH1I*** noisy = new TH1I**[ndetectors];
     TH1I*** dead = new TH1I**[ndetectors];
@@ -205,6 +205,7 @@ void analysis::fitNclust(){
     TH2I**** risetimeVScharge = new TH2I***[ndetectors];
     TH2I**** risetimeVSvaritation = new TH2I***[ndetectors];
     TH2I**** offsetVScharge = new TH2I***[ndetectors];
+    TH2I**** baseVScharge = new TH2I***[ndetectors];
     
     TH1I*** numberOfCluster = new TH1I**[ndetectors];
     TH2I*** clusterQvsPosition = new TH2I**[ndetectors];
@@ -230,6 +231,7 @@ void analysis::fitNclust(){
         risetimeVScharge[d] = new TH2I**[2];
         risetimeVSvaritation[d] = new TH2I**[2];
         offsetVScharge[d] = new TH2I**[2];
+        baseVScharge[d] = new TH2I**[2];
         
         numberOfCluster[d] = new TH1I*[2];
         clusterQvsPosition[d] = new TH2I*[2];
@@ -273,6 +275,7 @@ void analysis::fitNclust(){
             risetimeVScharge[d][r] = new TH2I*[3];
             risetimeVSvaritation[d][r] = new TH2I*[3];
             offsetVScharge[d][r] = new TH2I*[3];
+            baseVScharge[d][r] = new TH2I*[3];
             
             for(unsigned int n=0; n<3; n++){
             
@@ -392,9 +395,21 @@ void analysis::fitNclust(){
                 if(n==1) histname += "_noise";
                 else if(n==2) histname += "_signal";
                 histtitle = histname;
-                offsetVScharge[d][r][n] = new TH2I(histname, histtitle, 1000, -500., 500., stripChargeBins, stripChargeStart, stripsChargeEnd);
+                offsetVScharge[d][r][n] = new TH2I(histname, histtitle, stripChargeBins, stripChargeStart, stripsChargeEnd, stripChargeBins*2, -stripsChargeEnd, stripsChargeEnd);
                 offsetVScharge[d][r][n]->SetXTitle("charge [ADC channels]");
                 offsetVScharge[d][r][n]->SetYTitle("offset [ADC channels]");
+                
+                histname = "baseVScharge";
+                histname += detectornames.at(d);
+                histname += "_";
+                if(r==1) histname += "y";
+                else histname += "x";
+                if(n==1) histname += "_noise";
+                else if(n==2) histname += "_signal";
+                histtitle = histname;
+                baseVScharge[d][r][n] = new TH2I(histname, histtitle, stripChargeBins, stripChargeStart, stripsChargeEnd, stripChargeBins*2, -stripsChargeEnd, stripsChargeEnd);
+                baseVScharge[d][r][n]->SetXTitle("charge [ADC channels]");
+                baseVScharge[d][r][n]->SetYTitle("offset [ADC channels]");
             
             }
             
@@ -751,6 +766,7 @@ void analysis::fitNclust(){
         vector<double> chargeMean;
         vector<double> timeFitError;
         vector<double> chargeOffset;
+        vector<double> chargeBase;
         bool toBeSortedOut = false;
         
         for(unsigned int s=0; s<nstrips; s++){
@@ -807,6 +823,7 @@ void analysis::fitNclust(){
                 chargeMean.push_back(-1.);
                 timeFitError.push_back(1e6);
                 chargeOffset.push_back(0.);
+                chargeBase.push_back(0.);
                 
                 continue;
             }
@@ -840,6 +857,7 @@ void analysis::fitNclust(){
                     chi2ndf->push_back( -1000 );
                     timeFitError.push_back( 1e6 );
                     chargeOffset.push_back(0.);
+                    chargeBase.push_back(0.);
                     
                     sortOut.push_back(true);
                     
@@ -853,6 +871,7 @@ void analysis::fitNclust(){
             maxtimebin->push_back( maxtime );
             short maxQ = pulseheight->GetBinContent( maxtime );
             maxcharge->push_back( maxQ );
+            chargeBase.push_back( pulseheight->GetBinContent(1) );
 
             if( maxcharge->at(s) < minCharge.at( cdet ) || maxcharge->at(s) > maxCharge.at( cdet ) || maxtimebin->at(s) < 2 ){ 
                 if(debug && verbose) cout << " charge out of range "/* << maxQ << endl*/;
@@ -1396,6 +1415,7 @@ void analysis::fitNclust(){
                 risetimeVScharge[det][dir][n]->Fill( maxcharge->at(s), risetime->at(s));
                 risetimeVSvaritation[det][dir][n]->Fill( variation->at(s), risetime->at(s));
                 offsetVScharge[det][dir][n]->Fill( maxcharge->at(s), chargeOffset.at(s));
+                baseVScharge[det][dir][n]->Fill( maxcharge->at(s), chargeBase.at(s));
                 
                 if( n==1 && sortOut.at(s) ) break;
                 
@@ -1510,6 +1530,7 @@ void analysis::fitNclust(){
                 risetimeVScharge[d][r][n]->Write();
                 risetimeVSvaritation[d][r][n]->Write();
                 offsetVScharge[d][r][n]->Write();
+                baseVScharge[d][r][n]->Write();
             
             }
             
