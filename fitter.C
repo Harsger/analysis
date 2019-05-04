@@ -842,16 +842,27 @@ void analysis::fitNclust(){
             
             variation->push_back(pulseheight->GetRMS());
             chargeMean.push_back(pulseheight->GetMean());
-            if(debug && verbose) cout << " \t variation " << variation->at(s);
+            
+            short maxtime = pulseheight->GetMaximumBin();
+            maxtimebin->push_back( maxtime );
+            short maxQ = pulseheight->GetBinContent( maxtime );
+            maxcharge->push_back( maxQ );
+            chargeBase.push_back( pulseheight->GetBinContent(1) );
+            
+            if(debug && verbose) cout << " \t variation " << variation->at(s) << " \t charge " << maxQ << "\t time " << maxtime;
 
-            if( emptySignal || variation->at(s) > signalVariation.at(cdet) ){ 
-                if(debug && verbose) cout << " empty "/* << endl*/;
+            if( 
+                emptySignal || 
+                maxcharge->at(s) < minCharge.at( cdet ) || 
+                maxcharge->at(s) > maxCharge.at( cdet ) || 
+                maxtimebin->at(s) < 2 || 
+                variation->at(s) > signalVariation.at(cdet) 
+            ){ 
+                if(debug && verbose) cout << " outsorted " << endl;
                 
                 if(fitNoise) toBeSortedOut = true;
                 else{
                     
-                    maxcharge->push_back( -1000 );
-                    maxtimebin->push_back( -1000 );
                     turntime->push_back( -1000 );
                     risetime->push_back( -1000 );
                     chi2ndf->push_back( -1000 );
@@ -866,33 +877,6 @@ void analysis::fitNclust(){
                     
                 }
             }
-            
-            short maxtime = pulseheight->GetMaximumBin();
-            maxtimebin->push_back( maxtime );
-            short maxQ = pulseheight->GetBinContent( maxtime );
-            maxcharge->push_back( maxQ );
-            chargeBase.push_back( pulseheight->GetBinContent(1) );
-
-            if( maxcharge->at(s) < minCharge.at( cdet ) || maxcharge->at(s) > maxCharge.at( cdet ) || maxtimebin->at(s) < 2 ){ 
-                if(debug && verbose) cout << " charge out of range "/* << maxQ << endl*/;
-                
-                if(fitNoise) toBeSortedOut = true;
-                else {
-                    
-                    turntime->push_back( -1000 );
-                    risetime->push_back( -1000 );
-                    chi2ndf->push_back( -1000 );
-                    timeFitError.push_back( 1e6 );
-                    chargeOffset.push_back(0.);
-                    
-                    sortOut.push_back(true);
-                    
-                    pulseheight->Delete();
-                    continue;
-                
-                }
-            }
-            if(debug && verbose) cout << " \t charge " << maxQ;
 
             TF1 * inverseFermi = new TF1( "inverseFermi", "[0] / ( 1 + exp( ( [1] - x ) / [2] ) ) + [3]", 0, maxtime + 1);
             inverseFermi->SetParameters( maxQ, maxtime-1, 0.8, 0.);
