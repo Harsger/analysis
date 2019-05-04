@@ -305,6 +305,7 @@ void analysis::investigateCRF(){
     TH2I*** maxStripQvsClusterQ_board = new TH2I**[ndetectors];
     TH2I*** nStripsVSslope_board = new TH2I**[ndetectors];
     TH2I*** clusterQvsSlope_board = new TH2I**[ndetectors];
+    TH2I*** clusterTimeVSslope_board = new TH2I**[ndetectors];
     TH2I*** maxStripQvsSlope_board = new TH2I**[ndetectors];
     TH2I*** resVSscinX_board = new TH2I**[ndetectors];
     TH2I*** resVSslope_board = new TH2I**[ndetectors];
@@ -593,6 +594,7 @@ void analysis::investigateCRF(){
         maxStripQvsClusterQ_board[d] = new TH2I*[nboards.at(d)];
         nStripsVSslope_board[d] = new TH2I*[nboards.at(d)];
         clusterQvsSlope_board[d] = new TH2I*[nboards.at(d)];
+        clusterTimeVSslope_board[d] = new TH2I*[nboards.at(d)];
         maxStripQvsSlope_board[d] = new TH2I*[nboards.at(d)];
         
         for(unsigned int b=0; b<nboards.at(d); b++){
@@ -694,6 +696,20 @@ void analysis::investigateCRF(){
             clusterQvsSlope_board[d][b] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange,  500, 0, 10000);
             clusterQvsSlope_board[d][b]->SetXTitle("slope y (average MDTs)");
             clusterQvsSlope_board[d][b]->SetYTitle("cluster charge [ADC channel]"); 
+                
+            histname = "clusterTimeVSslope";
+            if(nboards.at(d)>1){
+                histname += "_board";
+                if( nboards.at(d) == 3 ) histname += b+6;
+                else histname += b;
+            }
+            if(ndetectors>1){ 
+                histname += "_";
+                histname += detectornames.at(d);
+            }
+            clusterTimeVSslope_board[d][b] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 270, 0., 27);
+            clusterTimeVSslope_board[d][b]->SetXTitle("slope y (average MDTs)");
+            clusterTimeVSslope_board[d][b]->SetYTitle("charge averaged leading clustertime [25 ns]"); 
                 
             histname = "maxStripQvsSlope";
             if(nboards.at(d)>1){
@@ -2065,6 +2081,7 @@ void analysis::investigateCRF(){
                 timeDifVSslope_board[d][board]->Fill( mdtangle, latest->at( leading[d][0] ) - earliest->at( leading[d][0] ));
                 nStripsVSslope_board[d][board]->Fill( mdtangle, size->at(leading[d][0]));
                 clusterQvsSlope_board[d][board]->Fill( mdtangle, chargesum->at( leading[d][0] ));
+                clusterTimeVSslope_board[d][board]->Fill( mdtangle, averagetime->at( leading[d][0] ));
                 maxStripQvsSlope_board[d][board]->Fill( mdtangle, maxStripQ->at( leading[d][0] ));
             }
             else{ 
@@ -2073,6 +2090,7 @@ void analysis::investigateCRF(){
                 timeDifVSslope_board[d][board]->Fill( mdtslope, latest->at( leading[d][0] ) - earliest->at( leading[d][0] ));
                 nStripsVSslope_board[d][board]->Fill( mdtslope, size->at(leading[d][0]));
                 clusterQvsSlope_board[d][board]->Fill( mdtslope, chargesum->at( leading[d][0] ));
+                clusterTimeVSslope_board[d][board]->Fill( mdtangle, averagetime->at( leading[d][0] ));
                 maxStripQvsSlope_board[d][board]->Fill( mdtslope, maxStripQ->at( leading[d][0] ));
             }
             maxStripQvsClusterQ_board[d][board]->Fill( chargesum->at(leading[d][0]), maxStripQ->at(leading[d][0]));
@@ -2811,10 +2829,12 @@ void analysis::investigateCRF(){
                     clusterQvsNstrips_near_board[d][nearboard]->Fill( size->at( nearest ), chargesum->at(nearest));
                     if(useAngle){ 
                         clusterQvsSlope_board[d][nearboard]->Fill( mdtangle,  chargesum->at(nearest));
+                        clusterTimeVSslope_board[d][nearboard]->Fill( mdtangle,  averagetime->at(nearest));
                         maxStripQvsSlope_board[d][nearboard]->Fill( mdtangle,  maxStripQ->at(nearest));
                     }
                     else{ 
                         clusterQvsSlope_board[d][nearboard]->Fill( mdtslope,  chargesum->at(nearest));
+                        clusterTimeVSslope_board[d][nearboard]->Fill( mdtslope,  averagetime->at(nearest));
                         maxStripQvsSlope_board[d][nearboard]->Fill( mdtslope,  maxStripQ->at(nearest));
                     }
 //                     maxQstripVSstrip[d]->Fill( centroid->at( nearest ), maxStripQ->at( nearest ) );
@@ -3111,6 +3131,7 @@ void analysis::investigateCRF(){
             maxStripQvsClusterQ_board[d][b]->Write();
             nStripsVSslope_board[d][b]->Write();
             clusterQvsSlope_board[d][b]->Write();
+            clusterTimeVSslope_board[d][b]->Write();
             maxStripQvsSlope_board[d][b]->Write();
             clusterQvsNstrips_near_board[d][b]->Write();
             if(!onlyCluster){ 
