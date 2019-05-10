@@ -1,7 +1,0 @@
-FitMacroName:                            fit_user_function.C
-fBinly:                                  300
-fBinuy:                                  2700
-fBinlx:                                  300
-fBinux:                                  2700
-fXtitle:                                 cluster position eta_out [strips]
-fYtitle:                                 cluster position eta_in [strips]

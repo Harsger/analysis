@@ -1,7 +1,0 @@
-FitMacroName:                            fit_user_function.C
-fBinly:                                  1
-fBinuy:                                  1000
-fBinlx:                                  870
-fBinux:                                  889
-fXtitle:                                 unixtime
-fYtitle:                                 leading cluster charge [ADC channel]

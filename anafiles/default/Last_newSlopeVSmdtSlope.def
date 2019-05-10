@@ -1,7 +1,0 @@
-FitMacroName:                            fit_user_function.C
-fBinly:                                  1
-fBinuy:                                  200
-fBinlx:                                  1
-fBinux:                                  30
-fXtitle:                                 slope y (average MDTs)
-fYtitle:                                 recalculated slope (3 layer)
