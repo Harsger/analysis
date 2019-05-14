@@ -499,10 +499,12 @@ void analysis::align(){
                 
 //                 resVSslope->GetYaxis()->SetRangeUser(-fitrange, fitrange);
                 
+                resVSslope->GetYaxis()->SetRangeUser(-2.,2.);
                 prof = resVSslope->ProfileX();
                 if( specifier.Contains("uTPCresVSuTPCslope_pp") ) linfit = new TF1("linfit","pol1",-3.,3.);
 //                 else linfit = new TF1("linfit","pol1",-0.5,0.5);
-                else linfit = new TF1("linfit","pol1",-0.176,0.176);
+//                 else linfit = new TF1("linfit","pol1",-0.176,0.176);
+                else linfit = new TF1("linfit","pol1",-0.3,0.3);
                 if(debug){ 
                     prof->Fit(linfit,"R");
                     prof->Draw();
@@ -811,7 +813,7 @@ void analysis::align(){
         
         cout << endl;
         
-        if( specifier == "resVSslope" ){
+        if( specifier == "resVSslope" && detectornames.at(d) != "MDTs" ){
         
             title = "resVSmdtY_area";
             if(ndetectors>1){ 
@@ -949,19 +951,27 @@ void analysis::align(){
             
         }
         
+        cout << " writing histos " << endl;
+        
         outfile->cd();
         
         deltaY->Write();
         deltaZ->Write();
         deltaY_zero->Write();
         deltaY_mean->Write();
-        if( specifier == "resVSslope" )meanX->Write();
+        
         deltaZvsY->Write();
         deltaZvsX->Write();
         deltaYvsX->Write();
         deltaYvsY->Write();
+        
+        if( detectornames.at(d) == "MDTs" ) continue;
+        
+        if( specifier == "resVSslope" )meanX->Write();
         if( specifier == "resVSslope" )resMeanVSstrip->Write();
         if( specifier == "resVSslope" )resMeanVSmdtY->Write();
+        
+        cout << " done " << endl;
         
     }    
         
@@ -973,7 +983,7 @@ void analysis::resolution(){
     
     if(debug) cout << " RESOLUTION " << endl;
     
-    crfResolution();
+    if( detectornames.at(0) != "MDTs" )  crfResolution();
     
     if(debug) cout << " CRF resolution calculated " << endl;
     
@@ -1193,6 +1203,12 @@ void analysis::resolution(){
         }
         
         if(debug) cout << " resolution per part calculated " << endl;
+        
+        if( detectornames.at(d) == "MDTs" ){
+            outfile->cd();
+            cenResPerPartition->Write();
+            continue;
+        }
         
         nbins = resVSslope->GetXaxis()->GetNbins();
         if( noPartitions ){
@@ -1851,6 +1867,8 @@ void analysis::properties(){
     TH2D * mulitplicity;
     TH2D * coincidenceEffi;
     
+    TGraphErrors ** efficiencyVScharge;
+    
     TString title;
     stringstream sdummy;
     double dodummy;
@@ -2214,6 +2232,26 @@ void analysis::properties(){
         title = "coincidence efficiency";
         coincidenceEffi->SetZTitle(title);
         
+        efficiencyVScharge = new TGraphErrors*[nboards.at(d)];
+        
+        for(unsigned int b=0; b<nboards.at(d); b++){
+            
+            title = "efficiencyVScharge";
+            if(nboards.at(d)>1){
+                title += "_board";
+                if( nboards.at(d) == 3 ) title += b+6;
+                else title += b;
+            }
+            if(ndetectors>1){ 
+                title += "_";
+                title += detectornames.at(d);
+            }
+            efficiencyVScharge[b] = new TGraphErrors();
+            efficiencyVScharge[b]->SetTitle(title);
+            efficiencyVScharge[b]->SetName(title);
+            
+        }
+        
         if(debug) cout << " fit timings and charges , calculate efficiencies " << endl;
         
         bool firstHist[2] = { true, true};
@@ -2417,12 +2455,12 @@ void analysis::properties(){
 //                 nearEfficiency->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(4) -  (double)effi->GetBinContent(9) ) / (double)effi->GetBinContent(1) );
 //                 leadingNearRatio->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(10) -  (double)effi->GetBinContent(9) ) / ( (double)effi->GetBinContent(2) -  (double)effi->GetBinContent(9) ) );
 //                 oneStripCluster->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(9) );
-                    
+                
                     if(
                         cx > divisions.at(d).at(0) * 0.3 &&
                         cx < divisions.at(d).at(0) * 0.7 &&
-                        cy > 1 &&
-                        cy < divisions.at(d).at(0) - 1 &&
+                        cy > 0 &&
+                        cy < divisions.at(d).at(1) - 1 &&
                         landau->GetParameter(1) > 0. &&
                         landau->GetParameter(1) < 1e4
                     ){
@@ -2450,6 +2488,15 @@ void analysis::properties(){
                         
                         if( effiStats[3] > partNearEffi ) effiStats[3] = partNearEffi;
                         if( effiStats[4] < partNearEffi ) effiStats[4] = partNearEffi;
+                        
+                        unsigned int board = (unsigned int)( (double)(cy) / (double)( divisions.at(d).at(0) ) * ( (double)(nboards.at(d)) - 1. ) );
+                        unsigned int lastBoard = (unsigned int)( ( (double)(cy) - 1. ) / (double)( divisions.at(d).at(0) ) * ( (double)(nboards.at(d)) - 1. ) );
+                        unsigned int nextBoard = (unsigned int)( ( (double)(cy) + 1. ) / (double)( divisions.at(d).at(0) ) * ( (double)(nboards.at(d)) - 1. ) );
+                        
+                        if( board != lastBoard || board != nextBoard ) continue;
+                        
+                        efficiencyVScharge[board]->SetPoint( efficiencyVScharge[board]->GetN() , partCharge , partNearEffi );
+                        efficiencyVScharge[board]->SetPointError( efficiencyVScharge[board]->GetN()-1 , landau->GetParError(1) , effiStats[1] );
                         
                     }
                     
@@ -2502,6 +2549,12 @@ void analysis::properties(){
         leadingNearRatio->Write();
         oneStripCluster->Write();
         coincidenceEffi->Write();
+        
+        for(unsigned int b=0; b<nboards.at(d); b++){
+            
+            efficiencyVScharge[b]->Write();
+            
+        }
         
     }
     
