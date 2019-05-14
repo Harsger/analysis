@@ -42,7 +42,7 @@ map< string , string > layer = {
     { "eta_in"     , "L2" },
     { "stereo_in"  , "L3" },
     { "stereo_out" , "L4" }
-//     ,{ "etaBot"  , "etaBot" },
+//     { "etaBot"  , "etaBot" },
 //     { "etaTop" , "etaTop" }
 };
 
@@ -70,6 +70,8 @@ map< string , pair< unsigned int , unsigned int > > SideRange = {
 
 vector<string> exclusions;
 
+unsigned int stripsPerAPV = 128;
+unsigned int stripsPerAdapter = 512;
 unsigned int stripsPerBoard = 1024;
     
 unsigned int moduleNumber = 0;
@@ -81,6 +83,10 @@ TString mapName = "";
 
 TString outputDir = "/project/etpdaq/NSW_QAQC/QC_App/cosmics";
 TString modulePrefix = "MMS2000";
+
+bool useDoublet = false;
+bool storeNoiseData = false;
+bool useCoincidence = false;
 
 void deadNnoisy();
 void amplificationScan();
@@ -103,6 +109,14 @@ int main(int argc, char* argv[]){
         " -a\tdirectory of amplification scan \n"
         " -m\tfile for efficiency and charge maps \n"
         "\n"
+        " -D\tdoublet data will be used instead (etaBot,etaTop) \n"
+        "\n"
+        " additional option for dead and noisy channel (-d) \n"
+        " -S\tstore results in separate root file \n"
+        "\n"
+        " additional option for amplification scan (-a) \n"
+        " -C\tcoincidence efficiency \n"
+        "\n"
         " additional option for maps (-m) \n"
         " -e\texclude sector in maps \n"
         "\n"
@@ -112,7 +126,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ( ( c = getopt( argc , argv , "n:d:a:m:e:o:" ) ) != -1 ){
+    while ( ( c = getopt( argc , argv , "n:d:a:m:DSCe:o:" ) ) != -1 ){
         switch( c ){
             case 'n':
                 moduleNumber = atoi( optarg );
@@ -125,6 +139,15 @@ int main(int argc, char* argv[]){
                 break;
             case 'm':
                 mapName = optarg;
+                break;
+            case 'D':
+                useDoublet = true;
+                break;
+            case 'S':
+                storeNoiseData = true;
+                break;
+            case 'C':
+                useCoincidence = true;
                 break;
             case 'e':
                 exclusions.push_back( optarg );
@@ -189,6 +212,13 @@ int main(int argc, char* argv[]){
     }
     readJson.close();
     
+    if(useDoublet){
+        layer = {
+                    { "etaBot"  , "etaBot" },
+                    { "etaTop" , "etaTop" }
+                };
+    }
+    
     TApplication app("app", &argc, argv);
     
 //     cout << writer << endl;
@@ -222,10 +252,23 @@ void deadNnoisy(){
         return;
     }
     
+    TString outname = deadNoiseName;
+//     if( outname.Contains('/') ) outname = outname( outname.Last('/')+1 , outname.Sizeof() );
+    outname.ReplaceAll( ".root" , "_deadNnoisy.root" );
+    
+    TFile * outfile;
+    
+    if( storeNoiseData ){ 
+        cout << " write noise data to : \t " << outname << endl;
+        outfile = new TFile( outname, "RECREATE" );
+    }
+    
     vector<TString> mode = { "dead" , "noisy" };
     
     TString histname;
     TH1I * readhist;
+    TH1D * meanhist;
+    TH2D * writehist;
     
     for( auto l : layer ){
         
@@ -240,44 +283,65 @@ void deadNnoisy(){
             }
             
             unsigned int nbins = readhist->GetXaxis()->GetNbins();
-            unsigned int lowEdge = readhist->GetXaxis()->GetXmin();
-            unsigned int highEdge = readhist->GetXaxis()->GetXmax();
-            unsigned int step = ( highEdge - lowEdge ) / (double)( nbins );
+//             unsigned int lowEdge = readhist->GetXaxis()->GetXmin();
+//             unsigned int highEdge = readhist->GetXaxis()->GetXmax();
+//             unsigned int step = ( highEdge - lowEdge ) / (double)( nbins );
             
             unsigned int nboards = nbins / stripsPerBoard;
+            unsigned int nAPV = nbins / stripsPerAPV;
             
-            double mean[nboards];
-            double stdv[nboards];
+            double mean[nAPV];
+            double stdv[nAPV];
             unsigned int counts[nboards];
             map< string , vector<unsigned int> > badChannel;
             
-            for(unsigned int b=0; b<nboards; b++){
-                mean[b] = 0.;
-                stdv[b] = 0.;
-                counts[b] = 0.;
+            for(unsigned int a=0; a<nAPV; a++){
+                mean[a] = 0.;
+                stdv[a] = 0.;
             }
+            
+            for(unsigned int b=0; b<nboards; b++) counts[b] = 0.;
         
             for(unsigned int b=1; b<=nbins; b++){
                 
-                unsigned int pcb = ( b - 1 ) / stripsPerBoard;
+                unsigned int apv = ( b - 1 ) / stripsPerAPV;
                 int content = readhist->GetBinContent( b );
                 
-                mean[pcb] += content;
-                stdv[pcb] += content * content;
+                mean[apv] += content;
+                stdv[apv] += content * content;
                 
             }
             
-            for(unsigned int b=0; b<nboards; b++){
-                stdv[b] = sqrt( ( stdv[b] - mean[b] * mean[b] / stripsPerBoard ) / ( stripsPerBoard - 1 ) );
-                mean[b] /= stripsPerBoard;
+            histname = m;
+            histname += "Mean_";
+            histname += l.first;
+            meanhist = new TH1D( histname , histname , nAPV , 0.5 , nbins+0.5 );
+            
+            for(unsigned int a=0; a<nAPV; a++){
+                stdv[a] = sqrt( ( stdv[a] - mean[a] * mean[a] / stripsPerAPV ) / ( stripsPerAPV - 1 ) );
+                mean[a] /= stripsPerAPV;
+                meanhist->SetBinContent( a+1 , mean[a] );
+                meanhist->SetBinError( a+1 , stdv[a] );
             }
+            
+            histname = m;
+            histname += "Variation_";
+            histname += l.first;
+            writehist = new TH2D( histname , histname , nAPV , 0.5 , nbins+0.5 , stripsPerAPV , 0.5 , stripsPerAPV+0.5 );
         
             for(unsigned int b=1; b<=nbins; b++){
                 
+                unsigned int apvChannel = ( b - 1 ) % stripsPerAPV + 1; 
+                if( ( ( b - 1 ) / stripsPerAdapter ) % 2 == 1 ) apvChannel = stripsPerAPV - apvChannel + 1;
+                unsigned int apv = ( b - 1 ) / stripsPerAPV;
                 unsigned int pcb = ( b - 1 ) / stripsPerBoard;
-                int content = readhist->GetBinContent( b );
                 
-                if( content > mean[pcb] + 3. * stdv[pcb] ){
+                int content = readhist->GetBinContent( b );
+                double normalizedDeviation = ( content - mean[apv] ) / stdv[apv];
+                
+                writehist->Fill( b , apvChannel , normalizedDeviation );
+                
+                if( content > mean[apv] + 3. * stdv[apv] ){
                     
                     counts[pcb]++;
                     
@@ -292,6 +356,12 @@ void deadNnoisy(){
                     
                 }
                 
+            }
+            
+            if( storeNoiseData ){
+                outfile->cd();
+                meanhist->Write();
+                writehist->Write();
             }
             
             for(unsigned int b=0; b<nboards; b++){
@@ -315,6 +385,8 @@ void deadNnoisy(){
         }
         
     }
+    
+    if( storeNoiseData ) outfile->Close();
     
 }
 
@@ -363,8 +435,8 @@ void amplificationScan(){
         for( auto det : layer ){
             
             TString histname = det.first;
-//             histname += "_coincidenceEffi";
-            histname += "_nearEfficiency";
+            if(useCoincidence) histname += "_coincidenceEffi";
+            else histname += "_nearEfficiency";
             
             TH2D * readhist = (TH2D*)infile->Get(histname);
         
@@ -456,9 +528,10 @@ void amplificationScan(){
     gStyle->SetTitleX(0.5);
     gStyle->SetTitleAlign(23);
     gStyle->SetOptStat(0);
-    gStyle->SetOptTitle(1);
-//     gStyle->SetPadTopMargin(    0.020 );
-    gStyle->SetPadTopMargin(    0.080 );
+//     gStyle->SetOptTitle(1);
+    gStyle->SetOptTitle(0);
+    gStyle->SetPadTopMargin(    0.020 );
+//     gStyle->SetPadTopMargin(    0.080 );
     gStyle->SetPadRightMargin(  0.010 );
     gStyle->SetPadBottomMargin( 0.110 );
     gStyle->SetPadLeftMargin(   0.105 );
@@ -532,8 +605,8 @@ void amplificationScan(){
         overLayered[ l.first ]->GetXaxis()->SetTitle( "amplification voltage [V]" );
 //         overLayered[ l.first ]->GetXaxis()->SetRangeUser( 500. , 600. );
         overLayered[ l.first ]->GetYaxis()->SetTitle( "efficiency" );
-//         overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0.3 , 1. );
-        overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0. , 1. );
+        overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0.5 , 1. );
+//         overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0. , 1. );
         overLayered[ l.first ]->Draw("APL");
         
 //         can->BuildLegend( 0.13 , 0.64 , 0.25 , 0.96 );
