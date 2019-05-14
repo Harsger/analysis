@@ -837,7 +837,7 @@ void analysis::investigateCRF(){
             histname += detectornames.at(d);
         }
 //         difVSslope_coincident[d] = new TH2I(histname, histname, 120, -0.6, 0.6, 2000, -100., 100.);
-        difVSslope_coincident[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -100., 100.);
+        difVSslope_coincident[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -10., 10.);
         difVSslope_coincident[d]->SetXTitle("slope y (average MDTs)");
         difVSslope_coincident[d]->SetYTitle("residual y [mm]");  
                 
@@ -1865,6 +1865,10 @@ void analysis::investigateCRF(){
         track[1][0] = 0.5 * ( interceptY[0] + interceptY[1] );
         track[0][1] = slopeX;
         track[1][1] = 0.5 * ( slopeY[0] + slopeY[1] );
+//         track[0][0] = interceptX;
+//         track[1][0] = interceptY[1];
+//         track[0][1] = slopeX;
+//         track[1][1] = slopeY[1];
         
 //         if( abs( slopeY[0] - slopeY[1] ) > 1e-2 ) continue;
 //         if( abs( mdtslope ) > 1e-1 ) continue;
@@ -2962,7 +2966,7 @@ void analysis::investigateCRF(){
             
             if( leadCentroid[d][1] > -1e5 && leadCentroid[other][1] > -1e5 ){ 
                 
-                double detDifference = leadCentroid[d][1] - leadCentroid[other][1];
+                double detDifference = leadCentroid[d][1] - leadCentroid[other][1] /*- mdtslope * ( position.at(d).at(2) - position.at(other).at(2) )*/;
                 if(useAngle) difVSslope_coincident[d]->Fill( mdtangle , detDifference );
                 else difVSslope_coincident[d]->Fill( mdtslope , detDifference );
                 
