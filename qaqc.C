@@ -87,6 +87,7 @@ TString modulePrefix = "MMS2000";
 bool useDoublet = false;
 bool storeNoiseData = false;
 bool useCoincidence = false;
+bool excludeBadChannel = false;
 
 void deadNnoisy();
 void amplificationScan();
@@ -113,6 +114,7 @@ int main(int argc, char* argv[]){
         "\n"
         " additional option for dead and noisy channel (-d) \n"
         " -S\tstore results in separate root file \n"
+        " -E\texclude noisy channel of APV \n"
         "\n"
         " additional option for amplification scan (-a) \n"
         " -C\tcoincidence efficiency \n"
@@ -126,7 +128,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ( ( c = getopt( argc , argv , "n:d:a:m:DSCe:o:" ) ) != -1 ){
+    while ( ( c = getopt( argc , argv , "n:d:a:m:DSECe:o:" ) ) != -1 ){
         switch( c ){
             case 'n':
                 moduleNumber = atoi( optarg );
@@ -145,6 +147,9 @@ int main(int argc, char* argv[]){
                 break;
             case 'S':
                 storeNoiseData = true;
+                break;
+            case 'E':
+                excludeBadChannel = true;
                 break;
             case 'C':
                 useCoincidence = true;
@@ -245,6 +250,16 @@ int main(int argc, char* argv[]){
 
 void deadNnoisy(){
     
+    vector<short> badPedestalChannel = { 1 , 3 , 19 , 36 , 39 , 43 , 47 , 99 , 103 , 107 , 111 };
+    vector<short> badCosmicChannel = { 65 , 71 , 75 , 79 , 83 , 87 , 91 , 95 , 99 , 128 };
+    
+    if( !(excludeBadChannel) ){
+        badPedestalChannel.clear();
+        badCosmicChannel.clear();
+    }
+            
+    unsigned int usedChannel = stripsPerAPV - badCosmicChannel.size();
+    
     TFile * infile = new TFile( deadNoiseName , "READ" );
     
     if( infile->IsZombie() ){
@@ -302,13 +317,43 @@ void deadNnoisy(){
             
             for(unsigned int b=0; b<nboards; b++) counts[b] = 0.;
         
+            bool skipNoisy = false;
+            if( m.EqualTo("noisy") && excludeBadChannel ){ 
+                skipNoisy = true;
+                usedChannel = stripsPerAPV - badCosmicChannel.size();
+            }
+            else usedChannel = stripsPerAPV;
+            
             for(unsigned int b=1; b<=nbins; b++){
+                
+                unsigned int apvChannel = ( b - 1 ) % stripsPerAPV + 1;
+                if( skipNoisy && find( badCosmicChannel.begin() , badCosmicChannel.end() , apvChannel ) != badCosmicChannel.end() ){ 
+//                     cout << " discarded \t" << b << "\t" << apvChannel << endl;
+                    continue;
+                }
                 
                 unsigned int apv = ( b - 1 ) / stripsPerAPV;
                 int content = readhist->GetBinContent( b );
                 
                 mean[apv] += content;
-                stdv[apv] += content * content;
+//                 stdv[apv] += content * content;
+                
+            }
+            
+            for(unsigned int a=0; a<nAPV; a++) mean[a] /= usedChannel;
+            
+            for(unsigned int b=1; b<=nbins; b++){
+                
+                unsigned int apvChannel = ( b - 1 ) % stripsPerAPV + 1;
+                if( skipNoisy && find( badCosmicChannel.begin() , badCosmicChannel.end() , apvChannel ) != badCosmicChannel.end() ){ 
+//                     cout << " discarded \t" << b << "\t" << apvChannel << endl;
+                    continue;
+                }
+                
+                unsigned int apv = ( b - 1 ) / stripsPerAPV;
+                int content = readhist->GetBinContent( b );
+                
+                stdv[apv] += ( content - mean[apv] ) * ( content - mean[apv] );
                 
             }
             
@@ -318,8 +363,10 @@ void deadNnoisy(){
             meanhist = new TH1D( histname , histname , nAPV , 0.5 , nbins+0.5 );
             
             for(unsigned int a=0; a<nAPV; a++){
-                stdv[a] = sqrt( ( stdv[a] - mean[a] * mean[a] / stripsPerAPV ) / ( stripsPerAPV - 1 ) );
-                mean[a] /= stripsPerAPV;
+                stdv[a] = sqrt( stdv[a] / usedChannel );
+//                 stdv[a] = sqrt( ( stdv[a] - mean[a] * mean[a] / usedChannel ) / ( usedChannel - 1 ) );
+//                 mean[a] /= usedChannel;
+//                 cout << l.first << "\t" << a << "\t" << mean[a] << "\t" << stdv[a] << endl;
                 meanhist->SetBinContent( a+1 , mean[a] );
                 meanhist->SetBinError( a+1 , stdv[a] );
             }
@@ -339,9 +386,15 @@ void deadNnoisy(){
                 int content = readhist->GetBinContent( b );
                 double normalizedDeviation = ( content - mean[apv] ) / stdv[apv];
                 
+//                 cout << " " << l.first << "\t" << b << "\t" << apvChannel << "\t" << content << "\t" << mean[apv] << "\t" << stdv[apv] << "\t" << normalizedDeviation << endl;
+                
+//                 writehist->SetBinContent( apv+1 , apvChannel , normalizedDeviation );
                 writehist->Fill( b , apvChannel , normalizedDeviation );
                 
                 if( content > mean[apv] + 3. * stdv[apv] ){
+                
+                    unsigned int apvChannel = ( b - 1 ) % stripsPerAPV + 1;
+                    if( skipNoisy && find( badCosmicChannel.begin() , badCosmicChannel.end() , apvChannel ) != badCosmicChannel.end() ) continue;
                     
                     counts[pcb]++;
                     
