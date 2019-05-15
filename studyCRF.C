@@ -187,12 +187,41 @@ void analysis::study(){
     
 //     outfile->cd();
     
+    unsigned int mdtSlopeDivision = 30;
+    double mdtSlopeRange = 0.6;
+                
+    histname = "hitDistribution";
+    TH2I* hitDistribution = new TH2I(histname, histname, binning[0] , range[0][0] , range[0][1] , binning[1] , range[1][0] , range[1][1]);
+    hitDistribution->SetXTitle("position along wires [mm]");
+    hitDistribution->SetYTitle("position perpendicular to wires [mm]"); 
+                
+    histname = "slopeVSslope";
+    TH2I* slopeVSslope = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange);
+    slopeVSslope->SetXTitle("slope x (scintillators)");
+    slopeVSslope->SetYTitle("slope y (average MDTs)"); 
+                
+    histname = "interceptDifVSslope";
+    TH2I* interceptDifVSslope = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 4000, -100., 100.);
+    interceptDifVSslope->SetXTitle("slope y (average MDTs)");
+    interceptDifVSslope->SetYTitle("MDT intercept difference [mm]"); 
+                
+    histname = "slopeDifferenceVSslope";
+    TH2I* slopeDifferenceVSslope = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 4000, -0.1, 0.1);
+    slopeDifferenceVSslope->SetXTitle("slope y (average MDTs)");
+    slopeDifferenceVSslope->SetYTitle("MDT slope difference");   
+                
+    histname = "interceptDifVSslopeDif";
+    TH2I* interceptDifVSslopeDif = new TH2I(histname, histname, 2000, -0.1, 0.1, 2000, -100., 100.);
+    interceptDifVSslopeDif->SetXTitle("MDT slope difference");
+    interceptDifVSslopeDif->SetYTitle("MDT intercept difference [mm]"); 
+    
     TH3D * intersect = new TH3D( "intersect" , "intersect" , binning[0] , range[0][0] , range[0][1] , binning[1] , range[1][0] , range[1][1] , binning[2] , range[2][0] , range[2][1] );
     TH3D * intersectWeight = new TH3D( "intersectWeight" , "intersectWeight" , binning[0] , range[0][0] , range[0][1] , binning[1] , range[1][0] , range[1][1] , binning[2] , range[2][0] , range[2][1] );
     
     TH2D *** intersection = new TH2D**[3]; 
     TH2D *** intersectionWeighted = new TH2D**[3]; 
     
+    TH2I *** slopeDifVSslope = new TH2I**[divisions[0]];
     TH2I *** resVSslope = new TH2I**[divisions[0]];
     
     for(unsigned int c=0; c<3; c++){
@@ -237,9 +266,19 @@ void analysis::study(){
     
     for(unsigned int x=0; x<divisions[0]; x++){
         
+        slopeDifVSslope[x] = new TH2I*[divisions[1]];
         resVSslope[x] = new TH2I*[divisions[1]];
         
         for(unsigned int y=0; y<divisions[1]; y++){
+            
+            histname = "slopeDifVSslope";
+            histname += "_x";
+            histname += x;
+            histname += "_y";
+            histname += y;
+            slopeDifVSslope[x][y] = new TH2I(histname,histname, 30, -0.6, 0.6, 1000, -0.1, 0.1);
+            slopeDifVSslope[x][y]->SetXTitle("slope y (average MDTs)");
+            slopeDifVSslope[x][y]->SetXTitle("MDT slope difference");
             
             histname = "resVSslope";
             histname += "_x";
@@ -271,7 +310,7 @@ void analysis::study(){
     
     double ix, sx, iy[2], sy[2];
     unsigned int outputevents = 100000;
-    if(raw) outputevents = 10000;
+    if(raw) outputevents = 1000;
 
     for (Long64_t entry=toStart; entry<toEnd; entry++) {
     
@@ -305,8 +344,18 @@ void analysis::study(){
 //         track[0][1] = sx;
 //         track[1][1] = 0.5 * ( sy[0] + sy[1] );
         
+        double meanIntercept = 0.5 * ( iy[0] + iy[1] );
+        double interceptDifference = iy[0] - iy[1];
+        
+        double meanSlope = 0.5 * ( sy[0] + sy[1] );
         double slopedifference = sy[0] - sy[1];
         double slopeDif = abs( slopedifference );
+        
+        hitDistribution->Fill( ix , meanIntercept );
+        slopeVSslope->Fill( sx , meanSlope );
+        interceptDifVSslope->Fill( meanSlope , interceptDifference );
+        slopeDifferenceVSslope->Fill( meanSlope , slopedifference );
+        interceptDifVSslopeDif->Fill( slopedifference , interceptDifference );
         
         double hit[3];
         
@@ -330,7 +379,8 @@ void analysis::study(){
         
         for(unsigned int c=0; c<3; c++) div[c] = ( hit[c] - range[c][0] ) / width[c];
         
-        resVSslope[div[0]][div[1]]->Fill( 0.5*(sy[0]+sy[1]), iy[0]-iy[1]);
+        slopeDifVSslope[div[0]][div[1]]->Fill( meanSlope, slopedifference );
+        resVSslope[div[0]][div[1]]->Fill( meanSlope, interceptDifference );
         
         for(unsigned int c=0; c<3; c++){ 
             
@@ -355,6 +405,12 @@ void analysis::study(){
     cout << " writing results ... ";
     
     outfile->cd();
+        
+    hitDistribution->Write();
+    slopeVSslope->Write();
+    interceptDifVSslope->Write();
+    slopeDifferenceVSslope->Write();
+    interceptDifVSslopeDif->Write();
     
     intersect->Write();
     intersectWeight->Write();
@@ -368,6 +424,12 @@ void analysis::study(){
             
         }
         
+    }
+    
+    for(unsigned int x=0; x<divisions[0]; x++){
+        for(unsigned int y=0; y<divisions[1]; y++){
+            slopeDifVSslope[x][y]->Write();
+        }
     }
     
     for(unsigned int x=0; x<divisions[0]; x++){
