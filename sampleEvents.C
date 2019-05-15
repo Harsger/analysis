@@ -20,6 +20,7 @@
 int main(int argc, char* argv[]){
     
     TString readname = "";
+    TString datapath = "";
     TString writename = "";
     int start = 0;
     int end = -1;
@@ -31,7 +32,8 @@ int main(int argc, char* argv[]){
         "       fitNclust [options]\n"
         "\n"
         " -i\tname of inputfile     \t(default:  \"" << readname << "\")\n"
-        " -o\tname of outputfile    \t(default:  \"" << writename << "\")\n"
+        " -d\tdata directory        \t(default:  \"" << readname << "\")\n"
+        " -o\toutput name or path   \t(default:  \"" << writename << "\")\n"
         " -p\tname of paramterfile  \t(default:  \"" << params << "\")\n"
         " -s\tstart event number    \t(default:  \"" << start << "\")\n"
         " -e\tend event number      \t(default:  \"" << end << "\"->whole file)\n"
@@ -41,11 +43,14 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "i:o:p:s:e:D")) != -1) {
+    while ((c = getopt (argc, argv, "i:d:o:p:s:e:D")) != -1) {
         switch (c)
         {
         case 'i':
             readname = optarg;
+            break;
+        case 'd':
+            datapath = optarg;
             break;
         case 'o':
             writename = optarg;
@@ -70,6 +75,25 @@ int main(int argc, char* argv[]){
             abort ();
         }
     }
+    
+    TString dataname = readname;
+    
+    if( datapath != "" ){
+        dataname = datapath;
+        dataname += "/";
+        dataname += readname;
+    }
+  
+    TString outname = writename;
+    if( !( writename.Contains(".root") ) ){
+        outname += "/";
+        TString toRename = readname;
+        toRename = toRename.ReplaceAll( ".root" , "_sample.root" );
+        outname += toRename;
+    }
+    
+    readname = dataname;
+    writename = outname;
   
     cout << " inputfile          : " << readname << "\n";
     cout << " outputfile         : " << writename << "\n";
@@ -115,7 +139,8 @@ int main(int argc, char* argv[]){
 
 void analysis::sampleEvents(){
     
-    unsigned int recordEvents = 500;
+//     unsigned int recordEvents = 500;
+    unsigned int recordEvents = 1;
     
     if(debug) cout << " sampling " << recordEvents << " events " << endl;
     
@@ -124,8 +149,73 @@ void analysis::sampleEvents(){
     outfile = new TFile(outname,"RECREATE");
     outfile->cd();
     
+    unsigned int stripsPerAPV = 128;
+    unsigned int stripsPerAdapter = 512;
+    unsigned int stripsPerBoard = 1024;
+    TString title;
+    
+    vector<short> badPedestalChannel = { 3 , 19 , 36 , 39 , 43 , 47 , 99 , 103 , 107 , 111 };
+    vector<short> badCosmicChannel = { 65 , 71 , 75 , 79 , 83 , 87 , 91 , 95 , 99 , 128 };
+    
+    TH2I *** signalShape = new TH2I**[3];
+    
+    for(unsigned int s=0; s<3; s++){
+        signalShape[s] = new TH2I*[2];
+        for(unsigned int a=0; a<2; a++){
+            title = "signalShape";
+            if(s==1) title += "_badPedestalChannel";
+            else if(s==2) title += "_badCosmicChannel";
+            title += "_";
+            if(a==1) title += "in";
+            else title += "out";
+            signalShape[s][a] = new TH2I( title , title , 30 , 0. , 30. , 2500 , -500. , 2000. );
+        }
+    }
+    
+    TH2I **** stripHits = new TH2I***[ndetectors];
+    TH2D **** stripSignal = new TH2D***[ndetectors];
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+        
+        stripHits[d] = new TH2I**[2];
+        stripSignal[d] = new TH2D**[2];
+        
+        for(unsigned int r=0; r<2; r++){
+            
+            if( detstrips.at(d).at(r) == 0 ) continue;
+        
+            stripHits[d][r] = new TH2I*[2];
+            stripSignal[d][r] = new TH2D*[2];
+            
+            for(unsigned int a=0; a<2; a++){
+            
+                title = "stripHits_";
+                title += detectornames.at(d);
+                title += "_";
+                if(r==1) title += "y";
+                else title += "x";
+                title += "_";
+                if(a==1) title += "in";
+                else title += "out";
+                stripHits[d][r][a] = new TH2I(title,title,detstrips.at(d).at(r),0.5,detstrips.at(d).at(r)+0.5,30,0.,30.);
+                
+                title = "stripSignal_";
+                title += detectornames.at(d);
+                title += "_";
+                if(r==1) title += "y";
+                else title += "x";
+                title += "_";
+                if(a==1) title += "in";
+                else title += "out";
+                stripSignal[d][r][a] = new TH2D(title,title,detstrips.at(d).at(r),0.5,detstrips.at(d).at(r)+0.5,30,0.,30.);
+                
+            }
+            
+        }
+    }
+    
     TH2D **** eventdisplay = new TH2D***[ndetectors];
-    TString title = "event";
+    title = "event";
     unsigned int written[ndetectors][2];
     
     for(unsigned int d=0; d<ndetectors; d++){
@@ -134,10 +224,11 @@ void analysis::sampleEvents(){
         
         for(unsigned int r=0; r<2; r++){
             
+            written[d][r] = 0;
+            
             if( detstrips.at(d).at(r) < 1 ) continue;
             
             eventdisplay[d][r] = new TH2D*[recordEvents];
-            written[d][r] = 0;
             
             for(unsigned int e=0; e<recordEvents; e++){
                 
@@ -177,7 +268,7 @@ void analysis::sampleEvents(){
 
     for (Long64_t entry=toStart; entry<toEnd; entry++) {
     
-        if(/*entry%1000==0 || debug*/true) cout << "--------------event_" << entry << "_" << endl;
+        if(entry%1000==0 || debug/*true*/) cout << "--------------event_" << entry << "_" << endl;
         
         data->GetEntry(entry);
         
@@ -195,6 +286,71 @@ void analysis::sampleEvents(){
             }
             if(inCRF) cout << " X " << _bx[0] << " " << _mx[0] << " Y " << 0.5*(_by[0]+_by[1]) << " " << 0.5*(_my[0]+_my[1]) << endl;
         }
+        
+        double track[2][2];
+        if(inCRF){
+            track[0][0] = _bx[0];
+            track[1][0] = 0.5 * ( _by[0] + _by[1] );
+            track[0][1] = _mx[0];
+            track[1][1] = 0.5 * ( _my [0] + _my[1] );
+        }
+        
+        unsigned int hitINdetector[ndetectors];
+        
+        for(unsigned int d=0; d<ndetectors; d++){
+            
+            if(!inCRF){
+                hitINdetector[d] = 1;
+                continue;
+            }
+            
+            hitINdetector[d] = 0;
+    
+            vector<double> intersection = CalcIntersection( track, d);
+            
+            int xpart = (int)( ( intersection.at(0) - position.at(d).at(0) + length.at(d).at(0) * 0.5 ) / length.at(d).at(0) * divisions.at(d).at(0) ); 
+            int ypart = (int)( ( intersection.at(1) - position.at(d).at(1) + length.at(d).at(1) * 0.5 ) / length.at(d).at(1) * divisions.at(d).at(1) ); 
+            if(
+                xpart < 0 || 
+                xpart >= divisions.at(d).at(0) || 
+                ypart < 0 || 
+                ypart >= divisions.at(d).at(1) 
+            ) hitINdetector[d] = 1;
+        }
+        
+        unsigned int foundStrips = mm_strip->size();
+        
+        for(unsigned int s=0; s<foundStrips; s++){
+            
+            string stripDetname = mm_id->at(s);
+            int det = -1;
+            
+            for(unsigned int d=0; d<ndetectors; d++){
+                if( stripDetname.find( detectornames.at(d) ) != std::string::npos ) det = d;
+            }
+            
+            if( det < 0 ) continue;
+            
+            unsigned int readout = mm_readout->at(s);
+            unsigned int stripnumber = mm_strip->at(s);
+            unsigned int apvChannel = ( stripnumber - 1 ) % stripsPerAPV + 1; 
+            unsigned int badType = 0;
+            
+            if( find( badPedestalChannel.begin() , badPedestalChannel.end() , apvChannel ) != badPedestalChannel.end() ) badType = 1;
+            if( find( badCosmicChannel.begin() , badCosmicChannel.end() , apvChannel ) != badCosmicChannel.end() ) badType = 2;
+            
+            unsigned int nBins = apv_q->at(s).size();
+            
+            for(unsigned int t=0; t<nBins; t++){
+                short charge = apv_q->at(s).at(t);
+                signalShape[badType][hitINdetector[det]]->Fill( t , charge );
+                stripHits[det][readout][hitINdetector[det]]->Fill( stripnumber , t );
+                stripSignal[det][readout][hitINdetector[det]]->Fill( stripnumber , t , charge );
+            }
+                
+        }
+        
+        continue;
         
         if( inCRF && (
                      0.5 * ( _my[0] + _my[1] ) < 0.3 ||
