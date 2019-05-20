@@ -459,6 +459,7 @@ void amplificationScan(){
     
     vector<double> ampVoltages;
     vector< vector<TH2D*> > effiHists;
+    vector< vector<TH2D*> > chargeHists;
     
     while( ( readfile = (TSystemFile*)next() ) ){ 
         
@@ -484,6 +485,7 @@ void amplificationScan(){
         ampVoltages.push_back( atof( voltage.Data() ) );
         
         vector<TH2D*> effiPerDet;
+        vector<TH2D*> chargePerDet;
         
         for( auto det : layer ){
             
@@ -499,10 +501,23 @@ void amplificationScan(){
             }
         
             effiPerDet.push_back( readhist );
+            
+            histname = det.first;
+            histname += "_clusterChargeMPV";
+            
+            readhist = (TH2D*)infile->Get(histname);
+        
+            if( readhist == NULL ){ 
+                cout << " ERROR : can not find histogram " << histname << " => abort " << endl;
+                return;
+            }
+        
+            chargePerDet.push_back( readhist );
         
         }
         
         effiHists.push_back( effiPerDet );
+        chargeHists.push_back( chargePerDet );
         
 //         infile->Close();
         
@@ -511,6 +526,7 @@ void amplificationScan(){
     vector<unsigned int> voltOrder = getSortedIndices( ampVoltages );
     
     map< string , TGraphErrors* > effiVSamp;
+    map< string , TGraphErrors* > chargeVSamp;
         
     for( auto l : layer ){
         
@@ -525,6 +541,12 @@ void amplificationScan(){
                 
                 writer[tag].clear();
                 effiVSamp[tag] = new TGraphErrors();
+                    
+                TString strDummy = tag;
+                strDummy.ReplaceAll("efficiency","charge");
+                tag = strDummy.Data();
+                    
+                chargeVSamp[tag] = new TGraphErrors();
                 
             }
             
@@ -539,14 +561,15 @@ void amplificationScan(){
         
         for( auto l : layer ){
             
-            TH2D * usehist = effiHists.at( voltOrder.at(v) ).at(d);
+            TH2D * ehist = effiHists.at( voltOrder.at(v) ).at(d);
+            TH2D * qhist = chargeHists.at( voltOrder.at(v) ).at(d);
             
             for( auto p : PCBrow ){
                 
                 for( auto s : SideColumn ){
                     
-                    double efficiency = usehist->GetBinContent( s.second , p.second );
-                    double effiError = usehist->GetBinError( s.second , p.second );
+                    double efficiency = ehist->GetBinContent( s.second , p.second );
+                    double effiError = ehist->GetBinError( s.second , p.second );
                     
                     string tag = l.second;
                     tag += s.first;
@@ -565,6 +588,13 @@ void amplificationScan(){
                     
                     effiVSamp[tag]->SetPoint( effiVSamp[tag]->GetN() , voltage , efficiency );
                     effiVSamp[tag]->SetPointError( effiVSamp[tag]->GetN()-1 , 1. , effiError );
+                    
+                    TString strDummy = tag;
+                    strDummy.ReplaceAll("efficiency","charge");
+                    tag = strDummy.Data();
+                    
+                    chargeVSamp[tag]->SetPoint( chargeVSamp[tag]->GetN() , voltage , qhist->GetBinContent( s.second , p.second ) );
+                    chargeVSamp[tag]->SetPointError( chargeVSamp[tag]->GetN()-1 , 1. , qhist->GetBinError( s.second , p.second ) );
                     
                 }
                 
@@ -585,9 +615,9 @@ void amplificationScan(){
     gStyle->SetOptTitle(0);
     gStyle->SetPadTopMargin(    0.020 );
 //     gStyle->SetPadTopMargin(    0.080 );
-    gStyle->SetPadRightMargin(  0.010 );
+    gStyle->SetPadRightMargin(  0.025 );
     gStyle->SetPadBottomMargin( 0.110 );
-    gStyle->SetPadLeftMargin(   0.105 );
+    gStyle->SetPadLeftMargin(   0.118 );
     double labelSize = 0.05;
     gStyle->SetLabelSize( labelSize , "x" );
     gStyle->SetTitleSize( labelSize , "x" );
@@ -596,7 +626,7 @@ void amplificationScan(){
     gStyle->SetLabelSize( labelSize , "z" );
     gStyle->SetTitleSize( labelSize , "z" );
     gStyle->SetTitleOffset( 1.0 , "x" );
-    gStyle->SetTitleOffset( 1.0 , "y" );
+    gStyle->SetTitleOffset( 1.2 , "y" );
 //     gStyle->SetTitleOffset( 1.2 , "z" );
     gROOT->ForceStyle();
     
@@ -610,77 +640,90 @@ void amplificationScan(){
             { 21 , 9 } ,
             { 25 , 46 } 
         };
-    
-    map< string , TMultiGraph* > overLayered;
-    map< string , bool > firstFilled;
-    for( auto l : layer ){ 
-        firstFilled[ l.first ] = false;
-        overLayered[ l.first ] = new TMultiGraph();
-    }
-    
-//     TFile * testOut = new TFile( "testOut.root" , "RECREATE" );
-    
-    for( auto l : layer ){
         
-        for( auto g : effiVSamp ){
+    vector<TString> mode = { "efficiency" , "charge" };
+        
+    for( auto m : mode ){
+    
+        map< string , TMultiGraph* > overLayered;
+        map< string , bool > firstFilled;
+        for( auto l : layer ){ 
+            firstFilled[ l.first ] = false;
+            overLayered[ l.first ] = new TMultiGraph();
+        }
+        
+        map< string , TGraphErrors* > toIterateOver = effiVSamp;
+        if( m == "charge" ) toIterateOver = chargeVSamp;
+        
+        for( auto l : layer ){
             
-            TString sectorID = g.first;
-            sectorID.ReplaceAll( "efficiency" , "" );
-        
-            if( sectorID.Contains( l.second ) ){
+            for( auto g : toIterateOver ){
                 
+                TString sectorID = g.first;
+                sectorID.ReplaceAll( m , "" );
+            
+                if( sectorID.Contains( l.second ) ){
+                    
+                    g.second->SetTitle( sectorID );
+                    g.second->SetName( sectorID );
+                    
+                    unsigned int n = 0;
+                    if( firstFilled[ l.first ] ) n = overLayered[ l.first ]->GetListOfGraphs()->GetEntries();
+                    else firstFilled[ l.first ] = true;
+                    g.second->SetMarkerStyle( plotStyle[n][0] );
+                    g.second->SetMarkerColor( plotStyle[n][1] );
+                    g.second->SetMarkerSize( 1.5 );
+                    g.second->SetLineColor( plotStyle[n][1] );
+                    overLayered[ l.first ]->Add( g.second , "P" );
+                    
+                }
+                
+                sectorID = g.first;
+                sectorID.ReplaceAll( m , "" );
                 g.second->SetTitle( sectorID );
                 g.second->SetName( sectorID );
                 
-                unsigned int n = 0;
-                if( firstFilled[ l.first ] ) n = overLayered[ l.first ]->GetListOfGraphs()->GetEntries();
-                else firstFilled[ l.first ] = true;
-                g.second->SetMarkerStyle( plotStyle[n][0] );
-                g.second->SetMarkerColor( plotStyle[n][1] );
-                g.second->SetMarkerSize( 1.5 );
-                g.second->SetLineColor( plotStyle[n][1] );
-                overLayered[ l.first ]->Add( g.second , "P" );
-                
             }
             
-            sectorID = g.first;
-            sectorID.ReplaceAll( "efficiency" , "" );
-            g.second->SetTitle( sectorID );
-            g.second->SetName( sectorID );
+            TString name = moduleName;
+            name += "_";
+            name += l.second;
+            
+            overLayered[ l.first ]->SetTitle( name );
+            overLayered[ l.first ]->GetXaxis()->SetTitle( "amplification voltage [V]" );
+//             overLayered[ l.first ]->GetXaxis()->SetRangeUser( 500. , 600. );
+            overLayered[ l.first ]->GetYaxis()->SetTitle( "efficiency" );
+            overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0.5 , 1. );
+            if( m == "charge" ){ 
+                overLayered[ l.first ]->GetYaxis()->SetTitle( "MPV cluster charge [ADC channel]" );
+                overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0. , 3000. );
+            }
+//             overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0. , 1. );
+            overLayered[ l.first ]->Draw("APL");
+            
+//             can->BuildLegend( 0.13 , 0.64 , 0.25 , 0.96 );
+            can->BuildLegend( 0.85 , 0.15 , 0.98 , 0.45 );
+            gPad->SetGridy();
+            gPad->Modified();
+            gPad->Update();
+            gPad->WaitPrimitive();
+            
+            name = outputDir;
+            name += "/";
+            name += moduleName;
+            name += l.second;
+            if( m == "charge") name += "ClusterQ";
+            name += "ampScan.png";
+            gPad->Print(name);
+            
+            name = outputDir;
+            name += "/";
+            name += l.second;
+            if( m == "charge") name += "ClusterQ";
+            name += "ampScan.pdf";
+            gPad->Print(name);
             
         }
-        
-        TString name = moduleName;
-        name += "_";
-        name += l.second;
-        
-        overLayered[ l.first ]->SetTitle( name );
-        overLayered[ l.first ]->GetXaxis()->SetTitle( "amplification voltage [V]" );
-//         overLayered[ l.first ]->GetXaxis()->SetRangeUser( 500. , 600. );
-        overLayered[ l.first ]->GetYaxis()->SetTitle( "efficiency" );
-        overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0.5 , 1. );
-//         overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0. , 1. );
-        overLayered[ l.first ]->Draw("APL");
-        
-//         can->BuildLegend( 0.13 , 0.64 , 0.25 , 0.96 );
-        can->BuildLegend( 0.85 , 0.15 , 0.98 , 0.45 );
-        gPad->SetGridy();
-        gPad->Modified();
-        gPad->Update();
-        gPad->WaitPrimitive();
-        
-        name = outputDir;
-        name += "/";
-        name += moduleName;
-        name += l.second;
-        name += "ampScan.png";
-        gPad->Print(name);
-        
-        name = outputDir;
-        name += "/";
-        name += l.second;
-        name += "ampScan.pdf";
-        gPad->Print(name);
         
     }
     
