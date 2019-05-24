@@ -32,16 +32,16 @@ map< string , string > layer = {
 };
 
 void fastPlot(
-    TString filename,
-    TString histPre = "chargeVSstrip"
+    TString filename = "test",
+    TString histPre = "chargeVSstrip_near"
 ){
             
     gROOT->SetStyle("Plain");
-    gStyle->SetPalette(kRainBow);
+//     gStyle->SetPalette(kRainBow);
     gStyle->SetTitleX(0.5);
     gStyle->SetTitleAlign(23);
-    gStyle->SetOptStat(10);
-    gStyle->SetOptTitle(1);
+    gStyle->SetOptStat(11);
+    gStyle->SetOptTitle(0);
     gStyle->SetPadTopMargin( 0.07 );
     gStyle->SetPadRightMargin( 0.03);
     gStyle->SetPadBottomMargin( 0.105 );
@@ -57,12 +57,13 @@ void fastPlot(
     gStyle->SetTitleOffset( 1.2 , "z" );
     gROOT->ForceStyle();
     
-    filename = "/project/etp4/mherrmann/analysis/results/basics/" + filename;
+//     filename = "/project/etp4/mherrmann/analysis/results/basics/" + filename;
+    filename = "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/m6_550V_eta3_630V_C200V_20190112_1451_b04_wStrip.root";
     TFile * infile = new TFile( filename , "READ" );
-    TH2I * readhist;
+//     TH2I * readhist;
     
     TCanvas * drawer = new TCanvas();
-    drawer->SetLogy();
+//     drawer->SetLogy();
     TVirtualPad * padle = gPad;
     
     if( infile->IsZombie() ){
@@ -72,19 +73,30 @@ void fastPlot(
     
     for( auto l : layer ){
         
-        TString histname = histPre + "_" + l.first + "_y";
+        TString histname = histPre + "_" + l.first;
         TH2I * readhist = (TH2I*)infile->Get( histname );
         TH1D * projection = readhist->ProjectionX();
+//         TString histname = histPre + "_" + l.first;
+//         TH1I * projection = (TH1I*)infile->Get( histname );
             
-        TString title = "stripHits_" + l.first;
-        projection->SetTitle( title );
+//         TString title = "stripHits_" + l.first;
+//         projection->GetXaxis()->SetTitle( "stripnumber" );
+//         projection->GetYaxis()->SetTitle( "hits per strip" );
         
+        TString title = "nearHits_" + l.first;
         projection->GetXaxis()->SetTitle( "stripnumber" );
-        projection->GetYaxis()->SetTitle( "hits per strip" );
+        projection->GetYaxis()->SetTitle( "hits" );
+        projection->GetYaxis()->SetRangeUser( 0., 16000. );
+        
+        projection->SetTitle( title );
+        projection->SetName( title );
         
         title = "anafiles/" + title + ".pdf";
         
-        projection->Draw("L");
+//         gPad->SetLogy();
+        gPad->SetGridy();
+        
+        projection->Draw("HIST");
         gPad->Modified();
         gPad->Update();
         gPad->WaitPrimitive();
