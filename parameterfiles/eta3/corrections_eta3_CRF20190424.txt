@@ -6,3 +6,8 @@ unix start 1556056800 end 1559253600
 
 etaBot     minClusterSize 2 effiRange 5
 etaTop     minClusterSize 2 effiRange 5
+
+etaBot FECnAPV 1 13 shift -0.425 FECnAPV 2 15 shift  0.425
+etaTop FECnAPV 0  1 shift  0.425 FECnAPV 2  6 shift -0.425
+
+etaTop FECnAPV 2  0 shift  -54.4 FECnAPV 2  1 shift -108.8

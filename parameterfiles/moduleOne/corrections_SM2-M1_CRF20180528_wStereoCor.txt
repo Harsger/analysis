@@ -5,7 +5,7 @@ FEC 3 triggerOffset 626.8
 FEC 4 triggerOffset 223.5 
 FEC 5 triggerOffset 215.4 
 
-useAngle
+uAngle
 
 uNewXtrack
 
@@ -30,3 +30,5 @@ uTPC_stereo_in.txt
 uTPC_stereo_out.txt
 
 COMMENTstereo shift 2 -41.2
+
+extrapolateTO -1.

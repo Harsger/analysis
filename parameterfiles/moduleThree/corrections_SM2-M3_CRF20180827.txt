@@ -13,3 +13,5 @@ stereo_in  minClusterSize 2 effiRange 5
 stereo_out minClusterSize 2 effiRange 5
 
 eta_in FEC 0 shift 0.425 FECnAPV 2 8 shift -0.425 FECnAPV 2 9 shift -0.425
+
+extrapolateTO 1.
