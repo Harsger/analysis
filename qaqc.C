@@ -86,6 +86,7 @@ TString modulePrefix = "MMS2000";
 
 bool useDoublet = false;
 bool storeNoiseData = false;
+bool compareAPVnoise = false;
 bool useCoincidence = false;
 bool excludeBadChannel = false;
 
@@ -113,8 +114,9 @@ int main(int argc, char* argv[]){
         " -D\tdoublet data will be used instead (etaBot,etaTop) \n"
         "\n"
         " additional option for dead and noisy channel (-d) \n"
-        " -S\tstore results in separate root file \n"
+        " -S\tstore noise data in separate root and txt file \n"
         " -E\texclude noisy channel of APV \n"
+        " -A\tAPV noise will be compared \n"
         "\n"
         " additional option for amplification scan (-a) \n"
         " -C\tcoincidence efficiency \n"
@@ -128,7 +130,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ( ( c = getopt( argc , argv , "n:d:a:m:DSECe:o:" ) ) != -1 ){
+    while ( ( c = getopt( argc , argv , "n:d:a:m:DSEACe:o:" ) ) != -1 ){
         switch( c ){
             case 'n':
                 moduleNumber = atoi( optarg );
@@ -150,6 +152,9 @@ int main(int argc, char* argv[]){
                 break;
             case 'E':
                 excludeBadChannel = true;
+                break;
+            case 'A':
+                compareAPVnoise = true;
                 break;
             case 'C':
                 useCoincidence = true;
@@ -268,7 +273,7 @@ void deadNnoisy(){
     }
     
     TString outname = deadNoiseName;
-//     if( outname.Contains('/') ) outname = outname( outname.Last('/')+1 , outname.Sizeof() );
+    if( outname.Contains('/') ) outname = outname( outname.Last('/')+1 , outname.Sizeof() );
     outname.ReplaceAll( ".root" , "_deadNnoisy.root" );
     
     TFile * outfile;
@@ -278,12 +283,35 @@ void deadNnoisy(){
         outfile = new TFile( outname, "RECREATE" );
     }
     
+    outname.ReplaceAll( ".root" , ".txt" );
+    ofstream writefile( outname.Data() );
+    
+    TH1F * APVnoiseMap;
+    
+    if( compareAPVnoise ){
+        TString filePosition = "/project/etp4/mherrmann/analysis/results/deadNnoisy/APVnoisyVariationMean.root";
+        TFile * APVnoiseFile = new TFile( filePosition , "READ");
+        if( APVnoiseFile->IsZombie() ){
+            cout << " WARNING : can not read APVnoiseFile at : " << filePosition << " => skip noise mapping " << endl;
+            compareAPVnoise = false;
+        }
+        else{
+            TString mapName = "noisyVariationVSapvChannel";
+            APVnoiseMap = (TH1F*)APVnoiseFile->Get(mapName);
+            if( APVnoiseMap == NULL ){
+                cout << " WARNING : can not read APVnoiseMap : " << mapName << " in : " << filePosition << " => skip noise mapping " << endl;
+                compareAPVnoise = false;
+            }
+        }
+    }
+    
     vector<TString> mode = { "dead" , "noisy" };
     
     TString histname;
     TH1I * readhist;
     TH1D * meanhist;
     TH2D * writehist;
+    TH1I * variationhist;
     
     for( auto l : layer ){
         
@@ -375,6 +403,11 @@ void deadNnoisy(){
             histname += "Variation_";
             histname += l.first;
             writehist = new TH2D( histname , histname , nAPV , 0.5 , nbins+0.5 , stripsPerAPV , 0.5 , stripsPerAPV+0.5 );
+            
+            histname = m;
+            histname += "VariationDistribution_";
+            histname += l.first;
+            variationhist = new TH1I( histname , histname , 200 , -10. , 10. );
         
             for(unsigned int b=1; b<=nbins; b++){
                 
@@ -386,10 +419,18 @@ void deadNnoisy(){
                 int content = readhist->GetBinContent( b );
                 double normalizedDeviation = ( content - mean[apv] ) / stdv[apv];
                 
+                if( compareAPVnoise && m == "noisy" )  normalizedDeviation -= APVnoiseMap->GetBinContent( apvChannel );
+                
 //                 cout << " " << l.first << "\t" << b << "\t" << apvChannel << "\t" << content << "\t" << mean[apv] << "\t" << stdv[apv] << "\t" << normalizedDeviation << endl;
                 
 //                 writehist->SetBinContent( apv+1 , apvChannel , normalizedDeviation );
                 writehist->Fill( b , apvChannel , normalizedDeviation );
+                variationhist->Fill( normalizedDeviation );
+                
+                if( storeNoiseData && m == "noisy" ){
+                    if( normalizedDeviation < -2.4 ) writefile << l.first << "\t dead \t " << b << "\t" << normalizedDeviation << endl;
+                    else if( normalizedDeviation > 2.4 ) writefile << l.first << "\t noisy \t " << b << "\t" << normalizedDeviation << endl;
+                }
                 
                 if( content > mean[apv] + 3. * stdv[apv] ){
                 
@@ -407,6 +448,8 @@ void deadNnoisy(){
                     
                     badChannel[ specifier ].push_back( b );
                     
+                    if( !storeNoiseData || m == "dead" ) writefile << l.first << "\t " << m << " \t " << b << "\t" << ( content - mean[apv] ) / stdv[apv] << endl;
+                    
                 }
                 
             }
@@ -415,6 +458,7 @@ void deadNnoisy(){
                 outfile->cd();
                 meanhist->Write();
                 writehist->Write();
+                variationhist->Write();
             }
             
             for(unsigned int b=0; b<nboards; b++){
