@@ -57,35 +57,44 @@ from array import array
         #[ "570V_20181022_2152" , "maxStripQvsSlope_board7_eta_in_stdv" , "570 V" ] 
     #]
     
-preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/driftScan/sm2_m3_560V_C" , "V_woCCC_cluPro.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/driftScan/sm2_m3_560V_C" , "V_woCCC_cluPro.root" ]
+
+#plotTags = [
+        #[ "100" , "nStripsVSslope_board7_eta_in_stdv" , "100 V" ] ,
+        #[ "150" , "nStripsVSslope_board7_eta_in_stdv" , "150 V" ] ,
+        #[ "200" , "nStripsVSslope_board7_eta_in_stdv" , "200 V" ] ,
+        #[ "250" , "nStripsVSslope_board7_eta_in_stdv" , "250 V" ] ,
+        #[ "300" , "nStripsVSslope_board7_eta_in_stdv" , "300 V" ] ,
+        #[ "350" , "nStripsVSslope_board7_eta_in_stdv" , "350 V" ] ,
+        #[ "400" , "nStripsVSslope_board7_eta_in_stdv" , "400 V" ] 
+    #]
+    
+preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/uTPCstudy/sm2_m1_570V_ZS2_20180601_0928_" , "_timed_angle_resolution.root" ]
 
 plotTags = [
-        [ "100" , "nStripsVSslope_board7_eta_in_stdv" , "100 V" ] ,
-        [ "150" , "nStripsVSslope_board7_eta_in_stdv" , "150 V" ] ,
-        [ "200" , "nStripsVSslope_board7_eta_in_stdv" , "200 V" ] ,
-        [ "250" , "nStripsVSslope_board7_eta_in_stdv" , "250 V" ] ,
-        [ "300" , "nStripsVSslope_board7_eta_in_stdv" , "300 V" ] ,
-        [ "350" , "nStripsVSslope_board7_eta_in_stdv" , "350 V" ] ,
-        [ "400" , "nStripsVSslope_board7_eta_in_stdv" , "400 V" ] 
+        [ "woCCC_tt" , "uTPCBroad_eta_in" , "without CCC" ] ,
+        [ "tt_CCC20" , "uTPCBroad_eta_in" , "20%" ] ,
+        [ "tt_CCC25" , "uTPCBroad_eta_in" , "25%" ] ,
+        [ "tt"       , "uTPCBroad_eta_in" , "30%" ] ,
+        [ "tt_CCC35" , "uTPCBroad_eta_in" , "35%" ] ,
+        [ "tt_CCC40" , "uTPCBroad_eta_in" , "40%" ] 
     ]
     
 #preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/uTPCstudy/sm2_m1_570V_ZS2_20180601_0928_" , "_wouTPCt0_cluPro.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/uTPCstudy/sm2_m1_570V_ZS2_20180601_0928_woCCC_" , "_wouTPCt0_cluPro.root" ]
 
 #plotTags = [
-        #[ "woCCC_tt" , "timeDifVSslope_board7_eta_in_stdv" , "without CCC" ] ,
-        #[ "tt_CCC20" , "timeDifVSslope_board7_eta_in_stdv" , "20%" ] ,
-        #[ "tt_CCC25" , "timeDifVSslope_board7_eta_in_stdv" , "25%" ] ,
-        #[ "tt"       , "timeDifVSslope_board7_eta_in_stdv" , "30%" ] ,
-        #[ "tt_CCC35" , "timeDifVSslope_board7_eta_in_stdv" , "35%" ] ,
-        #[ "tt_CCC40" , "timeDifVSslope_board7_eta_in_stdv" , "40%" ] 
+        #[ "tt"       , "timeDifVSslope_board7_eta_in_mean" , "inflection" ] ,
+        #[ "down"     , "timeDifVSslope_board7_eta_in_mean" , "baseline"   ] ,
+        #[ "up"       , "timeDifVSslope_board7_eta_in_mean" , "maximum"    ] 
     #]
     
-#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/uTPCstudy/sm2_m1_570V_ZS2_20180601_0928_" , "_wouTPCt0_cluPro.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleOne/uTPCstudy/sm2_m1_570V_ZS2_20180601_0928_" , "_uTPCtimed_study.root" ]
 
 #plotTags = [
-        #[ "tt"       , "timeDifVSslope_board7_eta_in_stdv" , "inflection" ] ,
-        #[ "moreFits" , "timeDifVSslope_board7_eta_in_stdv" , "baseline"   ] ,
-        #[ "up"       , "timeDifVSslope_board7_eta_in_stdv" , "maximum"    ] 
+        #[ "tt"   , "cluTime_uTPCres_SlopeVSslope_eta_in" , "inflection" ] ,
+        #[ "moreFits" , "cluTime_uTPCres_SlopeVSslope_eta_in" , "baseline"   ] ,
+        #[ "up"   , "cluTime_uTPCres_SlopeVSslope_eta_in" , "maximum"    ] 
     #]
     
 #preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/" , "_cluPro.root" ]
@@ -104,6 +113,17 @@ plotTags = [
         #[ "540V_eta3_610V_8515_20190306_1036" , "clusterQ_eta_out_x3_y2" , "L1R6 at 550 V" ] ,
         #[ "570V_eta3_590V_8515_20190307_1109" , "clusterQ_eta_out_x1_y2" , "L1L6 at 570 V" ] ,
         #[ "570V_eta3_590V_8515_20190307_1109" , "clusterQ_eta_out_x3_y2" , "L1R6 at 570 V" ] 
+    #]
+    
+#preNsuffix = [ "/project/etp3/mherrmann/driftSimulation/evaluated/Ar_100to70_CO2.root" , "" ]
+
+#plotTags = [
+        #[ "" , "Ar-CO2_94-6"  , "94:6" ] ,
+        #[ "" , "Ar-CO2_93-7"  , "93:7" ] ,
+        #[ "" , "Ar-CO2_92-8"  , "92:8" ] ,
+        #[ "" , "Ar-CO2_85-15" , "85:15" ] ,
+        #[ "" , "Ar-CO2_80-20" , "80:20" ] ,
+        #[ "" , "Ar-CO2_70-30" , "70:30" ] 
     #]
 
 def main(argv):
@@ -171,15 +191,23 @@ def main(argv):
     #plotter.GetXaxis().SetTitle( "drift voltage [V]" )
     #plotter.GetYaxis().SetTitle( "mean angle reconstruction [#circ]" )
     
-    plotter.GetXaxis().SetTitle( "slope reference track" )
-    plotter.GetYaxis().SetTitle( "st. dev. number of strips in cluster" )
+    #plotter.GetXaxis().SetTitle( "drift field [V/cm]" )
+    #plotter.GetYaxis().SetTitle( "drift velocity [mm/ns]" )
     
-    plotter.GetXaxis().SetRangeUser( -0.5 , 0.5 )
-    #plotter.GetYaxis().SetRangeUser( 0.7 , 1. )
+    #plotter.GetXaxis().SetTitle( "slope reference track" )
+    plotter.GetXaxis().SetTitle( "angle reference track [#circ]" )
+    #plotter.GetYaxis().SetTitle( "mean time difference first and last signal [25 ns]" )
+    plotter.GetYaxis().SetTitle( "residual width [mm]" )
+    
+    plotter.GetXaxis().SetRangeUser( -25. , 25. )
+    #plotter.GetXaxis().SetRangeUser( -0.5 , 0.5 )
+    plotter.GetYaxis().SetRangeUser( 0. , 3. )
+    #plotter.GetXaxis().SetRangeUser( 0. , 1000. )
+    #plotter.GetYaxis().SetRangeUser( 0. , 70. )
     
     
     plotter.Draw("APL")
-    plotter.SetTitle("eta in")
+    #plotter.SetTitle("eta in")
     #plotter.Draw("APL")
     can.BuildLegend()
     #legend.Draw()
