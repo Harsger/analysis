@@ -1783,7 +1783,8 @@ void simpleStripAna(){
 void muontomo(){
     
 //     TString inname = "/project/etp4/mherrmann/analysis/results/CRF/study/sm2_m1_2018_0530to0616_r02.root";
-    TString inname = "/project/etp4/mherrmann/analysis/anafiles/m7studyCRF.root";
+//     TString inname = "/project/etp4/mherrmann/analysis/results/CRF/study/m7_studyCRF.root";
+    TString inname = "/project/etp4/mherrmann/analysis/results/CRF/study/studyCRF_4chambers_HV.root";
     TFile * infile = new TFile( inname,"READ");
     TString outname = inname;
     outname.ReplaceAll(".root","_tomo.root");
@@ -1793,6 +1794,7 @@ void muontomo(){
     unsigned int ndiv[3] = { division[0][1]-division[0][0]+1, division[1][1]-division[1][0]+1, division[2][1]-division[2][0]+1};
     unsigned int required[3] = { 10, 200, 50};
     
+    TH2D ** distribution = new TH2D*[3]; 
     TH2D ** tomography = new TH2D*[3]; 
     
     vector<unsigned int> nbins { 0, 0};
@@ -1823,10 +1825,17 @@ void muontomo(){
         
         readhist->Delete();
         
-        histname = "tomography";
         TString toAdd = "YZ";
         if( c == 1 ) toAdd = "XZ";
         else if( c == 2 ) toAdd = "XY";
+        
+        histname = "distribution";
+        histname += toAdd;
+        distribution[c] = new TH2D( histname, histname, nbins.at(0), lowEdge.at(0), highEdge.at(0), nbins.at(1), lowEdge.at(1), highEdge.at(1));
+        distribution[c]->SetXTitle(" [mm]");
+        distribution[c]->SetYTitle(" [mm]"); 
+        
+        histname = "tomography";
         histname += toAdd;
         tomography[c] = new TH2D( histname, histname, nbins.at(0), lowEdge.at(0), highEdge.at(0), nbins.at(1), lowEdge.at(1), highEdge.at(1));
         tomography[c]->SetXTitle(" [mm]");
@@ -1865,13 +1874,89 @@ void muontomo(){
                     weights += intersectionWeighted[d]->GetBinContent( x, y);
                 }
                 if( hits < required[c] ) continue;
-                tomography[c]->SetBinContent( x, y, weights / hits);
+                distribution[c]->SetBinContent( x, y, hits );
+//                 tomography[c]->SetBinContent( x, y, weights / hits);
+                tomography[c]->SetBinContent( x, y, weights );
             }
         }
         
         outfile->cd();
+        distribution[c]->Write();
         tomography[c]->Write();
         
+    }
+    
+    unsigned int partitions[2] = { 40, 20 };
+        
+    TString histname = "slopeWidth";
+    TH2D * slopeWidth = new TH2D( histname, histname, partitions[0], lowEdge.at(0), highEdge.at(0), partitions[1], lowEdge.at(1), highEdge.at(1));
+    slopeWidth->SetXTitle("x [mm]");
+    slopeWidth->SetYTitle("y [mm]"); 
+        
+    histname = "slopeInclination";
+    TH2D * slopeInclination = new TH2D( histname, histname, partitions[0], lowEdge.at(0), highEdge.at(0), partitions[1], lowEdge.at(1), highEdge.at(1));
+    slopeInclination->SetXTitle("x [mm]");
+    slopeInclination->SetYTitle("y [mm]"); 
+    
+    TH1D ** slopeDifference = new TH1D*[2];
+    for(unsigned int i=0; i<2; i++){
+        histname = "slopeDifference_";
+        if(i==1) histname += "IN";
+        else histname += "OUT";
+        slopeDifference[i] = new TH1D();
+    }
+    bool firstTOadd[2] = { true , true };
+    
+    TProfile * prof;
+    
+    for(unsigned int cx=0; cx<partitions[0]; cx++){
+        for(unsigned int cy=0; cy<partitions[1]; cy++){
+        
+            histname = "slopeDifVSslope";
+            histname += "_x";
+            histname += cx;
+            histname += "_y";
+            histname += cy;
+            TH2I * readhist = (TH2I*)infile->Get(histname);
+            
+            slopeWidth->SetBinContent( cx+1 , cy+1 , readhist->GetStdDev(2) );
+            slopeWidth->SetBinError( cx+1 , cy+1 , readhist->GetStdDevError(2) );
+            
+            unsigned int inORout = 0;
+            if( 
+                cx >= division[0][0] &&
+                cx <= division[0][1] &&
+                cy >= division[1][0] &&
+                cy <= division[1][1]
+            ) inORout = 1;
+            
+            if( firstTOadd[inORout] ){
+                slopeDifference[inORout] = (TH1D*)(readhist->ProjectionY())->Clone();
+                firstTOadd[inORout] = false;
+            }
+            else slopeDifference[inORout]->Add( (TH1D*)readhist->ProjectionY() );
+            
+            TF1 * linear = new TF1( "linear" , "[0]+[1]*x" , -0.6 , 0.6 );
+            
+            prof = readhist->ProfileX();
+            
+            prof->Fit( linear , "RQ" );
+            
+            slopeInclination->SetBinContent( cx+1 , cy+1 , linear->GetParameter(1) );
+            slopeInclination->SetBinError( cx+1 , cy+1 , linear->GetParError(1) );
+            
+        }
+    }
+    
+    slopeWidth->Write();
+    slopeInclination->Write();
+    for(unsigned int i=0; i<2; i++){ 
+        histname = "slopeDifference_";
+        if(i==1) histname += "IN";
+        else histname += "OUT";
+        slopeDifference[i]->SetTitle(histname);
+        slopeDifference[i]->SetName(histname);
+        slopeDifference[i]->Write();
     }
     
     outfile->Close();
@@ -2677,6 +2762,8 @@ void clusterProperties( TString filename ){
     detectornames.push_back("eta_in");
     detectornames.push_back("stereo_in");
     detectornames.push_back("stereo_out");
+    detectornames.push_back("etaBot");
+    detectornames.push_back("etaTop");
     unsigned int ndetectors = detectornames.size();
     
     vector<string> boardnames;
@@ -2688,9 +2775,11 @@ void clusterProperties( TString filename ){
     map< unsigned int , TString > mode = {
         { 1 , "clusterQvsNstrips_near" } ,
         { 2 , "nStripsVSslope" } ,
-        { 3 , "fastestVSslope" } ,
-        { 4 , "slowestVSslope" } ,
-        { 5 , "timeDifVSslope" } 
+        { 3 , "clusterQvsSlope" } ,
+        { 4 , "maxStripQvsSlope" } ,
+        { 5 , "fastestVSslope" } ,
+        { 6 , "slowestVSslope" } ,
+        { 7 , "timeDifVSslope" } 
     };
     
     vector<unsigned int> nbins { 0, 0};
@@ -2794,7 +2883,7 @@ void tester( TString filename="test.dat" , bool bugger=false ){
 //     uTPCtime();
 //     startNendTimes();
 //     simpleStripAna();
-//     muontomo();
+    muontomo();
 //     coshfit();
 //     double first = 1;
 //     double second = 2;
@@ -2808,6 +2897,6 @@ void tester( TString filename="test.dat" , bool bugger=false ){
 //     driftPlots();
 //     extensiveAlignment();
 //     chargeNstripsPerBoard(filename);
-    clusterProperties( filename );
+//     clusterProperties( filename );
 }
 
