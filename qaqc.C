@@ -90,6 +90,9 @@ bool compareAPVnoise = false;
 bool useCoincidence = false;
 bool excludeBadChannel = false;
 
+double lowerEfficiencyBound = 0.5;
+double upperChargeBound = 1500.;
+
 void deadNnoisy();
 void amplificationScan();
 void effiNchargeMaps();
@@ -118,8 +121,12 @@ int main(int argc, char* argv[]){
         " -E\texclude noisy channel of APV \n"
         " -A\tAPV noise will be compared \n"
         "\n"
-        " additional option for amplification scan (-a) \n"
+        " additional option for efficiencies\n"
         " -C\tcoincidence efficiency \n"
+        " -l\tlower bound for efficiency plot ( default : " << lowerEfficiencyBound << " )\n"
+        "\n"
+        " additional option for charge plots\n"
+        " -q\tupper bound for charge plot ( default : " << upperChargeBound << " ADC channel )\n"
         "\n"
         " additional option for maps (-m) \n"
         " -e\texclude sector in maps \n"
@@ -130,7 +137,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ( ( c = getopt( argc , argv , "n:d:a:m:DSEACe:o:" ) ) != -1 ){
+    while ( ( c = getopt( argc , argv , "n:d:a:m:DSEACl:q:e:o:" ) ) != -1 ){
         switch( c ){
             case 'n':
                 moduleNumber = atoi( optarg );
@@ -158,6 +165,12 @@ int main(int argc, char* argv[]){
                 break;
             case 'C':
                 useCoincidence = true;
+                break;
+            case 'l':
+                lowerEfficiencyBound = atof( optarg );
+                break;
+            case 'q':
+                upperChargeBound = atof( optarg );
                 break;
             case 'e':
                 exclusions.push_back( optarg );
@@ -736,11 +749,12 @@ void amplificationScan(){
             overLayered[ l.first ]->SetTitle( name );
             overLayered[ l.first ]->GetXaxis()->SetTitle( "amplification voltage [V]" );
 //             overLayered[ l.first ]->GetXaxis()->SetRangeUser( 500. , 600. );
-            overLayered[ l.first ]->GetYaxis()->SetTitle( "efficiency" );
-            overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0.5 , 1. );
+            overLayered[ l.first ]->GetYaxis()->SetTitle( "5 mm efficiency" );
+            if(useCoincidence) overLayered[ l.first ]->GetYaxis()->SetTitle( "coincidence efficiency" );
+            overLayered[ l.first ]->GetYaxis()->SetRangeUser( lowerEfficiencyBound , 1. );
             if( m == "charge" ){ 
                 overLayered[ l.first ]->GetYaxis()->SetTitle( "MPV cluster charge [ADC channel]" );
-                overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0. , 3000. );
+                overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0. , upperChargeBound );
             }
 //             overLayered[ l.first ]->GetYaxis()->SetRangeUser( 0. , 1. );
             overLayered[ l.first ]->Draw("APL");
@@ -843,7 +857,8 @@ void effiNchargeMaps(){
     }
     
     map< string , string > mode;
-    mode["coincidenceEffi" ] = "efficiency";
+    mode["nearEfficiency" ] = "efficiency";
+//     mode["coincidenceEffi" ] = "efficiency";
     mode["clusterChargeMPV"] = "gain";
     
     TString histname;
@@ -857,6 +872,7 @@ void effiNchargeMaps(){
         for( auto m : mode ){
         
             histname = l.first + "_" + m.first;
+            if( m.second == "efficiency" && useCoincidence ) histname = histname.ReplaceAll( m.first , "coincidenceEffi" );
             readhist = (TH1I*)infile->Get( histname );
             
             if( readhist == NULL ){
@@ -931,12 +947,14 @@ void effiNchargeMaps(){
             cout << " " << specifier << " \t mean " << mean << " \t stdv " << stdv << " \t min " << min << " \t max " << max << endl;
             
             if( m.second == "efficiency" ){ 
-                readhist->GetZaxis()->SetRangeUser( 0.3 , 1. );
-                readhist->GetZaxis()->SetTitle( m.second.c_str() );
+                readhist->GetZaxis()->SetRangeUser( lowerEfficiencyBound , 1. );
+//                 readhist->GetZaxis()->SetTitle( m.second.c_str() );
+                readhist->GetZaxis()->SetTitle( "5 mm efficiency" );
+                if(useCoincidence) readhist->GetZaxis()->SetTitle( "coincidence efficiency" );
             }
             else{ 
 //                 readhist->GetZaxis()->SetRangeUser( 0. , max );
-                readhist->GetZaxis()->SetRangeUser( 0. , 1500. );
+                readhist->GetZaxis()->SetRangeUser( 0. , upperChargeBound );
                 readhist->GetZaxis()->SetTitle( "MPV cluster charge [ADC channel]" );
             }
             
