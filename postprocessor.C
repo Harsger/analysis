@@ -17,6 +17,12 @@
 
 #include "analysis.h"
 
+unsigned int stripsPerAPV = 128;
+unsigned int stripsPerAdapter = 512;
+unsigned int stripsPerBoard = 1024;
+
+void evaluateStripChargeDistribution( TH2I * chargeVSstrip , vector< vector<double> > &maxima );
+
 int main(int argc, char* argv[]){
     
     TString mode = "";
@@ -1867,6 +1873,8 @@ void analysis::properties(){
     TH2D * mulitplicity;
     TH2D * coincidenceEffi;
     
+    TGraphErrors * clusterQvsStripQmax;
+    TGraphErrors * clusterQvsStripQsaturation;
     TGraphErrors ** efficiencyVScharge;
     
     TString title;
@@ -2232,16 +2240,20 @@ void analysis::properties(){
         title = "coincidence efficiency";
         coincidenceEffi->SetZTitle(title);
         
-        efficiencyVScharge = new TGraphErrors*[nboards.at(d)];
+//         efficiencyVScharge = new TGraphErrors*[nboards.at(d)];
+        efficiencyVScharge = new TGraphErrors*[divisions.at(d).at(1)];
         
-        for(unsigned int b=0; b<nboards.at(d); b++){
+//         for(unsigned int b=0; b<nboards.at(d); b++){
+        for(unsigned int b=0; b<divisions.at(d).at(1); b++){
             
             title = "efficiencyVScharge";
-            if(nboards.at(d)>1){
-                title += "_board";
-                if( nboards.at(d) == 3 ) title += b+6;
-                else title += b;
-            }
+            title += "_";
+            title += b;
+//             if(nboards.at(d)>1){
+//                 title += "_board";
+//                 if( nboards.at(d) == 3 ) title += b+6;
+//                 else title += b;
+//             }
             if(ndetectors>1){ 
                 title += "_";
                 title += detectornames.at(d);
@@ -2254,6 +2266,40 @@ void analysis::properties(){
         
         if(debug) cout << " fit timings and charges , calculate efficiencies " << endl;
         
+                
+        title = "maxQstripVSstrip";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        
+        TH2I * chargeVSstrip = (TH2I*)infile->Get(title);
+        vector< vector<double> > maxima;
+        
+        if( chargeVSstrip != NULL ){ 
+            
+            evaluateStripChargeDistribution( chargeVSstrip , maxima );
+            
+            clusterQvsStripQmax = new TGraphErrors();
+            title = "clusterQvsStripQmax";
+            if(ndetectors>1){ 
+                title += "_";
+                title += detectornames.at(d);
+            }
+            clusterQvsStripQmax->SetTitle(title);
+            clusterQvsStripQmax->SetName(title);
+            
+            clusterQvsStripQsaturation = new TGraphErrors();
+            title = "clusterQvsStripQsaturation";
+            if(ndetectors>1){ 
+                title += "_";
+                title += detectornames.at(d);
+            }
+            clusterQvsStripQsaturation->SetTitle(title);
+            clusterQvsStripQsaturation->SetName(title);
+            
+        }
+        
         bool firstHist[2] = { true, true};
         
         double chargeStats[5] = { 0. , 0. , 0. , 1e6 , -1e6 };
@@ -2261,8 +2307,11 @@ void analysis::properties(){
         unsigned int usedPartitions = 0;
         unsigned int entriesSum = 0;
         
-        for(unsigned int cx=0; cx<divisions.at(d).at(0); cx++){
-            for(unsigned int cy=0; cy<divisions.at(d).at(1); cy++){
+        for(unsigned int cy=0; cy<divisions.at(d).at(1); cy++){
+            
+            TH1I * accumulator;
+            
+            for(unsigned int cx=0; cx<divisions.at(d).at(0); cx++){
                 
                 title = specifier;
                 if(ndetectors>1){ 
@@ -2274,6 +2323,24 @@ void analysis::properties(){
                 title += "_y";
                 title += cy;
                 resVSslope = (TH2I*)infile->Get(title);
+                
+                title = "clusterQ";
+                if(ndetectors>1){ 
+                    title += "_";
+                    title += detectornames.at(d);
+                }
+                title += "_x";
+                title += cx;
+                title += "_y";
+                title += cy;
+                clusterQ = (TH1I*)infile->Get(title);
+                
+                if(cx==0){ 
+                    title = "clusterQ_APV";
+                    title += cy;
+                    accumulator = (TH1I*)clusterQ->Clone(title);
+                }
+                else accumulator->Add(clusterQ);
                 
                 hits->SetBinContent( cx+1, cy+1, resVSslope->GetEntries());
                 
@@ -2377,17 +2444,6 @@ void analysis::properties(){
                     
 //                 }
                 
-                title = "clusterQ";
-                if(ndetectors>1){ 
-                    title += "_";
-                    title += detectornames.at(d);
-                }
-                title += "_x";
-                title += cx;
-                title += "_y";
-                title += cy;
-                clusterQ = (TH1I*)infile->Get(title);
-                
 //                 if( clusterQ->GetEntries() < requiredHits ){
 //                     clusterChargeMPV->SetBinContent( cx+1, cy+1, -1e6);
 //                     clusterChargeMPV->SetBinError( cx+1, cy+1, 1e7);
@@ -2459,8 +2515,8 @@ void analysis::properties(){
                     if(
                         cx > divisions.at(d).at(0) * 0.3 &&
                         cx < divisions.at(d).at(0) * 0.7 &&
-                        cy > 0 &&
-                        cy < divisions.at(d).at(1) - 1 &&
+//                         cy > 0 &&
+//                         cy < divisions.at(d).at(1) - 1 &&
                         landau->GetParameter(1) > 0. &&
                         landau->GetParameter(1) < 1e4
                     ){
@@ -2489,20 +2545,35 @@ void analysis::properties(){
                         if( effiStats[3] > partNearEffi ) effiStats[3] = partNearEffi;
                         if( effiStats[4] < partNearEffi ) effiStats[4] = partNearEffi;
                         
-                        unsigned int board = (unsigned int)( (double)(cy) / (double)( divisions.at(d).at(0) ) * ( (double)(nboards.at(d)) - 1. ) );
-                        unsigned int lastBoard = (unsigned int)( ( (double)(cy) - 1. ) / (double)( divisions.at(d).at(0) ) * ( (double)(nboards.at(d)) - 1. ) );
-                        unsigned int nextBoard = (unsigned int)( ( (double)(cy) + 1. ) / (double)( divisions.at(d).at(0) ) * ( (double)(nboards.at(d)) - 1. ) );
+//                         unsigned int board = (unsigned int)( (double)(cy) / (double)( divisions.at(d).at(0) ) * ( (double)(nboards.at(d)) - 1. ) );
+//                         unsigned int lastBoard = (unsigned int)( ( (double)(cy) - 1. ) / (double)( divisions.at(d).at(0) ) * ( (double)(nboards.at(d)) - 1. ) );
+//                         unsigned int nextBoard = (unsigned int)( ( (double)(cy) + 1. ) / (double)( divisions.at(d).at(0) ) * ( (double)(nboards.at(d)) - 1. ) );
+//                         
+//                         if( board != lastBoard || board != nextBoard ) continue;
+//                         
+//                         efficiencyVScharge[board]->SetPoint( efficiencyVScharge[board]->GetN() , partCharge , partNearEffi );
+//                         efficiencyVScharge[board]->SetPointError( efficiencyVScharge[board]->GetN()-1 , landau->GetParError(1) , effiStats[1] );
                         
-                        if( board != lastBoard || board != nextBoard ) continue;
-                        
-                        efficiencyVScharge[board]->SetPoint( efficiencyVScharge[board]->GetN() , partCharge , partNearEffi );
-                        efficiencyVScharge[board]->SetPointError( efficiencyVScharge[board]->GetN()-1 , landau->GetParError(1) , effiStats[1] );
+                        efficiencyVScharge[cy]->SetPoint( efficiencyVScharge[cy]->GetN() , partCharge , partNearEffi );
+                        efficiencyVScharge[cy]->SetPointError( efficiencyVScharge[cy]->GetN()-1 , landau->GetParError(1) , effiStats[1] );
                         
                     }
                     
 //                 }
                 
             }
+            
+            if( accumulator->GetEntries() < requiredHits || divisions.at(d).at(1) != 24 ) continue;
+            
+            landau->SetParameters( accumulator->GetRMS(), accumulator->GetMaximumBin());
+            accumulator->Fit( landau, "RQ");
+        
+            clusterQvsStripQmax->SetPoint( clusterQvsStripQmax->GetN() , maxima.at(cy).at(0) , landau->GetParameter(1) );
+            clusterQvsStripQmax->SetPointError( clusterQvsStripQmax->GetN()-1 , maxima.at(cy).at(1), landau->GetParError(1) );
+        
+            clusterQvsStripQsaturation->SetPoint( clusterQvsStripQsaturation->GetN() , maxima.at(cy).at(2) , landau->GetParameter(1) );
+            clusterQvsStripQsaturation->SetPointError( clusterQvsStripQsaturation->GetN()-1 , maxima.at(cy).at(3), landau->GetParError(1) );
+            
         }
         
         cout << endl << " " << detectornames.at(d) << " \t usedPartitions " << usedPartitions << " \t total entries " << entriesSum << endl;
@@ -2548,9 +2619,20 @@ void analysis::properties(){
         nearEfficiency->Write();
         leadingNearRatio->Write();
         oneStripCluster->Write();
+        mulitplicity->Write();
         coincidenceEffi->Write();
         
-        for(unsigned int b=0; b<nboards.at(d); b++){
+        if( divisions.at(d).at(1) == 24 ){
+            clusterQvsStripQmax->Write();
+            clusterQvsStripQsaturation->Write();
+        }
+        else{
+            clusterQvsStripQmax->Delete();
+            clusterQvsStripQsaturation->Delete();
+        }
+        
+//         for(unsigned int b=0; b<nboards.at(d); b++){
+        for(unsigned int b=0; b<divisions.at(d).at(1); b++){
             
             efficiencyVScharge[b]->Write();
             
@@ -3114,6 +3196,96 @@ void analysis::coarse(){
             gPad->WaitPrimitive();
             
         }
+        
+    }
+    
+}
+
+
+void evaluateStripChargeDistribution( TH2I * chargeVSstrip , vector< vector<double> > &maxima){
+    
+    maxima.clear();
+    vector<double> sliceMaxima;
+    
+    TH2I * workHist = (TH2I*)chargeVSstrip->Clone();
+    workHist->RebinX(stripsPerAPV);
+    unsigned int nbins = workHist->GetXaxis()->GetNbins();
+    
+    TH1D * projection;
+    TH1D * difference;
+    
+    for(unsigned int a=1; a<=nbins; a++){
+        
+        sliceMaxima.clear();
+        
+        TString title = workHist->GetTitle();
+        title += "_APV";
+        title += a-1;
+        projection = workHist->ProjectionY( title , a , a );
+        
+        unsigned int otherBins = projection->GetXaxis()->GetNbins();
+        double lowEdge = projection->GetXaxis()->GetXmin();
+        double highEdge = projection->GetXaxis()->GetXmax();
+        double step = (highEdge-lowEdge)/(double)(otherBins);
+        
+        projection->GetXaxis()->SetRangeUser( 150. , 2500. );
+        difference = (TH1D*)projection->Clone();
+        
+        unsigned int maxBin = projection->GetMaximumBin();
+        double maxContent = projection->GetBinContent( maxBin );
+        double maxPosition = lowEdge + step * ( maxBin - 0.5 );
+        
+        TF1 * fitfunction = new TF1( "fitfunction" , "landau" , 150. , 2500. );
+//         TF1 * fitfunction = new TF1( "fitfunction" , "landau+gaus(3)" , 100. , 2500. );
+        fitfunction->SetParameter( 0 , maxContent );
+        fitfunction->SetParameter( 1 , maxPosition );
+        fitfunction->SetParameter( 2 , maxPosition );
+//         fitfunction->SetParameter( 3 , 0.1 * maxContent  );
+//         fitfunction->SetParameter( 4 , 4. * maxPosition );
+//         fitfunction->SetParLimits( 4 , 3. * maxPosition , 2500. );
+//         fitfunction->SetParameter( 5 , 100. );
+        
+        projection->Fit( fitfunction , "RQB" );
+        
+        sliceMaxima.push_back( fitfunction->GetParameter(1) );
+        sliceMaxima.push_back( fitfunction->GetParError(1) );
+        
+//         cout << " " << title << endl;
+//         for(unsigned int p=0; p<fitfunction->GetNpar(); p++){
+//             cout << "\t" << fitfunction->GetParameter(p) << " +/- " << fitfunction->GetParError(p) << endl;
+//         }
+        
+//         projection->Draw();
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
+        
+        for(unsigned int b=1; b<=otherBins; b++){
+            double content = projection->GetBinContent( b );
+            double binCenter = lowEdge + step * ( b -  0.5 );
+            difference->SetBinContent( b , ( content - fitfunction->Eval(binCenter) ) / fitfunction->Eval(binCenter) );
+        }
+        
+        maxBin = difference->GetMaximumBin();
+        maxPosition = lowEdge + step * ( maxBin - 0.5 );
+        maxContent = difference->GetBinContent( maxBin );
+        
+        fitfunction = new TF1( "fitfunction" , "landau" , maxPosition-80. , maxPosition+50. );
+        fitfunction->SetParameter( 0 , maxContent );
+        fitfunction->SetParameter( 1 , maxPosition );
+        fitfunction->SetParameter( 2 , 50. );
+        
+        difference->Fit( fitfunction , "RQB" );
+        
+        sliceMaxima.push_back( fitfunction->GetParameter(1) );
+        sliceMaxima.push_back( fitfunction->GetParError(1) );
+        
+//         difference->Draw();
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
+        
+        maxima.push_back( sliceMaxima );
         
     }
     
