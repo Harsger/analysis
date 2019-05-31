@@ -2743,6 +2743,155 @@ void extensiveAlignment(
     
 }
 
+void deadNnoisy( TString filename ){
+    
+    unsigned int count = 0;
+
+    unsigned int stripsPerAPV = 128;
+    unsigned int stripsPerAdapter = 512;
+    unsigned int stripsPerBoard = 1024;
+        
+    TFile * infile = new TFile( filename , "READ" );
+    
+    TString name = filename;
+    if( name.Contains('/') ) name = name( name.Last('/')+1 , name.Sizeof() );
+    name.ReplaceAll( ".root" , "_deadNnoisy.root" );
+    
+    TFile * outfile = new TFile( name , "RECREATE" );
+    
+    name.ReplaceAll( ".root" , ".txt" );
+    
+    ofstream writefile( name.Data() );
+    
+    vector<string> detectornames;
+    detectornames.push_back("eta_out");
+    detectornames.push_back("eta_in");
+    detectornames.push_back("stereo_in");
+    detectornames.push_back("stereo_out");
+    detectornames.push_back("etaBot");
+    detectornames.push_back("etaTop");
+    unsigned int ndetectors = detectornames.size();
+    
+    vector<unsigned int> nbins { 0, 0};
+    vector<double> lowEdge { 0., 0.};
+    vector<double> highEdge { 0., 0.};
+    vector<double> step { 0., 0.};
+    
+    TH2I * readhist;
+    TH1D * projection;
+    
+    TH1D * meanHist;
+    TH1D * stdvHist;
+    TH1D * normedHist;
+    TH1I * difference;
+    
+    TF1 * fitfunction;
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+        
+//         name = "chargeVSstrip_near_";
+//         name += detectornames.at(d);
+        
+        name = "chargeVSstrip_";
+        name += detectornames.at(d);
+        name += "_y_signal";
+        
+        readhist = (TH2I*)infile->Get( name );
+                
+        nbins.at(0) = readhist->GetXaxis()->GetNbins();
+        lowEdge.at(0) = readhist->GetXaxis()->GetXmin();
+        highEdge.at(0) = readhist->GetXaxis()->GetXmax();
+        step.at(0) = (highEdge.at(0)-lowEdge.at(0))/(double)(nbins.at(0));
+            
+        nbins.at(1) = readhist->GetYaxis()->GetNbins();
+        lowEdge.at(1) = readhist->GetYaxis()->GetXmin();
+        highEdge.at(1) = readhist->GetYaxis()->GetXmax();
+        step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
+        
+        name = "striphits_";
+        name += detectornames.at(d);
+        projection = readhist->ProjectionX(name);
+        
+        name = "mean_";
+        name += detectornames.at(d);
+        meanHist = new TH1D(name,name, nbins.at(0)/stripsPerAPV, lowEdge.at(0) , highEdge.at(0));
+        
+        name = "stdv_";
+        name += detectornames.at(d);
+        stdvHist = new TH1D(name,name, nbins.at(0)/stripsPerAPV, lowEdge.at(0) , highEdge.at(0));
+        
+        name = "normed_";
+        name += detectornames.at(d);
+        normedHist = new TH1D(name,name, nbins.at(0), lowEdge.at(0) , highEdge.at(0));
+        
+        name = "difference_";
+        name += detectornames.at(d);
+        difference = new TH1I(name,name, 200, -1., 1.);
+        
+        fitfunction = new TF1("fitfunction","pol2",lowEdge.at(0)+step.at(0)*(double)nbins.at(0)/12.,highEdge.at(0)-step.at(0)*(double)nbins.at(0)/12.);
+        fitfunction->SetLineColor(2);
+        
+        projection->Fit( fitfunction , "RQW" );
+        projection->Fit( fitfunction , "RQW" );
+                
+//         projection->Draw();
+//         gPad->SetLogy();
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
+    
+        for(unsigned int b=1; b<=nbins.at(0); b++){
+            double content = projection->GetBinContent(b);
+            meanHist->Fill( b , content );
+            stdvHist->Fill( b , content * content );
+        }
+        
+        for(unsigned int a=1; a<=nbins.at(0)/stripsPerAPV; a++){
+            double calcMean = meanHist->GetBinContent(a);
+            double calcSTDV = stdvHist->GetBinContent(a);
+            calcSTDV = sqrt( ( calcSTDV - calcMean * calcMean / (double)stripsPerAPV ) / ( (double)stripsPerAPV - 1. ) );
+            calcMean /= (double)stripsPerAPV;
+            meanHist->SetBinContent( a , calcMean );
+            meanHist->SetBinError( a , calcSTDV );
+            stdvHist->SetBinContent( a , calcSTDV );
+        }
+        
+        int lastAPV = -1;
+        
+        for(unsigned int b=1; b<=nbins.at(0); b++){
+            double content = projection->GetBinContent(b);
+            unsigned int APVnumber = ( b - 1 ) / (stripsPerAPV) + 1;
+            double calcMean = meanHist->GetBinContent(APVnumber);
+            double calcSTDV = stdvHist->GetBinContent(APVnumber);
+//             double deviation = ( content - calcMean ) / calcSTDV;
+            double expected = fitfunction->Eval( (double)b );
+            double deviation = ( content - expected ) / expected;
+//             if( APVnumber != lastAPV ){ 
+//                 cout << " " << b << " " << APVnumber << " " << calcMean << " " << calcSTDV << endl;
+//                 lastAPV = APVnumber;
+//             }
+            normedHist->SetBinContent( b , deviation );
+            difference->Fill( deviation );
+//             if( deviation > 3. ) writefile << detectornames.at(d) << " noisy " << b;
+//             if( deviation < 1. ) writefile << detectornames.at(d) << " dead " << b;
+            if( deviation > 1.4 ) writefile << detectornames.at(d) << " noisy " << b << endl;
+            if( deviation < 0.6 ) writefile << detectornames.at(d) << " dead " << b << endl;
+        }
+        
+        outfile->cd();
+        projection->Write();
+        meanHist->Write();
+        stdvHist->Write();
+        normedHist->Write();
+        difference->Write();
+        
+    }
+    
+    outfile->Close();
+    writefile.close();
+    
+}
+
 void clusterProperties( TString filename ){
         
     TFile * infile = new TFile( filename , "READ" );
@@ -2883,7 +3032,7 @@ void tester( TString filename="test.dat" , bool bugger=false ){
 //     uTPCtime();
 //     startNendTimes();
 //     simpleStripAna();
-    muontomo();
+//     muontomo();
 //     coshfit();
 //     double first = 1;
 //     double second = 2;
@@ -2897,6 +3046,7 @@ void tester( TString filename="test.dat" , bool bugger=false ){
 //     driftPlots();
 //     extensiveAlignment();
 //     chargeNstripsPerBoard(filename);
+    deadNnoisy( filename );
 //     clusterProperties( filename );
 }
 
