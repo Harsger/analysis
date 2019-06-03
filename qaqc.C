@@ -64,8 +64,8 @@ map< string , pair< unsigned int , unsigned int > > BoardPartitions = {
 };
 
 map< string , pair< unsigned int , unsigned int > > SideRange = {
-    { "L" , {  5 ,  8 } },
-    { "R" , {  9 , 12 } }
+    { "L" , {  4 ,  8 } },
+    { "R" , {  9 , 13 } }
 };
 
 vector<string> exclusions;
@@ -297,7 +297,8 @@ void deadNnoisy(){
     }
     
     outname.ReplaceAll( ".root" , ".txt" );
-    ofstream writefile( outname.Data() );
+    ofstream writefile;
+    if(storeNoiseData) writefile.open( outname.Data() );
     
     TH1F * APVnoiseMap;
     
@@ -445,6 +446,7 @@ void deadNnoisy(){
                     else if( normalizedDeviation > 2.4 ) writefile << l.first << "\t noisy \t " << b << "\t" << normalizedDeviation << endl;
                 }
                 
+//                 if( content > mean[apv] + 3. * stdv[apv] ){
                 if( content > mean[apv] + 3. * stdv[apv] ){
                 
                     unsigned int apvChannel = ( b - 1 ) % stripsPerAPV + 1;
@@ -461,7 +463,7 @@ void deadNnoisy(){
                     
                     badChannel[ specifier ].push_back( b );
                     
-                    if( !storeNoiseData || m == "dead" ) writefile << l.first << "\t " << m << " \t " << b << "\t" << ( content - mean[apv] ) / stdv[apv] << endl;
+//                     if( !storeNoiseData || m == "dead" ) writefile << l.first << "\t " << m << " \t " << b << "\t" << ( content - mean[apv] ) / stdv[apv] << endl;
                     
                 }
                 
@@ -496,7 +498,10 @@ void deadNnoisy(){
         
     }
     
-    if( storeNoiseData ) outfile->Close();
+    if( storeNoiseData ){ 
+        outfile->Close();
+        writefile.close();
+    }
     
 }
 
@@ -888,8 +893,8 @@ void effiNchargeMaps(){
             unsigned int last[2]  = { nbins[0] , nbins[1] };
             
             if( nbins[0] == 16 ){
-                first[0] = 4;
-                last[0] = 13;
+                first[0] = SideRange["L"].first;
+                last[0] = SideRange["R"].second;
             }
             
             if( nbins[1] == 24 ){
