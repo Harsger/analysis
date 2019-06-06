@@ -28,6 +28,7 @@ int main(int argc, char* argv[]){
     int end = -1;
     TString params = "";
     bool only = true;
+    bool largePartitions = false;
     bool bugger = false;
     
     if(argc<2 || string(argv[1]).compare(string("--help"))==0) {
@@ -41,6 +42,7 @@ int main(int argc, char* argv[]){
         " -s\tstart event number    \t(default:  \"" << start << "\")\n"
         " -e\tend event number      \t(default:  \"" << end << "\"->whole file)\n"
         " -O\tonly cluster mode off \t(default:  \"" << only << "\")\n"
+        " -L\tlarge partitions       \t(default:  \"" << largePartitions << "\")\n"
         " -D\tdebugging mode        \t(default:  \"" << bugger << "\")\n"
         "\n"
         "output files are named : <inputname>_inCRF<start>to<end>.root\n"
@@ -49,7 +51,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "i:d:o:p:s:e:OD")) != -1) {
+    while ((c = getopt (argc, argv, "i:d:o:p:s:e:OLD")) != -1) {
         switch (c)
         {
         case 'i':
@@ -73,6 +75,9 @@ int main(int argc, char* argv[]){
         case 'O':
             only = false;
             break;
+        case 'L':
+            largePartitions = true;
+            break;
         case 'D':
             bugger = true;
             break;
@@ -90,6 +95,7 @@ int main(int argc, char* argv[]){
     cout << " outputdirectory    : " << outdirectory << "\n";
     cout << " processing events  : " << start << " to " << end << "\n";
     cout << " paramterfile       : " << params << "\n";
+    if(largePartitions) cout << " using 5 x 7 partitions " << endl;
     if(only) cout << " only cluster mode " << endl;
     
     
@@ -156,6 +162,13 @@ int main(int argc, char* argv[]){
     analysis * invest = new analysis(clusterTree,"CRF",CRFtree,stripTree);
     
     invest->setAnaParams( start, end, writename, params, only, bugger);
+    
+    if(largePartitions){
+        for(unsigned int d=0; d<invest->ndetectors; d++){
+            invest->divisions.at(d).at(0) = 5;
+            invest->divisions.at(d).at(1) = 7;
+        }
+    }
     
     invest->investigateCRF();
     
@@ -315,10 +328,14 @@ void analysis::investigateCRF(){
     TH2I*** risetimeVScharge_near_board;
     TH2I*** starttimeVSslope_near_board;
     TH2I*** chargeVSvariation_near_board;
+    TH2I*** chargeVSclusterStrip_board;
+    TH2I**** chargePositionVSslope_board;
     if(!onlyCluster){ 
         risetimeVScharge_near_board = new TH2I**[ndetectors];
         starttimeVSslope_near_board = new TH2I**[ndetectors];
         chargeVSvariation_near_board = new TH2I**[ndetectors];
+        chargeVSclusterStrip_board = new TH2I**[ndetectors];
+        chargePositionVSslope_board = new TH2I***[ndetectors];
     }
     
     TH2I*** firstTimeDifVSscinXperYpart = new TH2I**[ndetectors];
@@ -891,6 +908,8 @@ void analysis::investigateCRF(){
             risetimeVScharge_near_board[d] = new TH2I*[nboards.at(d)];
             starttimeVSslope_near_board[d] = new TH2I*[nboards.at(d)];
             chargeVSvariation_near_board[d] = new TH2I*[nboards.at(d)];
+            chargeVSclusterStrip_board[d] = new TH2I*[nboards.at(d)];
+            chargePositionVSslope_board[d] = new TH2I**[nboards.at(d)];
         }
         
         for(unsigned int b=0; b<nboards.at(d); b++){
@@ -1021,10 +1040,42 @@ void analysis::investigateCRF(){
                     histname += "_";
                     histname += detectornames.at(d);
                 }
-                if(useAngle) chargeVSvariation_near_board[d][b] = new TH2I(histname, histname, 100, 0., 10., 500, 0, 2500);
-                else chargeVSvariation_near_board[d][b] = new TH2I(histname, histname, 100, 0., 10., 500, 0, 2500);
+                chargeVSvariation_near_board[d][b] = new TH2I(histname, histname, 100, 0., 10., 500, 0, 2500);
                 chargeVSvariation_near_board[d][b]->SetXTitle("signal variation [25 ns]");
-                chargeVSvariation_near_board[d][b]->SetYTitle("strip charge [ADC channel]");  
+                chargeVSvariation_near_board[d][b]->SetYTitle("strip charge [ADC channel]");
+                
+                histname = "chargeVSclusterStrip_board";
+                if(nboards.at(d)>1){
+                    if( nboards.at(d) == 3 ) histname += b+6;
+                    else histname += b;
+                }
+                if(ndetectors>1){ 
+                    histname += "_";
+                    histname += detectornames.at(d);
+                }
+                chargeVSclusterStrip_board[d][b] = new TH2I(histname, histname, 10, 0.5, 10.5 , 500, 0, 2500);
+                chargeVSclusterStrip_board[d][b]->SetXTitle("strip in cluster");
+                chargeVSclusterStrip_board[d][b]->SetYTitle("strip charge [ADC channel]");  
+                
+                chargePositionVSslope_board[d][b] = new TH2I*[2];
+                
+                for(unsigned int h=0; h<2; h++){
+                    histname = "chargePositionVSslope_board";
+                    if(nboards.at(d)>1){
+                        if( nboards.at(d) == 3 ) histname += b+6;
+                        else histname += b;
+                    }
+                    if(ndetectors>1){ 
+                        histname += "_";
+                        histname += detectornames.at(d);
+                    }
+                    if( h == 0 ) histname += "_hits";
+                    else histname += "_charge";
+                    if(useAngle) chargePositionVSslope_board[d][b][h] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 21 , -10.5 , 10.5 );
+                    else chargePositionVSslope_board[d][b][h] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 21 , -10.5 , 10.5 );
+                    chargePositionVSslope_board[d][b][h]->SetXTitle("slope y (average MDTs)");
+                    chargePositionVSslope_board[d][b][h]->SetYTitle("strip in cluster");  
+                }
             
             }
             
@@ -2847,13 +2898,27 @@ void analysis::investigateCRF(){
                     nearHits[d]->Fill( intersection.at(0), intersection.at(1) );
                     if(!onlyCluster){
                         unsigned int stripindex = 0;
+                        int frontStrip = -1;
+//                         double typeConversionAdd = centroid->at(nearest) - (int)centroid->at(nearest);
                         for(unsigned int s=0; s<size->at(nearest); s++){
                             stripindex = strips->at(nearest).at(s);
                             risetimeVScharge_near_board[d][nearboard]->Fill( maxcharge->at(stripindex), risetime->at(stripindex) * 25.);
                             chargeVSvariation_near_board[d][nearboard]->Fill( variation->at(stripindex) , maxcharge->at(stripindex) );
                             chargeVSstrip_near[d]->Fill( number->at(stripindex) , maxcharge->at(stripindex) );
-                            if(useAngle) starttimeVSslope_near_board[d][nearboard]->Fill( mdtangle, ( turntime->at(stripindex) + extrapolateTO * extrapolationfactor * risetime->at(stripindex) ) * 25.);
-                            else starttimeVSslope_near_board[d][nearboard]->Fill( mdtslope, ( turntime->at(stripindex) + extrapolateTO * extrapolationfactor * risetime->at(stripindex) ) * 25.);
+//                             int stripInCluster = number->at(stripindex) - ( centroid->at(nearest) + typeConversionAdd );
+                            double stripInCluster = number->at(stripindex) - centroid->at(nearest) ;
+                            if(useAngle){ 
+                                starttimeVSslope_near_board[d][nearboard]->Fill( mdtangle, ( turntime->at(stripindex) + extrapolateTO * extrapolationfactor * risetime->at(stripindex) ) * 25.);
+                                chargePositionVSslope_board[d][nearboard][0]->Fill( mdtangle , stripInCluster );
+                                chargePositionVSslope_board[d][nearboard][1]->Fill( mdtangle , stripInCluster , maxcharge->at(stripindex) );
+                            }
+                            else{ 
+                                starttimeVSslope_near_board[d][nearboard]->Fill( mdtslope, ( turntime->at(stripindex) + extrapolateTO * extrapolationfactor * risetime->at(stripindex) ) * 25.);
+                                chargePositionVSslope_board[d][nearboard][0]->Fill( mdtslope , stripInCluster );
+                                chargePositionVSslope_board[d][nearboard][1]->Fill( mdtslope , stripInCluster , maxcharge->at(stripindex) );
+                            }
+                            if( frontStrip < 0 ) frontStrip = number->at(stripindex);
+                            if( abs( mdtangle ) < 2. )  chargeVSclusterStrip_board[d][nearboard]->Fill( number->at(stripindex) - frontStrip + 1 , maxcharge->at(stripindex) );
                         }
                     }
                 }
@@ -3142,6 +3207,8 @@ void analysis::investigateCRF(){
                 risetimeVScharge_near_board[d][b]->Write();
                 starttimeVSslope_near_board[d][b]->Write();
                 chargeVSvariation_near_board[d][b]->Write();
+                chargeVSclusterStrip_board[d][b]->Write();
+                for(unsigned int h=0; h<2; h++) chargePositionVSslope_board[d][b][h]->Write();
             }
             
         }
