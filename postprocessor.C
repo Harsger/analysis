@@ -32,6 +32,7 @@ int main(int argc, char* argv[]){
     TString parametername = "";
     unsigned int requiredHits = 500;
     double fitRange = -1.;
+    bool largePartitions = false;
     bool debug = false;
     
     if(argc<2 || string(argv[1]).compare(string("--help"))==0 || string(argv[1]).compare(string("-h"))==0) {
@@ -45,6 +46,7 @@ int main(int argc, char* argv[]){
         " -p\tparameterfile          \t(default:  \"" << parametername << "\")\n"
         " -r\trequired hits          \t(default:  \"" << requiredHits << "\")\n"
         " -f\tfit range              \t(default:  \"" << fitRange << "\")\n"
+        " -L\tlarge partitions       \t(default:  \"" << largePartitions << "\")\n"
         " -D\tenables debugging mode \t(default:  \"" << debug << "\")\n"
         "\n"
         "output files are named : <inputname>_<mode>.root\n"
@@ -53,7 +55,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "m:i:d:o:p:r:f:D")) != -1) {
+    while ((c = getopt (argc, argv, "m:i:d:o:p:r:f:LD")) != -1) {
         switch (c)
         {
         case 'm':
@@ -77,6 +79,9 @@ int main(int argc, char* argv[]){
         case 'f':
             fitRange = atof(optarg);
             break;
+        case 'L':
+            largePartitions = true;
+            break;
         case 'D':
             debug = true;
             break;
@@ -97,6 +102,7 @@ int main(int argc, char* argv[]){
     cout << " parameterfile   : " << parametername << "\n";
     cout << " required hits   : " << requiredHits << "\n";
     cout << " fit range       : " << fitRange << "\n";
+    if(largePartitions) cout << " using 5 x 7 partitions " << endl;
     if(debug) cout << " debugging mode enabled " << endl;
     cout << endl;
     
@@ -147,6 +153,13 @@ int main(int argc, char* argv[]){
     cout << endl;
     
     poster->setAnaParams( requiredHits, fitRange, outname, parametername, true, debug);
+    
+    if(largePartitions){
+        for(unsigned int d=0; d<poster->ndetectors; d++){
+            poster->divisions.at(d).at(0) = 5;
+            poster->divisions.at(d).at(1) = 7;
+        }
+    }
     
     if( !mode.Contains("coarse") && !mode.Contains("fine") ) poster->outfile = new TFile(outname,"RECREATE");
     
