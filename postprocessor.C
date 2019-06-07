@@ -21,6 +21,8 @@ unsigned int stripsPerAPV = 128;
 unsigned int stripsPerAdapter = 512;
 unsigned int stripsPerBoard = 1024;
 
+bool constantMDTresolution = false;
+
 void evaluateStripChargeDistribution( TH2I * chargeVSstrip , vector< vector<double> > &maxima );
 
 int main(int argc, char* argv[]){
@@ -47,6 +49,7 @@ int main(int argc, char* argv[]){
         " -r\trequired hits          \t(default:  \"" << requiredHits << "\")\n"
         " -f\tfit range              \t(default:  \"" << fitRange << "\")\n"
         " -L\tlarge partitions       \t(default:  \"" << largePartitions << "\")\n"
+        " -C\tconstant MDT resolution\t(default:  \"" << constantMDTresolution << "\")\n"
         " -D\tenables debugging mode \t(default:  \"" << debug << "\")\n"
         "\n"
         "output files are named : <inputname>_<mode>.root\n"
@@ -55,7 +58,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "m:i:d:o:p:r:f:LD")) != -1) {
+    while ((c = getopt (argc, argv, "m:i:d:o:p:r:f:LCD")) != -1) {
         switch (c)
         {
         case 'm':
@@ -82,6 +85,9 @@ int main(int argc, char* argv[]){
         case 'L':
             largePartitions = true;
             break;
+        case 'C':
+            constantMDTresolution = true;
+            break;
         case 'D':
             debug = true;
             break;
@@ -102,6 +108,7 @@ int main(int argc, char* argv[]){
     cout << " parameterfile   : " << parametername << "\n";
     cout << " required hits   : " << requiredHits << "\n";
     cout << " fit range       : " << fitRange << "\n";
+    if(constantMDTresolution) cout << " using constant MDT resolution " << endl;
     if(largePartitions) cout << " using 5 x 7 partitions " << endl;
     if(debug) cout << " debugging mode enabled " << endl;
     cout << endl;
@@ -1010,17 +1017,23 @@ void analysis::resolution(){
     TGraphErrors * centroidNarrow;
     TGraphErrors * centroidBroad;
     TGraphErrors * centroidBroadNarrowRatio;
+    TGraphErrors * centroidNarrowFullRatio;
     TGraphErrors * centroidResolutionTrackCor;
+    TGraphErrors * centroidResolutionTrackCorWeighted;
     TGraphErrors * uTPCResolution;
     TGraphErrors * uTPCNarrow;
     TGraphErrors * uTPCBroad;
     TGraphErrors * uTPCbroadNarrowRatio;
+    TGraphErrors * uTPCnarrowFullRatio;
     TGraphErrors * uTPCResolutionTrackCor;
+    TGraphErrors * uTPCResolutionTrackCorWeighted;
     TGraphErrors * stereoResolution;
     TGraphErrors * stereoNarrow;
     TGraphErrors * stereoBroad;
     TGraphErrors * stereoBroadNarrowRatio;
+    TGraphErrors * stereoNarrowFullRatio;
     TGraphErrors * stereoResolutionTrackCor;
+    TGraphErrors * stereoResolutionTrackCorWeighted;
     TH2D * cenResPerPartition;
     TH2I * resVSslope = new TH2I();
     TH2I * readHist;
@@ -1115,6 +1128,16 @@ void analysis::resolution(){
         title += "; slope reference track; centroid residual broad narrow ratio";
         centroidBroadNarrowRatio->SetTitle(title);
         
+        centroidNarrowFullRatio = new TGraphErrors();
+        title = "centroidNarrowFullRatio";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        centroidNarrowFullRatio->SetName(title);
+        title += "; slope reference track; centroid residual narrow ratio";
+        centroidNarrowFullRatio->SetTitle(title);
+        
         centroidResolutionTrackCor = new TGraphErrors();
         title = "centroidResolutionTrackCor";
         if(ndetectors>1){ 
@@ -1122,10 +1145,20 @@ void analysis::resolution(){
             title += detectornames.at(d);
         }
         centroidResolutionTrackCor->SetName(title);
-//         title += "; slope reference track; residual width without track uncertainty [mm]";
         centroidResolutionTrackCor->SetTitle(title);
         centroidResolutionTrackCor->GetXaxis()->SetTitle("slope reference track");
         centroidResolutionTrackCor->GetYaxis()->SetTitle("residual width without track uncertainty [mm]");
+        
+        centroidResolutionTrackCorWeighted = new TGraphErrors();
+        title = "centroidResolutionTrackCorWeighted";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        centroidResolutionTrackCorWeighted->SetName(title);
+        centroidResolutionTrackCorWeighted->SetTitle(title);
+        centroidResolutionTrackCorWeighted->GetXaxis()->SetTitle("slope reference track");
+        centroidResolutionTrackCorWeighted->GetYaxis()->SetTitle("residual width weighted without track uncertainty [mm]");
         
         uTPCResolution = new TGraphErrors();
         title = "uTPCResolution";
@@ -1167,6 +1200,16 @@ void analysis::resolution(){
         title += "; slope reference track; uTPC residual broad narrow ratio";
         uTPCbroadNarrowRatio->SetTitle(title);
         
+        uTPCnarrowFullRatio = new TGraphErrors();
+        title = "uTPCnarrowFullRatio";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        uTPCnarrowFullRatio->SetName(title);
+        title += "; slope reference track; uTPC residual narrow ratio";
+        uTPCnarrowFullRatio->SetTitle(title);
+        
         uTPCResolutionTrackCor = new TGraphErrors();
         title = "uTPCResolutionTrackCor";
         if(ndetectors>1){ 
@@ -1174,10 +1217,20 @@ void analysis::resolution(){
             title += detectornames.at(d);
         }
         uTPCResolutionTrackCor->SetName(title);
-//         title += "; slope reference track; uTPC residual width without track uncertainty [mm]";
         uTPCResolutionTrackCor->SetTitle(title);
         uTPCResolutionTrackCor->GetXaxis()->SetTitle("slope reference track");
         uTPCResolutionTrackCor->GetYaxis()->SetTitle("uTPC residual width without track uncertainty [mm]");
+        
+        uTPCResolutionTrackCorWeighted = new TGraphErrors();
+        title = "uTPCResolutionTrackCorWeighted";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        uTPCResolutionTrackCorWeighted->SetName(title);
+        uTPCResolutionTrackCorWeighted->SetTitle(title);
+        uTPCResolutionTrackCorWeighted->GetXaxis()->SetTitle("slope reference track");
+        uTPCResolutionTrackCorWeighted->GetYaxis()->SetTitle("uTPC residual width weighted without track uncertainty [mm]");
         
         if(debug) cout << " graphs initialized " << endl;
         
@@ -1229,17 +1282,13 @@ void analysis::resolution(){
             continue;
         }
         
-        nbins = resVSslope->GetXaxis()->GetNbins();
-        if( noPartitions ){
-            title = "resVSslope_area";
-            if(ndetectors>1){ 
-                title += "_";
-                title += detectornames.at(d);
-            }
-            resVSslope = (TH2I*)infile->Get(title);
-            nbins = resVSslope->GetXaxis()->GetNbins();
-            if(debug) cout << " resolution taken from resVSslope_area " << endl;
+        title = "resVSslope_area";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
         }
+        resVSslope = (TH2I*)infile->Get(title);
+        nbins = resVSslope->GetXaxis()->GetNbins();
         lowEdge = resVSslope->GetXaxis()->GetXmin();
         highEdge = resVSslope->GetXaxis()->GetXmax();
         step = (highEdge-lowEdge)/(double)(nbins);
@@ -1277,43 +1326,57 @@ void analysis::resolution(){
             
 //             cout << " " << fitresults.at(2) << " +/- " << fitresults.at(8) << "\t" << fitresults.at(0) << " +/- " << fitresults.at(6) << endl;
 //             cout << " " << fitresults.at(5) << " +/- " << fitresults.at(11) << "\t" << fitresults.at(3) << " +/- " << fitresults.at(9) << endl;
+            
+            double integralError = 1.;
+            double integral = slice->IntegralAndError( slice->GetXaxis()->FindBin(-fitrange) , slice->GetXaxis()->FindBin(fitrange) , integralError );
         
             if( fitresults.at(0) > 0. ){
                 centroidBroadNarrowRatio->SetPoint( centroidBroadNarrowRatio->GetN(), lowEdge+step*(b-0.5), fitresults.at(3) / fitresults.at(0));
                 centroidBroadNarrowRatio->SetPointError( centroidBroadNarrowRatio->GetN()-1, 0.5*step, sqrt( pow( fitresults.at(9) / fitresults.at(0), 2) + pow( fitresults.at(3) / pow( fitresults.at(0), 2) * fitresults.at(6), 2) ) );
+                centroidNarrowFullRatio->SetPoint( centroidNarrowFullRatio->GetN(), lowEdge+step*(b-0.5), fitresults.at(0) / integral );
+                centroidNarrowFullRatio->SetPointError( centroidNarrowFullRatio->GetN()-1, 0.5*step, sqrt( pow( fitresults.at(6) / integral, 2) + pow( fitresults.at(0) / pow( integral , 2) * integralError , 2) ) );
             }
             
             if( fitresults.at(2) < crfRes.at(b-1).at(0) ) continue;
             
-//             residualWidth = 
-//                 ( 
-//                     sqrt( fitresults.at(2) * fitresults.at(2) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) ) * fitresults.at(0) + 
-//                     sqrt( fitresults.at(5) * fitresults.at(5) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) ) * fitresults.at(3) 
-//                 ) 
-//                 / ( fitresults.at(0) + fitresults.at(3) );
-//                 
-//             residualWidthError = 
-//                 ( 
-//                     sqrt( fitresults.at(8) * fitresults.at(8) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) ) * fitresults.at(0) + 
-//                     sqrt( fitresults.at(11) * fitresults.at(11) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) ) * fitresults.at(3) 
-//                 ) 
-//                 / ( fitresults.at(0) + fitresults.at(3) );
-            
-//             residualWidth = sqrt( residualWidth * residualWidth - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) );
-//                 
-//             residualWidthError = sqrt( residualWidthError * residualWidthError + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) );
-            
             residualWidth = sqrt( fitresults.at(2) * fitresults.at(2) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) );
-            residualWidthError = sqrt( fitresults.at(8) * fitresults.at(8) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) );
-            
-//             residualWidth = sqrt( residualWidth * residualWidth - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) );
-//             residualWidthError = sqrt( residualWidthError * residualWidthError + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) );
+            residualWidthError = sqrt( 
+                                        pow( 2. * fitresults.at(2) * fitresults.at(8) / residualWidth , 2 ) +
+                                        pow( 2. * crfRes.at(b-1).at(0) * crfRes.at(b-1).at(1) / residualWidth , 2 )
+                                            
+                                    );
             
             centroidResolutionTrackCor->SetPoint(centroidResolutionTrackCor->GetN(),lowEdge+step*(b-0.5),residualWidth);
             centroidResolutionTrackCor->SetPointError(centroidResolutionTrackCor->GetN()-1,0.5*step,residualWidthError);
             
+            if( fitresults.at(5) < crfRes.at(b-1).at(2) ) continue;
+            
+            residualWidth = 
+                ( 
+                    sqrt( fitresults.at(2) * fitresults.at(2) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) ) * fitresults.at(0) + 
+                    sqrt( fitresults.at(5) * fitresults.at(5) - crfRes.at(b-1).at(2) * crfRes.at(b-1).at(2) ) * fitresults.at(3) 
+                ) 
+                / ( fitresults.at(0) + fitresults.at(3) );
+                
+            residualWidthError = 
+                ( 
+                    sqrt( fitresults.at(8) * fitresults.at(8) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) ) * fitresults.at(0) + 
+                    sqrt( fitresults.at(11) * fitresults.at(11) + crfRes.at(b-1).at(3) * crfRes.at(b-1).at(3) ) * fitresults.at(3) 
+                ) 
+                / ( fitresults.at(0) + fitresults.at(3) );
+            
+            centroidResolutionTrackCorWeighted->SetPoint(centroidResolutionTrackCorWeighted->GetN(),lowEdge+step*(b-0.5),residualWidth);
+            centroidResolutionTrackCorWeighted->SetPointError(centroidResolutionTrackCorWeighted->GetN()-1,0.5*step,residualWidthError);
+            
         } 
         
+        title = "resVSslope_sum";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        resVSslope->SetTitle(title);
+        resVSslope->SetName(title);
         resVSslope->Write();
                 
         title = "uTPCresVSslope";
@@ -1354,37 +1417,47 @@ void analysis::resolution(){
             
             uTPCBroad->SetPoint(uTPCBroad->GetN(),lowEdge+step*(b-0.5),fitresults.at(5));
             uTPCBroad->SetPointError(uTPCBroad->GetN()-1,0.5*step,fitresults.at(11));
+            
+            double integralError = 1.;
+            double integral = slice->IntegralAndError( slice->GetXaxis()->FindBin(-fitrange) , slice->GetXaxis()->FindBin(fitrange) , integralError );
         
             if( fitresults.at(0) > 0. ){
                 uTPCbroadNarrowRatio->SetPoint( uTPCbroadNarrowRatio->GetN(), lowEdge+step*(b-0.5), fitresults.at(3) / fitresults.at(0));
                 uTPCbroadNarrowRatio->SetPointError( uTPCbroadNarrowRatio->GetN()-1, 0.5*step, sqrt( pow( fitresults.at(9) / fitresults.at(0), 2) + pow( fitresults.at(3) / pow( fitresults.at(0), 2) * fitresults.at(6), 2) ) );
+                uTPCnarrowFullRatio->SetPoint( uTPCnarrowFullRatio->GetN(), lowEdge+step*(b-0.5), fitresults.at(0) / integral );
+                uTPCnarrowFullRatio->SetPointError( uTPCnarrowFullRatio->GetN()-1, 0.5*step, sqrt( pow( fitresults.at(6) / integral, 2) + pow( fitresults.at(0) / pow( integral , 2) * integralError , 2) ) );
             }
             
             if( fitresults.at(2) < crfRes.at(b-1).at(0) ) continue;
             
-//             residualWidth = 
-//                 ( 
-//                     sqrt( fitresults.at(2) * fitresults.at(2) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) ) * fitresults.at(0) + 
-//                     sqrt( fitresults.at(5) * fitresults.at(5) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) ) * fitresults.at(3) 
-//                 ) 
-//                 / ( fitresults.at(0) + fitresults.at(3) );
-//                 
-//             residualWidthError = 
-//                 ( 
-//                     sqrt( fitresults.at(8) * fitresults.at(8) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) ) * fitresults.at(0) + 
-//                     sqrt( fitresults.at(11) * fitresults.at(11) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) ) * fitresults.at(3) 
-//                 ) 
-//                 / ( fitresults.at(0) + fitresults.at(3) );
-            
-//             residualWidth = sqrt( residualWidth * residualWidth - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) );
-//                 
-//             residualWidthError = sqrt( residualWidthError * residualWidthError + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) );
-            
             residualWidth = sqrt( fitresults.at(2) * fitresults.at(2) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) );
-            residualWidthError = sqrt( fitresults.at(8) * fitresults.at(8) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) );
+            residualWidthError = sqrt( 
+                                        pow( 2. * fitresults.at(2) * fitresults.at(8) / residualWidth , 2 ) +
+                                        pow( 2. * crfRes.at(b-1).at(0) * crfRes.at(b-1).at(1) / residualWidth , 2 )
+                                            
+                                    );
             
             uTPCResolutionTrackCor->SetPoint(uTPCResolutionTrackCor->GetN(),lowEdge+step*(b-0.5),residualWidth);
             uTPCResolutionTrackCor->SetPointError(uTPCResolutionTrackCor->GetN()-1,0.5*step,residualWidthError);
+            
+            if( fitresults.at(5) < crfRes.at(b-1).at(2) ) continue;
+            
+            residualWidth = 
+                ( 
+                    sqrt( fitresults.at(2) * fitresults.at(2) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) ) * fitresults.at(0) + 
+                    sqrt( fitresults.at(5) * fitresults.at(5) - crfRes.at(b-1).at(2) * crfRes.at(b-1).at(2) ) * fitresults.at(3) 
+                ) 
+                / ( fitresults.at(0) + fitresults.at(3) );
+                
+            residualWidthError = 
+                ( 
+                    sqrt( fitresults.at(8) * fitresults.at(8) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) ) * fitresults.at(0) + 
+                    sqrt( fitresults.at(11) * fitresults.at(11) + crfRes.at(b-1).at(3) * crfRes.at(b-1).at(3) ) * fitresults.at(3) 
+                ) 
+                / ( fitresults.at(0) + fitresults.at(3) );
+            
+            uTPCResolutionTrackCorWeighted->SetPoint(uTPCResolutionTrackCorWeighted->GetN(),lowEdge+step*(b-0.5),residualWidth);
+            uTPCResolutionTrackCorWeighted->SetPointError(uTPCResolutionTrackCorWeighted->GetN()-1,0.5*step,residualWidthError);
             
         }
         
@@ -1393,12 +1466,16 @@ void analysis::resolution(){
         centroidNarrow->Write();
         centroidBroad->Write();
         centroidBroadNarrowRatio->Write();
+        centroidNarrowFullRatio->Write();
         centroidResolutionTrackCor->Write();
+        centroidResolutionTrackCorWeighted->Write();
         uTPCResolution->Write();
         uTPCNarrow->Write();
         uTPCBroad->Write();
         uTPCbroadNarrowRatio->Write();
+        uTPCnarrowFullRatio->Write();
         uTPCResolutionTrackCor->Write();
+        uTPCResolutionTrackCorWeighted->Write();
         
     }
     
@@ -1446,6 +1523,16 @@ void analysis::resolution(){
         title += "; slope reference track; stereo residual broad narrow ratio";
         stereoBroadNarrowRatio->SetTitle(title);
         
+        stereoNarrowFullRatio = new TGraphErrors();
+        title = "stereoNarrowFullRatio";
+        if(stereoLayer.size()>1){ 
+            title += "_";
+            title += l;
+        }
+        stereoNarrowFullRatio->SetName(title);
+        title += "; slope reference track; stereo residual narrow ratio";
+        stereoNarrowFullRatio->SetTitle(title);
+        
         stereoResolutionTrackCor = new TGraphErrors();
         title = "stereoResolutionTrackCor";
         if(stereoLayer.size()>1){ 
@@ -1455,6 +1542,16 @@ void analysis::resolution(){
         stereoResolutionTrackCor->SetName(title);
         title += "; slope reference track; stereo residual width without track uncertainty [mm]";
         stereoResolutionTrackCor->SetTitle(title);
+        
+        stereoResolutionTrackCorWeighted = new TGraphErrors();
+        title = "stereoResolutionTrackCorWeighted";
+        if(stereoLayer.size()>1){ 
+            title += "_";
+            title += l;
+        }
+        stereoResolutionTrackCorWeighted->SetName(title);
+        title += "; slope reference track; stereo residual width without track uncertainty [mm]";
+        stereoResolutionTrackCorWeighted->SetTitle(title);
         
         title = "resVSslope_stereo";
         title += l;
@@ -1488,31 +1585,46 @@ void analysis::resolution(){
             stereoBroad->SetPoint(stereoBroad->GetN(),lowEdge+step*(b-0.5),fitresults.at(5));
             stereoBroad->SetPointError(stereoBroad->GetN()-1,0.5*step,fitresults.at(11));
             
+            double integralError = 1.;
+            double integral = slice->IntegralAndError( slice->GetXaxis()->FindBin(-fitrange) , slice->GetXaxis()->FindBin(fitrange) , integralError );
+        
+            if( fitresults.at(0) > 0. ){
+                stereoBroadNarrowRatio->SetPoint( stereoBroadNarrowRatio->GetN(), lowEdge+step*(b-0.5), fitresults.at(3) / fitresults.at(0));
+                stereoBroadNarrowRatio->SetPointError( stereoBroadNarrowRatio->GetN()-1, 0.5*step, sqrt( pow( fitresults.at(9) / fitresults.at(0), 2) + pow( fitresults.at(3) / pow( fitresults.at(0), 2) * fitresults.at(6), 2) ) );
+                stereoNarrowFullRatio->SetPoint( stereoNarrowFullRatio->GetN(), lowEdge+step*(b-0.5), fitresults.at(0) / integral );
+                stereoNarrowFullRatio->SetPointError( stereoNarrowFullRatio->GetN()-1, 0.5*step, sqrt( pow( fitresults.at(6) / integral, 2) + pow( fitresults.at(0) / pow( integral , 2) * integralError , 2) ) );
+            }
+            
             if( fitresults.at(2) < crfRes.at(b-1).at(0) ) continue;
             
-//             residualWidth = 
-//                 ( 
-//                     sqrt( fitresults.at(2) * fitresults.at(2) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) ) * fitresults.at(0) + 
-//                     sqrt( fitresults.at(5) * fitresults.at(5) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) ) * fitresults.at(3) 
-//                 ) 
-//                 / ( fitresults.at(0) + fitresults.at(3) );
-//                 
-//             residualWidthError = 
-//                 ( 
-//                     sqrt( fitresults.at(8) * fitresults.at(8) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) ) * fitresults.at(0) + 
-//                     sqrt( fitresults.at(11) * fitresults.at(11) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) ) * fitresults.at(3) 
-//                 ) 
-//                 / ( fitresults.at(0) + fitresults.at(3) );
-            
-//             residualWidth = sqrt( residualWidth * residualWidth - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) );
-//                 
-//             residualWidthError = sqrt( residualWidthError * residualWidthError + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) );
-            
             residualWidth = sqrt( fitresults.at(2) * fitresults.at(2) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) );
-            residualWidthError = sqrt( fitresults.at(8) * fitresults.at(8) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) );
+            residualWidthError = sqrt( 
+                                        pow( 2. * fitresults.at(2) * fitresults.at(8) / residualWidth , 2 ) +
+                                        pow( 2. * crfRes.at(b-1).at(0) * crfRes.at(b-1).at(1) / residualWidth , 2 )
+                                            
+                                    );
             
             stereoResolutionTrackCor->SetPoint(stereoResolutionTrackCor->GetN(),lowEdge+step*(b-0.5),residualWidth);
             stereoResolutionTrackCor->SetPointError(stereoResolutionTrackCor->GetN()-1,0.5*step,residualWidthError);
+            
+            if( fitresults.at(5) < crfRes.at(b-1).at(2) ) continue;
+            
+            residualWidth = 
+                ( 
+                    sqrt( fitresults.at(2) * fitresults.at(2) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) ) * fitresults.at(0) + 
+                    sqrt( fitresults.at(5) * fitresults.at(5) - crfRes.at(b-1).at(2) * crfRes.at(b-1).at(2) ) * fitresults.at(3) 
+                ) 
+                / ( fitresults.at(0) + fitresults.at(3) );
+                
+            residualWidthError = 
+                ( 
+                    sqrt( fitresults.at(8) * fitresults.at(8) + crfRes.at(b-1).at(1) * crfRes.at(b-1).at(1) ) * fitresults.at(0) + 
+                    sqrt( fitresults.at(11) * fitresults.at(11) + crfRes.at(b-1).at(3) * crfRes.at(b-1).at(3) ) * fitresults.at(3) 
+                ) 
+                / ( fitresults.at(0) + fitresults.at(3) );
+            
+            stereoResolutionTrackCorWeighted->SetPoint(stereoResolutionTrackCorWeighted->GetN(),lowEdge+step*(b-0.5),residualWidth);
+            stereoResolutionTrackCorWeighted->SetPointError(stereoResolutionTrackCorWeighted->GetN()-1,0.5*step,residualWidthError);
             
         }
         
@@ -1522,7 +1634,9 @@ void analysis::resolution(){
         stereoNarrow->Write();
         stereoBroad->Write();
         stereoBroadNarrowRatio->Write();
+        stereoNarrowFullRatio->Write();
         stereoResolutionTrackCor->Write();
+        stereoResolutionTrackCorWeighted->Write();
         
     }
     
@@ -1637,8 +1751,21 @@ void analysis::crfResolution(int det){
 //         vecdodummy.push_back( residualWidth );
 //         vecdodummy.push_back( residualWidthError );
         
+        if(constantMDTresolution){
+        
+            vecdodummy.push_back( 0.3 );
+            vecdodummy.push_back( 0.01 );
+            
+            vecdodummy.push_back( 1.1 );
+            vecdodummy.push_back( 0.03 );
+        
+        }
+        
         vecdodummy.push_back( fitresults.at(2) / sqrt(2.) );
         vecdodummy.push_back( fitresults.at(8) / sqrt(2.) );
+        
+        vecdodummy.push_back( fitresults.at(5) / sqrt(2.) );
+        vecdodummy.push_back( fitresults.at(11) / sqrt(2.) );
         
         crfRes.push_back( vecdodummy);
         
