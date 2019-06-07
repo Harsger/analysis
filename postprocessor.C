@@ -160,6 +160,8 @@ int main(int argc, char* argv[]){
     cout << endl;
     
     poster->setAnaParams( requiredHits, fitRange, outname, parametername, true, debug);
+//     poster->readname = readname;
+    poster->readname = inname;
     
     if(largePartitions){
         for(unsigned int d=0; d<poster->ndetectors; d++){
@@ -248,6 +250,7 @@ void analysis::align(){
     TH2D * CRFhits;
     TF1 * linfit;
     TF1 * gaus;
+    TH2I * sumHist;
     
     TH2D * deltaY;
     TH2D * deltaZ;
@@ -271,6 +274,8 @@ void analysis::align(){
     double dodummy;
     vector<double> vecdodummy;
     vector<double> fitresults;
+    
+    vector< vector<double> > fullSampleFit;
     
     unsigned int startAt = 0;
     
@@ -501,6 +506,9 @@ void analysis::align(){
                 }
                 resVSslope = (TH2I*)infile->Get(title);
                 
+                if( cx == 0 && cy == 0 ) sumHist = (TH2I*)resVSslope->Clone();
+                else sumHist->Add( resVSslope );
+                
                 unsigned int partitionEntries = resVSslope->GetEntries();
                 
                 if( partitionEntries < requiredHits ){ 
@@ -639,6 +647,25 @@ void analysis::align(){
         vecdodummy.push_back(zcor);
         vecdodummy.push_back(zerr);
         corrections.push_back(vecdodummy);
+        vecdodummy.clear();
+        
+        prof = sumHist->ProfileX();
+        if( specifier.Contains("uTPCresVSuTPCslope_pp") ) linfit = new TF1("linfit","pol1",-3.,3.);
+        else linfit = new TF1("linfit","pol1",-0.3,0.3);
+        if(debug){ 
+            prof->Fit(linfit,"R");
+            prof->Draw();
+            gPad->Modified();
+            gPad->Update();
+            gPad->WaitPrimitive();
+        }
+        else prof->Fit(linfit,"RQ0");
+        
+        vecdodummy.push_back( linfit->GetParameter(0) );
+        vecdodummy.push_back( linfit->GetParError(0) );
+        vecdodummy.push_back( linfit->GetParameter(1) );
+        vecdodummy.push_back( linfit->GetParError(1) );
+        fullSampleFit.push_back( vecdodummy );
         vecdodummy.clear();
         
         if( specifier.Contains("uTPCresVSuTPCslope_pp") ){ 
@@ -1003,6 +1030,31 @@ void analysis::align(){
         
     cout << endl;
     
+    cout << " " << readname << endl;
+    cout << " detector ";
+    if( specifier.Contains("uTPCresVSuTPCslope_pp") )  cout << " \t uTPC -> t0" << endl;
+    else cout << " \t -Y \t \t +Z " << endl;
+    for(unsigned int d=0; d<ndetectors; d++){
+        cout << " " << detectornames.at(d);
+        if( specifier.Contains("uTPCresVSuTPCslope_pp") ) 
+            cout << " \t " << -fullSampleFit.at(d).at(2)/pitch.at(d) << " +/- " << fullSampleFit.at(d).at(3)/pitch.at(d);
+        else{ 
+            for(unsigned int p=0; p<fullSampleFit.at(d).size(); p+=2){
+                cout << " \t " << fullSampleFit.at(d).at(p) << " +/- " << fullSampleFit.at(d).at(p+1);
+            }
+        }
+        cout << endl;
+    }
+    cout << endl;
+    
+    if( specifier.Contains("uTPCresVSuTPCslope_pp") ){
+        ofstream textfile;
+        textfile.open( "uTPCt0.txt" , std::ios_base::app );
+        textfile << readname << endl;
+        for(unsigned int d=0; d<ndetectors; d++)
+            textfile << fixed << setprecision(3) << setw(5) << -fullSampleFit.at(d).at(2)/pitch.at(d) << endl;
+    }
+    
 }
 
 void analysis::resolution(){
@@ -1264,7 +1316,7 @@ void analysis::resolution(){
                     title += "sliced";
                     slice = readHist->ProjectionY(title);
                     slice->GetXaxis()->SetRangeUser( -fitrange, fitrange);
-                    fitresults = fitDoubleGaussian((TH1I*)(slice),debug);
+                    fitresults = fitDoubleGaussian((TH1I*)(slice),false);
                     residualWidth = ( fitresults.at(2) * fitresults.at(0) + fitresults.at(5) * fitresults.at(3) ) / ( fitresults.at(0) + fitresults.at(3) );
                     residualWidthError = ( fitresults.at(8) * fitresults.at(0) + fitresults.at(11) * fitresults.at(3) ) / ( fitresults.at(0) + fitresults.at(3) );
                     cenResPerPartition->SetBinContent(cx+1,cy+1,residualWidth);
