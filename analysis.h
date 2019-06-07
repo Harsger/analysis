@@ -1617,9 +1617,9 @@ vector<double> analysis::fitDoubleGaussian(TH1I * hist, bool bugger){
     //  simpleGaussian->SetParLimits(1,mean-deviation,mean+deviation);
     //  simpleGaussian->SetParLimits(2,0.,1.1*deviation);
         
-    hist->Fit(simpleGaussian,"RQB");
-    hist->Fit(simpleGaussian,"RQB");
-    hist->Fit(simpleGaussian,"RQ");
+//     hist->Fit(simpleGaussian,"RQB");
+//     hist->Fit(simpleGaussian,"RQB");
+//     hist->Fit(simpleGaussian,"RQ");
 
     TF1 * doubleGaussian = new TF1("doubleGaussian","gaus(0)+gaus(3)", -fitrange+fitcenter, fitrange+fitcenter); 
 
@@ -1679,36 +1679,41 @@ vector<double> analysis::fitDoubleGaussian(TH1I * hist, bool bugger){
         unsigned int first = 0;
         unsigned int second = 1;
         
-        if( abs( doubleGaussian->GetParameter(2) ) < abs( doubleGaussian->GetParameter(5) ) && integral0 > integral1 ){
-            first = 0;
-            second = 1;
-        }
-        else if( abs( doubleGaussian->GetParameter(2) ) > abs( doubleGaussian->GetParameter(5) ) && integral0 < integral1 ){
+        if( abs( doubleGaussian->GetParameter(2) ) > abs( doubleGaussian->GetParameter(5) ) ){
             first = 1;
             second = 0;
         }
-        else{
-            if(debug) cout << " WARNING : narrowest gaussian is not most filled gaussian for " << hist->GetName() << " => using most filled for first gaussian " << endl;
-            if( integral0 > integral1 ){
-                first = 0;
-                second = 1;
-            }
-            else if( integral0 < integral1 ){
-                first = 1;
-                second = 0;
-            }
-            else{
-                if(debug) cout << " same integral ? " << endl;
-                if( abs( doubleGaussian->GetParameter(2) ) < abs( doubleGaussian->GetParameter(5) ) ){
-                    first = 0;
-                    second = 1;
-                }
-                else if( abs( doubleGaussian->GetParameter(2) ) > abs( doubleGaussian->GetParameter(5) ) ){
-                    first = 1;
-                    second = 0;
-                }
-            }
-        }
+        
+//         if( abs( doubleGaussian->GetParameter(2) ) < abs( doubleGaussian->GetParameter(5) ) && integral0 > integral1 ){
+//             first = 0;
+//             second = 1;
+//         }
+//         else if( abs( doubleGaussian->GetParameter(2) ) > abs( doubleGaussian->GetParameter(5) ) && integral0 < integral1 ){
+//             first = 1;
+//             second = 0;
+//         }
+//         else{
+//             if(debug) cout << " WARNING : narrowest gaussian is not most filled gaussian for " << hist->GetName() << " => using most filled for first gaussian " << endl;
+//             if( integral0 > integral1 ){
+//                 first = 0;
+//                 second = 1;
+//             }
+//             else if( integral0 < integral1 ){
+//                 first = 1;
+//                 second = 0;
+//             }
+//             else{
+//                 if(debug) cout << " same integral ? " << endl;
+//                 if( abs( doubleGaussian->GetParameter(2) ) < abs( doubleGaussian->GetParameter(5) ) ){
+//                     first = 0;
+//                     second = 1;
+//                 }
+//                 else if( abs( doubleGaussian->GetParameter(2) ) > abs( doubleGaussian->GetParameter(5) ) ){
+//                     first = 1;
+//                     second = 0;
+//                 }
+//             }
+//         }
             
         weight[first] = integral0;
         weight[second] = integral1;
