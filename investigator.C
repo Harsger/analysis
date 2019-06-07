@@ -834,7 +834,7 @@ void analysis::investigateCRF(){
             histname += detectornames.at(d);
         }
 //         resVSslope_area[d] = new TH2I(histname, histname, 120, -0.6, 0.6, 2000, -100., 100.);
-        resVSslope_area[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -100., 100.);
+        resVSslope_area[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -50., 50.);
         resVSslope_area[d]->SetXTitle("slope y (average MDTs)");
         resVSslope_area[d]->SetYTitle("residual y [mm]");  
                 
@@ -890,7 +890,7 @@ void analysis::investigateCRF(){
         for(unsigned int m=0; m<2; m++){ 
                 
             histname = "interceptDifVSslopeDif_at";
-            if(m==0) histname += "NOT";
+            if(m==1) histname += "NOT";
             if(ndetectors>1) histname += detectornames.at(d);
             interceptDifVSslopeDif_at[d][m] = new TH2I(histname, histname, 200, 0., 0.1, 2000, -10., 10.);
             interceptDifVSslopeDif_at[d][m]->SetXTitle("difference of MDTs slopes [mm]");
@@ -1098,7 +1098,7 @@ void analysis::investigateCRF(){
             histname += detectornames.at(d);
         }
 //         uTPCresVSslope[d] = new TH2I(histname, histname, 120, -0.6, 0.6, 2000, -100., 100.);
-        uTPCresVSslope[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -100., 100.);
+        uTPCresVSslope[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -50., 50.);
         uTPCresVSslope[d]->SetXTitle("slope y (average MDTs)");
         uTPCresVSslope[d]->SetYTitle("uTPC residual y [mm]");  
                 
@@ -1636,7 +1636,7 @@ void analysis::investigateCRF(){
         
             histname = "resVSslope_stereo";
             histname += l;
-            resVSslope_stereo[l] = new TH2I( histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -100., 100.);
+            resVSslope_stereo[l] = new TH2I( histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -50., 50.);
             resVSslope_stereo[l]->SetXTitle("slope y (average MDTs)");
             resVSslope_stereo[l]->SetYTitle("residual y [mm]");
         
