@@ -3053,14 +3053,35 @@ void overlayer(){
     
     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
 
+//     vector< vector<string> > plotTags = {
+//         { "520V_20190531_2009" , "clusterQvsNstrips_near_board8_eta_out" , "520V" } ,
+//         { "530V_20190531_0832" , "clusterQvsNstrips_near_board8_eta_out" , "530V" } ,
+//         { "540V_20190530_2006" , "clusterQvsNstrips_near_board8_eta_out" , "540V" } ,
+//         { "550V_20190530_0948" , "clusterQvsNstrips_near_board8_eta_out" , "550V" } ,
+//         { "560V_20190529_0815" , "clusterQvsNstrips_near_board8_eta_out" , "560V" } ,
+//         { "570V_20190528_1223" , "clusterQvsNstrips_near_board8_eta_out" , "570V" } 
+//     };
+    
+//     vector< vector<string> > plotTags = {
+//         { "8515_580V_CJet8s_20190520_1827" , "clusterQvsNstrips_near_board8_eta_out" , "580V" } ,
+//         { "8515_610V_CJet8s_20190520_0842" , "clusterQvsNstrips_near_board8_eta_out" , "610V" } ,
+//         { "8515_615V_CJet8s_20190519_0811" , "clusterQvsNstrips_near_board8_eta_out" , "615V" } ,
+//         { "8515_620V_CJet8s_20190516_1150" , "clusterQvsNstrips_near_board8_eta_out" , "620V" } ,
+//         { "8515_625V_CJet8s_20190517_0901" , "clusterQvsNstrips_near_board8_eta_out" , "625V" } ,
+//         { "8515_630V_CJet8s_20190517_2033" , "clusterQvsNstrips_near_board8_eta_out" , "630V" } ,
+//         { "8515_635V_CJet8s_20190518_1213" , "clusterQvsNstrips_near_board8_eta_out" , "635V" }
+//     };
+    
     vector< vector<string> > plotTags = {
-        { "520V_20190531_2009" , "clusterQvsNstrips_near_board8_eta_out" , "520V" } ,
-        { "530V_20190531_0832" , "clusterQvsNstrips_near_board8_eta_out" , "530V" } ,
-        { "540V_20190530_2006" , "clusterQvsNstrips_near_board8_eta_out" , "540V" } ,
-        { "550V_20190530_0948" , "clusterQvsNstrips_near_board8_eta_out" , "550V" } ,
-        { "560V_20190529_0815" , "clusterQvsNstrips_near_board8_eta_out" , "560V" } ,
-        { "570V_20190528_1223" , "clusterQvsNstrips_near_board8_eta_out" , "570V" } 
-    };
+        { "8020_600V_C475V_20190526_2145" , "clusterQvsNstrips_near_board8_eta_out" , "600V" } ,
+        { "8020_610V_C475V_20190527_0825" , "clusterQvsNstrips_near_board8_eta_out" , "610V" } ,
+        { "8020_640V_C475V_20190523_1918" , "clusterQvsNstrips_near_board8_eta_out" , "640V" } ,
+        { "8020_645V_C475V_20190524_0843" , "clusterQvsNstrips_near_board8_eta_out" , "645V" } ,
+        { "8020_650V_C475V_20190524_2023" , "clusterQvsNstrips_near_board8_eta_out" , "650V" } ,
+        { "8020_655V_C475V_20190525_1204" , "clusterQvsNstrips_near_board8_eta_out" , "655V" } , 
+        { "8020_660V_C475V_20190525_1938" , "clusterQvsNstrips_near_board8_eta_out" , "660V" } ,
+        { "8020_665V_C475V_20190526_1054" , "clusterQvsNstrips_near_board8_eta_out" , "665V" }
+    }; 
 
 //     vector< vector<unsigned int> > plotStyle = {
 //         { 20 , 1 } ,
@@ -3075,7 +3096,8 @@ void overlayer(){
         { 26 ,  6 } ,
         { 21 ,  9 } ,
         { 25 , 46 } ,
-        {  5 , 28 } 
+        {  5 , 28 } , 
+        { 30 , 42 } 
     };
 
 //     vector< vector<unsigned int> > plotStyle = {
@@ -3110,7 +3132,7 @@ void overlayer(){
         
         projection.push_back( readhist->ProjectionY( p.at(2).c_str() ) );
         
-        projection.at(counter)->GetXaxis()->SetRangeUser( 0. , 3000. );
+        projection.at(counter)->GetXaxis()->SetRangeUser( 0. , 5000. );
         double integral = projection.at(counter)->Integral();
         projection.at(counter)->Scale( 1. / integral );
         
@@ -3142,7 +3164,7 @@ void overlayer(){
     
     can->BuildLegend( 0.85 , 0.15 , 0.98 , 0.45 );
     
-//     gPad->SetLogy();
+    gPad->SetLogy();
     gPad->SetGridx();
     gPad->SetGridy();
     gPad->Modified();
@@ -3213,7 +3235,7 @@ void comparer(){
         { 3 , "sigma" }
     };
     
-    TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/qaqc/m8_gasStudy.root" , "RECREATE" );
+    TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root" , "RECREATE" );
     
     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
 
@@ -3221,8 +3243,8 @@ void comparer(){
     map< string , map< unsigned int , string > > measurements;
     
     measurements["93:07"] = {
-//         { 520 , "520V_20190531_2009" } ,
-//         { 530 , "530V_20190531_0832" } ,
+        { 520 , "520V_20190531_2009" } ,
+        { 530 , "530V_20190531_0832" } ,
         { 540 , "540V_20190530_2006" } ,
         { 550 , "550V_20190530_0948" } ,
         { 560 , "560V_20190529_0815" } ,
@@ -3230,7 +3252,7 @@ void comparer(){
     };
     
     measurements["85:15"] = {
-//         { 580 , "8515_580V_CJet8s_20190520_1827" } ,
+        { 580 , "8515_580V_CJet8s_20190520_1827" } ,
         { 610 , "8515_610V_CJet8s_20190520_0842" } ,
         { 615 , "8515_615V_CJet8s_20190519_0811" } ,
         { 620 , "8515_620V_CJet8s_20190516_1150" } ,
@@ -3240,8 +3262,8 @@ void comparer(){
     };
     
     measurements["80:20"] = {
-//         { 600 , "8020_600V_C475V_20190526_2145" } ,
-//         { 610 , "8020_610V_C475V_20190527_0825" } ,
+        { 600 , "8020_600V_C475V_20190526_2145" } ,
+        { 610 , "8020_610V_C475V_20190527_0825" } ,
         { 640 , "8020_640V_C475V_20190523_1918" } ,
         { 645 , "8020_645V_C475V_20190524_0843" } ,
         { 650 , "8020_650V_C475V_20190524_2023" } ,
@@ -3277,6 +3299,7 @@ void comparer(){
     unsigned int numberOfGainFitParameter = 1;
     
     map< string , TGraphErrors** > gainVSpillarHeight;
+    map< string , TGraphErrors** > clusterQvsPillarHeight;
     for( auto m : measurements ){
         gainVSpillarHeight[m.first] = new TGraphErrors*[numberOfGainFitParameter];
         name = "gainVSpillarHeight_";
@@ -3291,6 +3314,19 @@ void comparer(){
             gainVSpillarHeight[m.first][g]->SetTitle(title);
             gainVSpillarHeight[m.first][g]->SetName(title);
         }
+        clusterQvsPillarHeight[m.first] = new TGraphErrors*[parameter.size()];
+        name = "clusterQvsPillarHeight_";
+        title = m.first;
+        title = title.ReplaceAll( ":" , "" );
+        name += title;
+        for( auto p : parameter ){
+            title = name;
+            title += "_";
+            title += p.second;
+            clusterQvsPillarHeight[m.first][p.first] = new TGraphErrors();
+            clusterQvsPillarHeight[m.first][p.first]->SetTitle(title);
+            clusterQvsPillarHeight[m.first][p.first]->SetName(title);
+        }
     }
     
     TGraphErrors ** ampScan;
@@ -3304,7 +3340,12 @@ void comparer(){
     vector<double> highEdge { 0., 0.};
     vector<double> step { 0., 0.};
     
-    double maximum , mean , stdv;
+    double 
+        maximum , 
+        mean , meanError , 
+        stdv , stdvError ,
+        MPV , MPVerror , 
+        sigma , sigmaError ;
     
     for( auto v : variable ){
         for( auto d : detectornames ){
@@ -3346,37 +3387,83 @@ void comparer(){
 //                         if( v.second == "clusterQvsSlope" ){
 //                             projection->GetXaxis()->SetRangeUser( 300. , 5000. );
 //                         }
-//                         else if( v.second == "nStripsVSslope" ){
-//                             projection->GetXaxis()->SetRangeUser( 1.5 , 10.5 );
-//                         }
+//                         else 
+                        if( v.second == "nStripsVSslope" ){
+                            projection->GetXaxis()->SetRangeUser( 1.5 , 10.5 );
+                        }
                         maximum = projection->GetMaximum();
                         mean = projection->GetMean();
+                        meanError = projection->GetMeanError();
                         stdv = projection->GetStdDev();
+                        stdvError = projection->GetStdDevError();
                         ampScan[0]->SetPoint( ampScan[0]->GetN() , a.first , mean );
-                        ampScan[0]->SetPointError( ampScan[0]->GetN()-1 , 1. , projection->GetMeanError() );
+                        ampScan[0]->SetPointError( ampScan[0]->GetN()-1 , 1. , meanError );
 //                         ampScan[0]->SetPointError( ampScan[0]->GetN()-1 , 1. , stdv );
                         ampScan[1]->SetPoint( ampScan[1]->GetN() , a.first , stdv );
-                        ampScan[1]->SetPointError( ampScan[1]->GetN()-1 , 1. , projection->GetStdDevError() );
+                        ampScan[1]->SetPointError( ampScan[1]->GetN()-1 , 1. , stdvError );
 //                         function = new TF1( "function" , "gaus" , lowEdge.at(1) , highEdge.at(1) );
-                        function = new TF1( "function" , "gaus" , mean - 5. * stdv , mean + 5. * stdv );
                         if( v.second == "clusterQvsSlope" ){
-                            function = new TF1( "function" , "landau" , 300. , 5000. );
-                            function->SetParameters( maximum , mean , stdv );
+                            function = new TF1( "function" , "gaus" , mean - 5. * stdv , mean + 5. * stdv );
+                            if( v.second == "clusterQvsSlope" ){
+                                function = new TF1( "function" , "landau" , 300. , 5000. );
+                                function->SetParameters( maximum , mean , stdv );
+                            }
+                            else if( v.second == "nStripsVSslope" ){
+                                function = new TF1( "function" , "landau" , 1.5 , 10.5 );
+                            }
+                            projection->Fit( function , "RQB" );
+    //                         projection->Draw();
+    //                         gPad->Modified();
+    //                         gPad->Update();
+    //                         gPad->WaitPrimitive();
+                            if( function->GetParameter(1) <= 0. ) continue;
+                            MPV = function->GetParameter(1);
+                            MPVerror = function->GetParError(1);
+                            sigma = function->GetParameter(2);
+                            sigmaError = function->GetParError(2);
+                            ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , MPV );
+                            ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 1. , MPVerror );
+    //                         ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 1. , function->GetParameter(2) );
+                            ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , sigma );
+                            ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , 1. , sigmaError );
+                            if(
+                                ( m.first == "93:07" && a.first == 570 ) ||
+                                ( m.first == "85:15" && a.first == 615 ) ||
+                                ( m.first == "80:20" && a.first == 645 )
+                            ){
+                                clusterQvsPillarHeight[m.first][0]->SetPoint( clusterQvsPillarHeight[m.first][0]->GetN() , pillarHeights[d+"_"+b].first , mean );
+                                clusterQvsPillarHeight[m.first][0]->SetPointError( clusterQvsPillarHeight[m.first][0]->GetN()-1 , pillarHeights[d+"_"+b].second*0.5 , meanError );
+                                clusterQvsPillarHeight[m.first][1]->SetPoint( clusterQvsPillarHeight[m.first][1]->GetN() , pillarHeights[d+"_"+b].second / pillarHeights[d+"_"+b].first , stdv / mean );
+                                clusterQvsPillarHeight[m.first][1]->SetPointError( clusterQvsPillarHeight[m.first][1]->GetN()-1 , 0. , sqrt( pow( stdvError / mean , 2 ) + pow( stdv / mean / mean * meanError , 2 ) ) );
+                                clusterQvsPillarHeight[m.first][2]->SetPoint( clusterQvsPillarHeight[m.first][2]->GetN() , pillarHeights[d+"_"+b].first , MPV );
+                                clusterQvsPillarHeight[m.first][2]->SetPointError( clusterQvsPillarHeight[m.first][2]->GetN()-1 , pillarHeights[d+"_"+b].second*0.5 , MPVerror );
+                                clusterQvsPillarHeight[m.first][3]->SetPoint( clusterQvsPillarHeight[m.first][3]->GetN() , pillarHeights[d+"_"+b].second / pillarHeights[d+"_"+b].first , sigma / MPV );
+                                clusterQvsPillarHeight[m.first][3]->SetPointError( clusterQvsPillarHeight[m.first][3]->GetN()-1 , 0. , sqrt( pow( sigmaError / MPV , 2 ) + pow( sigma / MPV / MPV * MPVerror , 2 ) ) );
+                            }
                         }
                         else if( v.second == "nStripsVSslope" ){
-                            function = new TF1( "function" , "landau" , 1.5 , 10.5 );
+                            name = v.second + "_" + b + "_" + d;
+                            name = name.ReplaceAll( "VSslope" , "inclinedTracks" );
+                            projection = readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( -0.5 ) , readhist->GetXaxis()->FindBin( -0.45 ) );
+                            name += "_up";
+                            projection->Add( readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( 0.45 ) , readhist->GetXaxis()->FindBin( 0.5 ) ) );
+                            double inclinedMean = projection->GetMean();
+                            double inclinedMeanError = projection->GetMeanError();
+                            double inclinedStdv = projection->GetStdDev();
+                            double inclinedStdvError = projection->GetStdDevError();
+                            name = v.second + "_" + b + "_" + d;
+                            name = name.ReplaceAll( "VSslope" , "straightTracks" );
+                            projection = readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( -0.02 ) , readhist->GetXaxis()->FindBin( 0.02 ) );
+                            double straightMean = projection->GetMean();
+                            double straightMeanError = projection->GetMeanError();
+//                             double straightStdv = projection->GetStdDev();
+//                             double straightStdvError = projection->GetStdDevError();
+                            ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , inclinedMean-straightMean );
+                            ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 1. , sqrt( pow( inclinedMeanError , 2 ) + pow( straightMeanError , 2 ) ) );
+    //                         ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 1. , function->GetParameter(2) );
+                            ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , inclinedStdv );
+                            ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , 1. , inclinedStdvError );
                         }
-                        projection->Fit( function , "RQB" );
-//                         projection->Draw();
-//                         gPad->Modified();
-//                         gPad->Update();
-//                         gPad->WaitPrimitive();
-                        if( function->GetParameter(1) <= 0. ) continue;
-                        ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , function->GetParameter(1) );
-                        ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 1. , function->GetParError(1) );
-//                         ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 1. , function->GetParameter(2) );
-                        ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , function->GetParameter(2) );
-                        ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , 1. , function->GetParError(2) );
                         infile->Close();
                     }
                     for( auto p : parameter ){
@@ -3403,17 +3490,20 @@ void comparer(){
                             ( d == "stereo_in" && b == "board8" && m.first == "93:07" )
                         )
                     ){
-//                         function = new TF1( "function" , "exp( [0] * exp( [1] / x ) )" , 500. , 700. );
-//                         function->SetParameters( 75. , -1.5e3 );
-//                         function = new TF1( "function" , " [0] * exp( [1] * x ) + [2]" , 500. , 700. );
-//                         function->SetParameters( 1e-10 , 4e-2 , 250. );
-                        function = new TF1( "function" , "exp( [0] + x * [1] )" , 500. , 700. );
-                        function->SetParameters( -1. , 2e-2 );
-                        ampScan[1]->Fit( function , "RQB" );
-                        ampScan[1]->Draw("AP");
-                        gPad->Modified();
-                        gPad->Update();
-                        gPad->WaitPrimitive();
+                        function = new TF1( "function" , "exp( [0] * exp( [1] / x ) )" , 500. , 700. );
+                        function->SetParameters( 75. , -1.5e3 );
+//                         function = new TF1( "function" , "  exp( [0] + [1] * x ) + [2]" , 500. , 700. );
+//                         function->SetParameters( -1. , 2e-2 , 250. );
+//                         function = new TF1( "function" , "exp( [0] + x * [1] ) + 150." , 500. , 700. );
+//                         function->SetParameters( -1. , 2e-2 );
+                        ampScan[2]->Fit( function , "RQB" );
+//                         cout << m.first << " " << function->GetParameter(0) << " \t " << function->GetParameter(1) << endl;
+//                         function->SetNpx(40000);
+//                         function->Draw("P");
+//                         ampScan[2]->Draw("AP");
+//                         gPad->Modified();
+//                         gPad->Update();
+//                         gPad->WaitPrimitive();
                         name = d+"_"+b;
                         gainVSpillarHeight[m.first][0]->SetPoint( gainVSpillarHeight[m.first][0]->GetN() , pillarHeights[name.Data()].first , function->GetParameter(0) / function->GetParameter(1) );
                         gainVSpillarHeight[m.first][0]->SetPointError( 
@@ -3441,9 +3531,110 @@ void comparer(){
     
     for( auto m : measurements ){ 
         for(unsigned int g=0; g<numberOfGainFitParameter; g++) gainVSpillarHeight[m.first][g]->Write();
+        for( auto p : parameter ) clusterQvsPillarHeight[m.first][p.first]->Write();
     }
     
     outfile->Close();
+    
+}
+
+void stacker(){
+    
+    TCanvas * can = new TCanvas("can","can");
+            
+    gROOT->SetStyle("Plain");
+    Int_t palette[9] = { 1 , 2 , 4 , 6 , 9 , 46 , 48 , 5 };
+    gStyle->SetPalette( 9 , palette );
+//     gStyle->SetPalette(kRainBow);
+//     gStyle->SetTitleX(0.5);
+//     gStyle->SetTitleAlign(23);
+//     gStyle->SetOptStat(1001101);
+    gStyle->SetOptStat(1111);
+    gStyle->SetOptTitle(0);
+    gStyle->SetPadTopMargin( 0.01 );
+    gStyle->SetPadRightMargin( 0.170 );
+    gStyle->SetPadBottomMargin( 0.105 );
+    gStyle->SetPadLeftMargin( 0.07 );
+    double labelSize = 0.05;
+    gStyle->SetLabelSize( labelSize , "x" );
+    gStyle->SetTitleSize( labelSize , "x" );
+    gStyle->SetLabelSize( labelSize , "y" );
+    gStyle->SetTitleSize( labelSize , "y" );
+    gStyle->SetLabelSize( labelSize , "z" );
+    gStyle->SetTitleSize( labelSize , "z" );
+    gStyle->SetTitleOffset( 1.0 , "x" );
+    gStyle->SetTitleOffset( 1.2 , "y" );
+    gStyle->SetTitleOffset( 1.2 , "z" );
+    gROOT->ForceStyle();
+
+    vector< vector<unsigned int> > plotStyle = {
+        { 20 ,  1 } ,
+        { 24 ,  2 } ,
+        { 22 ,  4 } ,
+        { 26 ,  6 } ,
+        { 21 ,  9 } ,
+        { 25 , 46 } ,
+        {  5 , 28 } ,
+        {  2 ,  0 } 
+    };
+    
+    TFile * infile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_570V_20190528_1223_fitNclust_inCRF.root" , "READ" );
+    TH2I * readhist = (TH2I*)infile->Get("clusterQvsNstrips_near_board8_eta_out");
+    
+//     readhist->RebinY(5);
+    
+    vector<unsigned int> nbins { 0, 0};
+    vector<double> lowEdge { 0., 0.};
+    vector<double> highEdge { 0., 0.};
+    vector<double> step { 0., 0.};
+    
+    nbins.at(0) = readhist->GetXaxis()->GetNbins();
+    lowEdge.at(0) = readhist->GetXaxis()->GetXmin();
+    highEdge.at(0) = readhist->GetXaxis()->GetXmax();
+    step.at(0) = (highEdge.at(0)-lowEdge.at(0))/(double)(nbins.at(0));
+    nbins.at(1) = readhist->GetYaxis()->GetNbins();
+    lowEdge.at(1) = readhist->GetYaxis()->GetXmin();
+    highEdge.at(1) = readhist->GetYaxis()->GetXmax();
+    step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
+    
+    THStack * stack = new THStack( "stack" , "stack" );
+    TH1D * projection;
+    TString name; 
+    
+    for(unsigned int b=2; b<9; b++){
+        name = "";
+        name += b;
+        projection = readhist->ProjectionY( name , b , b );
+        projection->SetTitle(name);
+        projection->SetName(name);
+//         projection->SetLineColor( plotStyle.at(b-2).at(1) );
+        projection->SetLineColor( palette[b-2] );
+        projection->SetMarkerColor( palette[b-2] );
+        projection->SetStats(true);
+        stack->Add(projection);
+    }
+    
+    name = " > 8";
+    projection = readhist->ProjectionY( name , 9 , nbins.at(0) );
+    projection->SetTitle(name);
+    projection->SetName(name);
+//     projection->SetLineColor( plotStyle.at(9-2).at(1) );
+    projection->SetLineColor( palette[9-2] );
+    projection->SetMarkerColor( palette[9-2] );
+    projection->SetStats(true);
+    stack->Add(projection);
+    
+//     stack->GetXaxis()->SetRangeUser( 0. , 5000. );
+    
+    stack->Draw("pfc");
+    
+    can->BuildLegend( 0.85 , 0.15 , 0.98 , 0.45 );
+    
+    gPad->SetLogy();
+    gPad->SetGridx();
+    gPad->SetGridy();
+    gPad->Modified();
+    gPad->Update();
     
 }
 
@@ -3472,6 +3663,7 @@ void tester( TString filename="test.dat" , bool bugger=false ){
 //     deadNnoisy( filename );
 //     clusterProperties( filename );
 //     overlayer();
-    comparer();
+//     comparer();
+    stacker();
 }
 
