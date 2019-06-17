@@ -3220,7 +3220,8 @@ void comparer(){
     unsigned int nboards = boardnames.size();
     
     map< unsigned int , TString > variable = {
-        { 0 , "clusterQvsSlope" } ,
+        { 0 , "clusterQvsNstrips_near" } ,
+//         { 0 , "clusterQvsSlope" } ,
 //         { 1 , "nStripsVSslope" } ,
 //         { 2 , "maxStripQvsSlope" } ,
 //         { 3 , "fastestVSslope" } ,
@@ -3243,7 +3244,7 @@ void comparer(){
     map< string , map< unsigned int , string > > measurements;
     
     measurements["93:07"] = {
-        { 520 , "520V_20190531_2009" } ,
+//         { 520 , "520V_20190531_2009" } ,
         { 530 , "530V_20190531_0832" } ,
         { 540 , "540V_20190530_2006" } ,
         { 550 , "550V_20190530_0948" } ,
@@ -3252,7 +3253,7 @@ void comparer(){
     };
     
     measurements["85:15"] = {
-        { 580 , "8515_580V_CJet8s_20190520_1827" } ,
+//         { 580 , "8515_580V_CJet8s_20190520_1827" } ,
         { 610 , "8515_610V_CJet8s_20190520_0842" } ,
         { 615 , "8515_615V_CJet8s_20190519_0811" } ,
         { 620 , "8515_620V_CJet8s_20190516_1150" } ,
@@ -3262,8 +3263,8 @@ void comparer(){
     };
     
     measurements["80:20"] = {
-        { 600 , "8020_600V_C475V_20190526_2145" } ,
-        { 610 , "8020_610V_C475V_20190527_0825" } ,
+//         { 600 , "8020_600V_C475V_20190526_2145" } ,
+//         { 610 , "8020_610V_C475V_20190527_0825" } ,
         { 640 , "8020_640V_C475V_20190523_1918" } ,
         { 645 , "8020_645V_C475V_20190524_0843" } ,
         { 650 , "8020_650V_C475V_20190524_2023" } ,
@@ -3300,6 +3301,7 @@ void comparer(){
     
     map< string , TGraphErrors** > gainVSpillarHeight;
     map< string , TGraphErrors** > clusterQvsPillarHeight;
+    map< string , TGraphErrors** > chargeIncreasePerStripVSpillarHeight;
     for( auto m : measurements ){
         gainVSpillarHeight[m.first] = new TGraphErrors*[numberOfGainFitParameter];
         name = "gainVSpillarHeight_";
@@ -3327,9 +3329,24 @@ void comparer(){
             clusterQvsPillarHeight[m.first][p.first]->SetTitle(title);
             clusterQvsPillarHeight[m.first][p.first]->SetName(title);
         }
+        chargeIncreasePerStripVSpillarHeight[m.first] = new TGraphErrors*[parameter.size()];
+        name = "chargeIncreasePerStripVSpillarHeight_";
+        title = m.first;
+        title = title.ReplaceAll( ":" , "" );
+        name += title;
+        for(unsigned int p=0; p<2; p++){
+            title = name;
+            title += "_";
+            if( p==0 ) title += "mean";
+            else title += "MPV";
+            chargeIncreasePerStripVSpillarHeight[m.first][p] = new TGraphErrors();
+            chargeIncreasePerStripVSpillarHeight[m.first][p]->SetTitle(title);
+            chargeIncreasePerStripVSpillarHeight[m.first][p]->SetName(title);
+        }
     }
     
     TGraphErrors ** ampScan;
+    TGraphErrors ** correlation;
     TFile * infile;
     TH2I * readhist;
     TH1D * projection;
@@ -3375,6 +3392,10 @@ void comparer(){
                             cerr << " ERROR: could not read histogram \"" << name << "\"" << endl;
                             continue;
                         }
+//                         readhist->Draw("colz");
+//                         gPad->Modified();
+//                         gPad->Update();
+//                         gPad->WaitPrimitive();
                         nbins.at(0) = readhist->GetXaxis()->GetNbins();
                         lowEdge.at(0) = readhist->GetXaxis()->GetXmin();
                         highEdge.at(0) = readhist->GetXaxis()->GetXmax();
@@ -3403,14 +3424,8 @@ void comparer(){
                         ampScan[1]->SetPointError( ampScan[1]->GetN()-1 , 1. , stdvError );
 //                         function = new TF1( "function" , "gaus" , lowEdge.at(1) , highEdge.at(1) );
                         if( v.second == "clusterQvsSlope" ){
-                            function = new TF1( "function" , "gaus" , mean - 5. * stdv , mean + 5. * stdv );
-                            if( v.second == "clusterQvsSlope" ){
-                                function = new TF1( "function" , "landau" , 300. , 5000. );
-                                function->SetParameters( maximum , mean , stdv );
-                            }
-                            else if( v.second == "nStripsVSslope" ){
-                                function = new TF1( "function" , "landau" , 1.5 , 10.5 );
-                            }
+                            function = new TF1( "function" , "landau" , 300. , 5000. );
+                            function->SetParameters( maximum , mean , stdv );
                             projection->Fit( function , "RQB" );
     //                         projection->Draw();
     //                         gPad->Modified();
@@ -3464,12 +3479,68 @@ void comparer(){
                             ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , inclinedStdv );
                             ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , 1. , inclinedStdvError );
                         }
+                        else if( v.second == "clusterQvsNstrips_near" ){
+                            correlation = new TGraphErrors*[2];
+                            for(unsigned int p=0; p<2; p++) correlation[p] = new TGraphErrors();
+                            for(unsigned int n=3; n<8; n++){
+                                name = v.second + "_" + b + "_" + d;
+                                title = "_nStrips";
+                                title += n;
+                                name = name.ReplaceAll( "vsNstrips_near" , title );
+                                projection = readhist->ProjectionY( name , n , n );
+                                maximum = projection->GetMaximum();
+                                mean = projection->GetMean();
+                                meanError = projection->GetMeanError();
+                                stdv = projection->GetStdDev();
+                                stdvError = projection->GetStdDevError();
+                                correlation[0]->SetPoint( correlation[0]->GetN() , n , mean );
+                                correlation[0]->SetPointError( correlation[0]->GetN()-1 , sqrt(n) , meanError );
+//                                 correlation[0]->SetPointError( correlation[0]->GetN()-1 , 1. , stdv );
+                                function = new TF1( "function" , "landau" , 150. , 5000. );
+                                function->SetParameters( maximum , mean , stdv );
+                                projection->Fit( function , "RQB" );
+                                MPV = function->GetParameter(1);
+                                MPVerror = function->GetParError(1);
+                                sigma = function->GetParameter(2);
+                                sigmaError = function->GetParError(2);
+                                correlation[1]->SetPoint( correlation[1]->GetN() , n , MPV );
+                                correlation[1]->SetPointError( correlation[1]->GetN()-1 , sqrt(n) , MPVerror );
+//                                 correlation[1]->SetPointError( correlation[1]->GetN()-1 , 1. , sigma );
+                                
+                            }
+                            function = new TF1( "function" , "pol1" , 2.5 , 8.5 );
+                            function->SetParameters( -1000. , 800. );
+                            for(unsigned int p=0; p<2; p++){
+                                correlation[p]->Fit( function , "RQB" );
+//                                 correlation[p]->Draw("AP");
+//                                 gPad->Modified();
+//                                 gPad->Update();
+//                                 gPad->WaitPrimitive();
+                                ampScan[p+2]->SetPoint( ampScan[p+2]->GetN() , a.first , function->GetParameter(1) );
+                                ampScan[p+2]->SetPointError( ampScan[p+2]->GetN()-1 , 1. , function->GetParError(1) );
+                            }
+                        }
+                        else{
+                            function = new TF1( "function" , "gaus" , mean - 5. * stdv , mean + 5. * stdv );
+                            function->SetParameters( maximum , mean , stdv );
+                            projection->Fit( function , "RQB" );
+                            mean = function->GetParameter(1);
+                            meanError = function->GetParError(1);
+                            stdv = function->GetParameter(2);
+                            stdvError = function->GetParError(2);
+                            ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , mean );
+                            ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 1. , meanError );
+    //                         ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 1. , stdv );
+                            ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , stdv );
+                            ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , 1. , stdvError );
+                        }
                         infile->Close();
                     }
                     for( auto p : parameter ){
                         name = v.second;
                         name = name.ReplaceAll( "VSslope" , "" );
                         name = name.ReplaceAll( "vsSlope" , "" );
+                        name = name.ReplaceAll( "_near" , "" );
                         name += "VSamplificationVoltage_";
                         name += p.second;
                         name += "_";
@@ -3520,6 +3591,20 @@ void comparer(){
 //                             gainVSpillarHeight[m.first][g]->SetPointError( gainVSpillarHeight[m.first][g]->GetN()-1 , pillarHeights[name.Data()].second , function->GetParError(g) );
 //                         }
                     }
+                    else if( v.second == "clusterQvsNstrips_near" ){
+                        function = new TF1( "function" , "pol1" , 500. , 700. );
+                        function->SetParameters( 1. , 1. );
+                        for(unsigned int p=0; p<2; p++){
+                            ampScan[p+2]->Fit( function , "RQB" );
+//                             ampScan[p+2]->Draw("AP");
+//                             gPad->Modified();
+//                             gPad->Update();
+//                             gPad->WaitPrimitive();
+                            name = d+"_"+b;
+                            chargeIncreasePerStripVSpillarHeight[m.first][p]->SetPoint( chargeIncreasePerStripVSpillarHeight[m.first][p]->GetN() , pillarHeights[name.Data()].first , function->GetParameter(1) );
+                            chargeIncreasePerStripVSpillarHeight[m.first][p]->SetPointError( chargeIncreasePerStripVSpillarHeight[m.first][p]->GetN()-1 , pillarHeights[name.Data()].second , function->GetParError(1) );
+                        }
+                    }
                     outfile->cd();
                     for( auto p : parameter ) ampScan[p.first]->Write();
                 }
@@ -3532,6 +3617,7 @@ void comparer(){
     for( auto m : measurements ){ 
         for(unsigned int g=0; g<numberOfGainFitParameter; g++) gainVSpillarHeight[m.first][g]->Write();
         for( auto p : parameter ) clusterQvsPillarHeight[m.first][p.first]->Write();
+        for(unsigned int p=0; p<2; p++) chargeIncreasePerStripVSpillarHeight[m.first][p]->Write();
     }
     
     outfile->Close();
@@ -3543,13 +3629,14 @@ void stacker(){
     TCanvas * can = new TCanvas("can","can");
             
     gROOT->SetStyle("Plain");
-    Int_t palette[9] = { 1 , 2 , 4 , 6 , 9 , 46 , 48 , 5 };
+    Int_t palette[9] = { 12 , 28 , 4 , 6 , 9 , 46 , 48 , 5 };
+//     Int_t palette[9] = { 21 , 22 , 23 , 24 , 25 , 26 , 27 , 28 };
     gStyle->SetPalette( 9 , palette );
 //     gStyle->SetPalette(kRainBow);
 //     gStyle->SetTitleX(0.5);
 //     gStyle->SetTitleAlign(23);
 //     gStyle->SetOptStat(1001101);
-    gStyle->SetOptStat(1111);
+    gStyle->SetOptStat(1110);
     gStyle->SetOptTitle(0);
     gStyle->SetPadTopMargin( 0.01 );
     gStyle->SetPadRightMargin( 0.170 );
@@ -3628,7 +3715,15 @@ void stacker(){
     
     stack->Draw("pfc");
     
+    projection = readhist->ProjectionY( "full" );
+    
+    TF1 * lan = new TF1("lan","landau",300.,3000.);
+    projection->Fit( lan , "RQ" );
+    
     can->BuildLegend( 0.85 , 0.15 , 0.98 , 0.45 );
+    
+    projection->Draw("same");
+    projection->GetPainter()->PaintStat(1,lan);
     
     gPad->SetLogy();
     gPad->SetGridx();
@@ -3663,7 +3758,7 @@ void tester( TString filename="test.dat" , bool bugger=false ){
 //     deadNnoisy( filename );
 //     clusterProperties( filename );
 //     overlayer();
-//     comparer();
-    stacker();
+    comparer();
+//     stacker();
 }
 
