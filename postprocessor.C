@@ -1748,6 +1748,13 @@ void analysis::crfResolution(int det){
     title += "; slope avarage reference track; residual broad narrow ratio";
     mdtResidualBroadNarrowRatio->SetTitle(title);
     
+    title = "mdtResidualNarrowFullRatio";
+    title += nameTOadd;
+    TGraphErrors * mdtResidualNarrowFullRatio = new TGraphErrors();
+    mdtResidualNarrowFullRatio->SetName(title);
+    title += "; slope avarage reference track; residual narrow ratio";
+    mdtResidualNarrowFullRatio->SetTitle(title);
+    
     double residualWidth; 
     double residualWidthError;
     vector<double> fitresults; 
@@ -1785,10 +1792,15 @@ void analysis::crfResolution(int det){
         
         mdtResolutionBroad->SetPoint( mdtResolutionBroad->GetN(), lowEdge+step*(b-0.5), fitresults.at(5) / sqrt(2.));
         mdtResolutionBroad->SetPointError( mdtResolutionBroad->GetN()-1, 0.5*step, fitresults.at(11) / sqrt(2.));
+            
+        double integralError = 1.;
+        double integral = slice->IntegralAndError( slice->GetXaxis()->FindBin(-fitrange) , slice->GetXaxis()->FindBin(fitrange) , integralError );
         
         if( fitresults.at(0) > 0. ){
             mdtResidualBroadNarrowRatio->SetPoint( mdtResidualBroadNarrowRatio->GetN(), lowEdge+step*(b-0.5), fitresults.at(3) / fitresults.at(0));
             mdtResidualBroadNarrowRatio->SetPointError( mdtResidualBroadNarrowRatio->GetN()-1, 0.5*step, sqrt( pow( fitresults.at(9) / fitresults.at(0), 2) + pow( fitresults.at(3) / pow( fitresults.at(0), 2) * fitresults.at(6), 2) ) );
+            mdtResidualNarrowFullRatio->SetPoint( mdtResidualNarrowFullRatio->GetN(), lowEdge+step*(b-0.5), fitresults.at(0) / integral );
+            mdtResidualNarrowFullRatio->SetPointError( mdtResidualNarrowFullRatio->GetN()-1, 0.5*step, sqrt( pow( fitresults.at(6) / integral, 2) + pow( fitresults.at(0) / pow( integral , 2) * integralError , 2) ) );
         }
         
         residualWidth = ( fitresults.at(2) * fitresults.at(0) + fitresults.at(5) * fitresults.at(3) ) / ( fitresults.at(0) + fitresults.at(3) )/sqrt(2.);
@@ -1833,6 +1845,7 @@ void analysis::crfResolution(int det){
     mdtResolutionNarrow->Write();
     mdtResolutionBroad->Write();
     mdtResidualBroadNarrowRatio->Write();
+    mdtResidualNarrowFullRatio->Write();
     
 }
 
@@ -1842,6 +1855,9 @@ void analysis::inclined(){
     TGraphErrors * uTPCslopeVSslope_stdv;
     TGraphErrors * uTPCslopeVSslope_MPV;
     TGraphErrors * uTPCslopeVSslope_width;
+    
+    TGraphErrors * uTPCslopeOffset;
+    TGraphErrors * uTPCslopeResolution;
     
     TH2I * readHist;
     TH1D * slice;
@@ -1887,7 +1903,6 @@ void analysis::inclined(){
             title += detectornames.at(d);
         }
         uTPCslopeVSslope_MPV->SetName(title);
-//         title += "; slope reference track; MPV uTPC slope reconstruction";
         uTPCslopeVSslope_MPV->SetTitle(title);
         uTPCslopeVSslope_MPV->GetXaxis()->SetTitle("slope reference track");
         uTPCslopeVSslope_MPV->GetYaxis()->SetTitle("MPV uTPC slope reconstruction");
@@ -1899,10 +1914,31 @@ void analysis::inclined(){
             title += detectornames.at(d);
         }
         uTPCslopeVSslope_width->SetName(title);
-//         title += "; slope reference track; width uTPC slope reconstruction";
         uTPCslopeVSslope_width->SetTitle(title);
         uTPCslopeVSslope_width->GetXaxis()->SetTitle("slope reference track");
         uTPCslopeVSslope_width->GetYaxis()->SetTitle("width uTPC slope reconstruction");
+        
+        uTPCslopeOffset = new TGraphErrors();
+        title = "uTPCslopeOffset";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        uTPCslopeOffset->SetName(title);
+        uTPCslopeOffset->SetTitle(title);
+        uTPCslopeOffset->GetXaxis()->SetTitle("slope reference track");
+        uTPCslopeOffset->GetYaxis()->SetTitle("uTPC slope offset");
+        
+        uTPCslopeResolution = new TGraphErrors();
+        title = "uTPCslopeResolution";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        uTPCslopeResolution->SetName(title);
+        uTPCslopeResolution->SetTitle(title);
+        uTPCslopeResolution->GetXaxis()->SetTitle("slope reference track");
+        uTPCslopeResolution->GetYaxis()->SetTitle("width uTPC slope reconstruction");
         
         title = "uTPCslopeVSslope";
         if(ndetectors>1){ 
@@ -2028,6 +2064,65 @@ void analysis::inclined(){
         uTPCslopeVSslope_MPV->Write();
         uTPCslopeVSslope_width->Write();
         
+        title = "uTPCslopeDifVSslope";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        readHist = (TH2I*)infile->Get(title);
+        
+        if( readHist == NULL ){
+            cout << " WARNING : can not find " << title << " => skipped " << endl;
+            uTPCslopeOffset->Delete();
+            uTPCslopeResolution->Delete();
+            continue;
+        }
+        
+        nbins.at(0) = readHist->GetXaxis()->GetNbins();
+        lowEdge.at(0) = readHist->GetXaxis()->GetXmin();
+        highEdge.at(0) = readHist->GetXaxis()->GetXmax();
+        step.at(0) = (highEdge.at(0)-lowEdge.at(0))/(double)(nbins.at(0));
+
+        nbins.at(1) = readHist->GetYaxis()->GetNbins();
+        lowEdge.at(1) = readHist->GetYaxis()->GetXmin();
+        highEdge.at(1) = readHist->GetYaxis()->GetXmax();
+        step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
+        
+        for(unsigned int b=1; b<=nbins.at(0); b++){
+            
+            title = "uTPCslopeVSslope";
+            if(ndetectors>1){
+                title += "_";
+                title += detectornames.at(d);
+            }
+            title += "_projection";
+            title += b;
+            slice = readHist->ProjectionY(title,b,b);
+            
+            TF1 * fitfunction = new TF1( "fitfunction" , "gaus" , -90. , 90. );
+            fitfunction->SetParameters( slice->GetMaximum() , slice->GetMean() , slice->GetStdDev() );
+            slice->Fit( fitfunction , "RQB" );
+            
+            if(debug){   
+                slice->Draw();
+                gPad->Modified();
+                gPad->Update();
+                gPad->WaitPrimitive();
+            }
+            
+            uTPCslopeOffset->SetPoint( uTPCslopeOffset->GetN() , lowEdge.at(0)+step.at(0)*(b-0.5) , fitfunction->GetParameter(1) );
+            uTPCslopeOffset->SetPointError( uTPCslopeOffset->GetN()-1 , 0.5*step.at(0) , fitfunction->GetParError(1) );
+            
+            uTPCslopeResolution->SetPoint( uTPCslopeResolution->GetN() , lowEdge.at(0)+step.at(0)*(b-0.5) , abs( fitfunction->GetParameter(2) ) );
+            uTPCslopeResolution->SetPointError( uTPCslopeResolution->GetN()-1 , 0.5*step.at(0) , fitfunction->GetParError(2) );
+            
+        }
+        
+        outfile->cd();
+        
+        uTPCslopeOffset->Write();
+        uTPCslopeResolution->Write();
+        
     }
     
 }
@@ -2064,6 +2159,7 @@ void analysis::properties(){
     TH2D * oneStripCluster;
     TH2D * mulitplicity;
     TH2D * coincidenceEffi;
+    TH2D * uTPCefficiency;
     
     TGraphErrors * clusterQvsStripQmax;
     TGraphErrors * clusterQvsStripQsaturation;
@@ -2432,6 +2528,29 @@ void analysis::properties(){
         title = "coincidence efficiency";
         coincidenceEffi->SetZTitle(title);
         
+        if(ndetectors>1){
+            title = detectornames.at(d);
+            title += "_uTPCefficiency";
+        }
+        else title = "uTPCefficiency";
+        uTPCefficiency = new TH2D(title,title,divisions.at(d).at(0),0.,divisions.at(d).at(0),divisions.at(d).at(1),0.,divisions.at(d).at(1));
+        title = "x [";
+        dodummy = length.at(d).at(0)/(double)(divisions.at(d).at(0));
+        sdummy << fixed << setprecision(1) << dodummy;
+        title += sdummy.str();
+        sdummy.str("");
+        title += " mm]";
+        uTPCefficiency->SetXTitle(title);
+        title = "y [";
+        dodummy = length.at(d).at(1)/(double)(divisions.at(d).at(1));
+        sdummy << fixed << setprecision(1) << dodummy;
+        title += sdummy.str();
+        sdummy.str("");
+        title += " mm]";
+        uTPCefficiency->SetYTitle(title);
+        title = "uTPC efficiency";
+        uTPCefficiency->SetZTitle(title);
+        
 //         efficiencyVScharge = new TGraphErrors*[nboards.at(d)];
         efficiencyVScharge = new TGraphErrors*[divisions.at(d).at(1)];
         
@@ -2499,6 +2618,8 @@ void analysis::properties(){
         unsigned int usedPartitions = 0;
         unsigned int entriesSum = 0;
         
+        bool effiFORuTPC = false;
+        
         for(unsigned int cy=0; cy<divisions.at(d).at(1); cy++){
             
             TH1I * accumulator;
@@ -2557,6 +2678,8 @@ void analysis::properties(){
                     mulitplicity->SetBinError( cx+1, cy+1, 1e7);
                     coincidenceEffi->SetBinContent( cx+1, cy+1, -1e6);
                     coincidenceEffi->SetBinError( cx+1, cy+1, 1e7);
+                    uTPCefficiency->SetBinContent( cx+1, cy+1, -1e6);
+                    uTPCefficiency->SetBinError( cx+1, cy+1, 1e7);
                     continue;
                 }
                 
@@ -2699,6 +2822,11 @@ void analysis::properties(){
                 mulitplicity->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(8) ) / (double)effi->GetBinContent(3) * sqrt( 1. + (double)effi->GetBinContent(8) / (double)effi->GetBinContent(3) ) );
                 coincidenceEffi->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(7) / (double)effi->GetBinContent(6) );
                 coincidenceEffi->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(7) ) / (double)effi->GetBinContent(6) * sqrt( 1. + (double)effi->GetBinContent(7) / (double)effi->GetBinContent(6) ) );
+                if( effi->GetXaxis()->GetNbins() >= 12 && (double)effi->GetBinContent(11) > 0. ){
+                    effiFORuTPC = true;
+                    uTPCefficiency->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(12) / (double)effi->GetBinContent(11) );
+                    uTPCefficiency->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(12) ) / (double)effi->GetBinContent(11) * sqrt( 1. + (double)effi->GetBinContent(12) / (double)effi->GetBinContent(12) ) );
+                }
 //                 efficiency->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(3) -  (double)effi->GetBinContent(9) ) / (double)effi->GetBinContent(1) );
 //                 nearEfficiency->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(4) -  (double)effi->GetBinContent(9) ) / (double)effi->GetBinContent(1) );
 //                 leadingNearRatio->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(10) -  (double)effi->GetBinContent(9) ) / ( (double)effi->GetBinContent(2) -  (double)effi->GetBinContent(9) ) );
@@ -2813,6 +2941,9 @@ void analysis::properties(){
         oneStripCluster->Write();
         mulitplicity->Write();
         coincidenceEffi->Write();
+        
+        if( effiFORuTPC ) uTPCefficiency->Write();
+        else uTPCefficiency->Delete();
         
         if( divisions.at(d).at(1) == 24 ){
             clusterQvsStripQmax->Write();
