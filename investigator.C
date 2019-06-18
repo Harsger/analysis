@@ -341,11 +341,12 @@ void analysis::investigateCRF(){
     TH2I*** firstTimeDifVSscinXperYpart = new TH2I**[ndetectors];
     
     TH2I** uTPCslopeVSslope = new TH2I*[ndetectors];
+    TH2I** uTPCslopeDifVSslope = new TH2I*[ndetectors];
     TH2I** uTPCresVSslope = new TH2I*[ndetectors];
     TH2I** uTPCresVSuTPCslope = new TH2I*[ndetectors];
     TH2I** uTPCresVScentroidRes = new TH2I*[ndetectors];
-    TH2I** uTPCslopeVSuTPCchi2 = new TH2I*[ndetectors];
     TH2I** uTPCresVSuTPCchi2 = new TH2I*[ndetectors];
+    TH2I** uTPCslopeVSuTPCchi2 = new TH2I*[ndetectors];
     TH2I** uTPCchi2VSslope = new TH2I*[ndetectors];
     TH2I** uTPCdifCentroidVSres = new TH2I*[ndetectors];
     TH2I** uTPCdifCentroidVScluTime = new TH2I*[ndetectors];
@@ -1092,6 +1093,16 @@ void analysis::investigateCRF(){
         uTPCslopeVSslope[d]->SetXTitle("slope y (average MDTs)");
         uTPCslopeVSslope[d]->SetYTitle("1 / uTPC slope [strip / 25 ns]");  
                 
+        histname = "uTPCslopeDifVSslope";
+        if(ndetectors>1){ 
+            histname += "_";
+            histname += detectornames.at(d);
+        }
+        if(useAngle) uTPCslopeDifVSslope[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 900, -90., 90.);
+        else uTPCslopeDifVSslope[d] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 2000, -5., 5.);
+        uTPCslopeDifVSslope[d]->SetXTitle("slope y (average MDTs)");
+        uTPCslopeDifVSslope[d]->SetYTitle("slope difference");  
+                
         histname = "uTPCresVSslope";
         if(ndetectors>1){ 
             histname += "_";
@@ -1392,7 +1403,8 @@ void analysis::investigateCRF(){
                 histname += cx;
                 histname += "_y";
                 histname += cy;
-                effi[d][cx][cy] = new TH1I(histname, histname, 10, 0.5, 10.5);
+//                 effi[d][cx][cy] = new TH1I(histname, histname, 10, 0.5, 10.5);
+                effi[d][cx][cy] = new TH1I(histname, histname, 12, 0.5, 12.5);
                 effi[d][cx][cy]->SetXTitle("efficiency stage");
                 effi[d][cx][cy]->SetYTitle("counts");  
                 
@@ -2414,6 +2426,7 @@ void analysis::investigateCRF(){
                 
                 numberOfCluster[d]->Fill( foundCluster[d][1], usedCluster[d][1]);
                 effi[d][xpart][ypart]->Fill(1.);
+                if( abs( mdtangle ) > 10. ) effi[d][xpart][ypart]->Fill(11.);
                 
                 interceptDifVSslopeDif_at[d][0]->Fill( abs( slopeY[0] - slopeY[1] ) , interceptY[0] - interceptY[1] );
                 
@@ -2698,9 +2711,9 @@ void analysis::investigateCRF(){
             if( 
 //                 abs( resMaxQ ) < effiRange.at(d) &&
 //                 size->at( leading[d][1] ) >= requiredForuTPC && 
-                size->at( leading[d][1] ) >= 3 && 
+                size->at( leading[d][1] ) >= 3 /*&& */
 //                 uTPCchi2->at( leading[d][1] ) / uTPCndf->at( leading[d][1] ) < 100. &&
-                abs( 1. / uTPCslope->at( leading[d][1] ) ) > 0.05 /*&&*/
+//                 abs( 1. / uTPCslope->at( leading[d][1] ) ) > 0.05 /*&&*/
 //                 CCCfactor.at(d) * uTPCslope->at( leading[d][1] ) * mdtslope >= 0.
             ){
                 
@@ -2719,11 +2732,23 @@ void analysis::investigateCRF(){
                 
 //                 if( abs( detpitch / 25. / uTPC_slope / driftVelocity.at(d) - mdtslope ) > 0.15 ) continue;
                 
-                if(useAngle) uTPCslopeVSslope[d]->Fill( mdtangle, atan( detpitch / 25. / uTPC_slope / driftVelocity.at(d) ) * 180. / TMath::Pi() );
-                else uTPCslopeVSslope[d]->Fill( mdtslope, 1./uTPC_slope );
+                double uTPCtrackSlope = detpitch / 25. / uTPC_slope / driftVelocity.at(d);
+                double uTPCangle = atan( uTPCtrackSlope ) * 180. / TMath::Pi();
+                
+                double sign = 1.;
+                if( CCCfactor.at(d) < 0. ) sign = -1.;
+                
+                if(useAngle){
+                    uTPCslopeVSslope[d]->Fill( mdtangle, uTPCangle );
+                    uTPCslopeDifVSslope[d]->Fill( mdtangle, sign*uTPCangle - mdtangle );
+                }
+                else{ 
+                    uTPCslopeVSslope[d]->Fill( mdtslope, 1./uTPC_slope ); 
+                    uTPCslopeDifVSslope[d]->Fill( mdtslope, sign*uTPCtrackSlope - mdtslope );
+                }
                 
                 if( size->at( leading[d][1] ) <= maxSize.at(d) ){
-                    if(useAngle) uTPCslopeVSslope_nStrips[d][size->at( leading[d][1] )-1]->Fill( mdtangle, atan( detpitch / 25. / uTPC_slope / driftVelocity.at(d) ) * 180. / TMath::Pi() );
+                    if(useAngle) uTPCslopeVSslope_nStrips[d][size->at( leading[d][1] )-1]->Fill( mdtangle, uTPCangle );
                     else uTPCslopeVSslope_nStrips[d][size->at( leading[d][1] )-1]->Fill( mdtslope, 1./uTPC_slope );
                 }
                 
@@ -2744,6 +2769,8 @@ void analysis::investigateCRF(){
                 
                 double uTPCresidual = uTPChit.at(1) - mdtposition;
                 
+                if( abs( mdtangle ) > 10. && abs( uTPCresidual ) < effiRange.at(d) ) effi[d][xpart][ypart]->Fill(12.);
+                
                 uTPCpoints.at(d) = uTPChit.at(1); 
                 
                 if(useAngle) uTPCresVSslope[d]->Fill( mdtangle, uTPCresidual);
@@ -2754,7 +2781,7 @@ void analysis::investigateCRF(){
                 
                 uTPCresVScentroidRes[d]->Fill( resMaxQ, uTPCresidual);
                 
-                if(useAngle) uTPCslopeVSuTPCchi2[d]->Fill( uTPC_chi2NDF, atan( detpitch / 25. / uTPC_slope / driftVelocity.at(d) ) * 180. / TMath::Pi() );
+                if(useAngle) uTPCslopeVSuTPCchi2[d]->Fill( uTPC_chi2NDF, uTPCangle );
                 else uTPCslopeVSuTPCchi2[d]->Fill( uTPC_chi2NDF, 1./uTPC_slope );
                 uTPCresVSuTPCchi2[d]->Fill( uTPC_chi2NDF, uTPCresidual);
                 if(useAngle) uTPCchi2VSslope[d]->Fill( mdtangle, uTPC_chi2NDF );
@@ -3252,6 +3279,7 @@ void analysis::investigateCRF(){
         residualVSnStrips[d]->Write();
         
         uTPCslopeVSslope[d]->Write();
+        uTPCslopeDifVSslope[d]->Write();
         uTPCresVSslope[d]->Write();
         uTPCresVSuTPCslope[d]->Write();
         
