@@ -85,7 +85,7 @@ TString outputDir = "/project/etpdaq/NSW_QAQC/QC_App/cosmics";
 TString modulePrefix = "MMS2000";
 
 bool useDoublet = false;
-bool storeNoiseData = false;
+bool storeData = false;
 bool compareAPVnoise = false;
 bool useCoincidence = false;
 bool excludeBadChannel = false;
@@ -115,9 +115,9 @@ int main(int argc, char* argv[]){
         " -m\tfile for efficiency and charge maps \n"
         "\n"
         " -D\tdoublet data will be used instead (etaBot,etaTop) \n"
+        " -S\tstore data in separate root and/or txt file \n"
         "\n"
         " additional option for dead and noisy channel (-d) \n"
-        " -S\tstore noise data in separate root and txt file \n"
         " -E\texclude noisy channel of APV \n"
         " -A\tAPV noise will be compared \n"
         "\n"
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]){
         " additional option for maps (-m) \n"
         " -e\texclude sector in maps \n"
         "\n"
-        " -o\toutput will be stored in "<< outputDir <<"\n"
+        " -o\tdirectory, where output will be stored (default:\""<< outputDir <<"\")\n"
         "\n";
         return 0;
     }
@@ -155,7 +155,7 @@ int main(int argc, char* argv[]){
                 useDoublet = true;
                 break;
             case 'S':
-                storeNoiseData = true;
+                storeData = true;
                 break;
             case 'E':
                 excludeBadChannel = true;
@@ -291,14 +291,14 @@ void deadNnoisy(){
     
     TFile * outfile;
     
-    if( storeNoiseData ){ 
+    if( storeData ){ 
         cout << " write noise data to : \t " << outname << endl;
         outfile = new TFile( outname, "RECREATE" );
     }
     
     outname.ReplaceAll( ".root" , ".txt" );
     ofstream writefile;
-    if(storeNoiseData) writefile.open( outname.Data() );
+    if(storeData) writefile.open( outname.Data() );
     
     TH1F * APVnoiseMap;
     
@@ -441,7 +441,7 @@ void deadNnoisy(){
                 writehist->Fill( b , apvChannel , normalizedDeviation );
                 variationhist->Fill( normalizedDeviation );
                 
-                if( storeNoiseData && m == "noisy" ){
+                if( storeData && m == "noisy" ){
                     if( normalizedDeviation < -2.4 ) writefile << l.first << "\t dead \t " << b << "\t" << normalizedDeviation << endl;
                     else if( normalizedDeviation > 2.4 ) writefile << l.first << "\t noisy \t " << b << "\t" << normalizedDeviation << endl;
                 }
@@ -463,13 +463,13 @@ void deadNnoisy(){
                     
                     badChannel[ specifier ].push_back( b );
                     
-//                     if( !storeNoiseData || m == "dead" ) writefile << l.first << "\t " << m << " \t " << b << "\t" << ( content - mean[apv] ) / stdv[apv] << endl;
+//                     if( !storeData || m == "dead" ) writefile << l.first << "\t " << m << " \t " << b << "\t" << ( content - mean[apv] ) / stdv[apv] << endl;
                     
                 }
                 
             }
             
-            if( storeNoiseData ){
+            if( storeData ){
                 outfile->cd();
                 meanhist->Write();
                 writehist->Write();
@@ -498,7 +498,7 @@ void deadNnoisy(){
         
     }
     
-    if( storeNoiseData ){ 
+    if( storeData ){ 
         outfile->Close();
         writefile.close();
     }
@@ -667,6 +667,27 @@ void amplificationScan(){
         }
         
     }
+        
+    vector<TString> mode = { "efficiency" , "charge" };
+    map< string , TGraphErrors* > toIterateOver;
+    
+    if( storeData ){
+        TString name = ampScanDir;
+        name += "_plots.root";
+        TFile * writefile = new TFile( name , "RECREATE" );
+        writefile->cd();
+        cout << " plots will be saved in : " << name << endl;
+        for( auto m : mode ){
+            toIterateOver = effiVSamp;
+            if( m == "charge" ) toIterateOver = chargeVSamp;
+            for( auto g : toIterateOver ){
+                name = g.first;
+                g.second->SetName( name );
+                g.second->SetTitle( name );
+                g.second->Write();
+            }
+        }
+    }
             
     gROOT->SetStyle("Plain");
     gStyle->SetPalette(kRainBow);
@@ -703,8 +724,6 @@ void amplificationScan(){
             { 25 , 46 } 
         };
         
-    vector<TString> mode = { "efficiency" , "charge" };
-        
     for( auto m : mode ){
     
         map< string , TMultiGraph* > overLayered;
@@ -714,7 +733,7 @@ void amplificationScan(){
             overLayered[ l.first ] = new TMultiGraph();
         }
         
-        map< string , TGraphErrors* > toIterateOver = effiVSamp;
+        toIterateOver = effiVSamp;
         if( m == "charge" ) toIterateOver = chargeVSamp;
         
         for( auto l : layer ){
@@ -765,7 +784,9 @@ void amplificationScan(){
             overLayered[ l.first ]->Draw("APL");
             
 //             can->BuildLegend( 0.13 , 0.64 , 0.25 , 0.96 );
-            can->BuildLegend( 0.85 , 0.15 , 0.98 , 0.45 );
+//             can->BuildLegend( 0.85 , 0.15 , 0.98 , 0.45 );
+            if( m == "charge" ) can->BuildLegend( 0.13 , 0.64 , 0.25 , 0.96 );
+            else can->BuildLegend( 0.85 , 0.15 , 0.98 , 0.45 );
             gPad->SetGridy();
             gPad->Modified();
             gPad->Update();
