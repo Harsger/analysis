@@ -303,6 +303,95 @@ vector<double> fitDoubleGaussian(TH1I * hist, bool bugger){
     return result;
 }
 
+vector<double> fitDoubleGaussian( TH1D * hist, double fitrange=3. , double fitcenter=0. ){
+  
+    vector<double> result;
+
+    double mean = hist->GetMean();
+    double maximum = hist->GetBinContent(hist->GetMaximumBin());
+    double deviation = hist->GetRMS();
+
+    double weight[2];
+    double center[2];
+    double sigma[2];
+    double weightErr[2];
+    double centerErr[2];
+    double sigmaErr[2];
+    double chisquare;
+    double ndf;
+
+    TF1 * doubleGaussian = new TF1("doubleGaussian","gaus(0)+gaus(3)", -fitrange+fitcenter, fitrange+fitcenter); 
+
+//     doubleGaussian->SetParameters(0.9*maximum,mean,0.8*deviation,0.1*maximum,mean,10.*deviation);
+    doubleGaussian->SetParameters(1.,mean,1.,1.,mean,1.);
+
+    //  doubleGaussian->SetParLimits(0,0.,maximum);
+    //  doubleGaussian->SetParLimits(1,mean-deviation,mean+deviation);
+    //  doubleGaussian->SetParLimits(2,0.,deviation);
+    //  doubleGaussian->SetParLimits(3,0.,0.5*maximum);
+    //  doubleGaussian->SetParLimits(4,mean-deviation,mean+deviation);
+    //  doubleGaussian->SetParLimits(5,0.,100.*deviation);
+        
+    hist->Fit(doubleGaussian,"RQB");
+    hist->Fit(doubleGaussian,"RQB");
+    hist->Fit(doubleGaussian,"RQ");
+
+    TF1 * singleGaus = new TF1("singleGaus","gaus",-fitrange+fitcenter, fitrange+fitcenter);
+    singleGaus->SetParameters( doubleGaussian->GetParameter(0), doubleGaussian->GetParameter(1), doubleGaussian->GetParameter(2));
+    double integral0 = singleGaus->Integral( -fitrange+fitcenter, fitrange+fitcenter);
+    singleGaus->SetParameters( doubleGaussian->GetParameter(3), doubleGaussian->GetParameter(4), doubleGaussian->GetParameter(5));
+    double integral1 = singleGaus->Integral( -fitrange+fitcenter, fitrange+fitcenter);
+    
+    unsigned int first = 0;
+    unsigned int second = 1;
+    
+    if( abs( doubleGaussian->GetParameter(2) ) > abs( doubleGaussian->GetParameter(5) ) ){
+        first = 1;
+        second = 0;
+    }
+        
+    weight[first] = integral0;
+    weight[second] = integral1;
+//     weight[first] = doubleGaussian->GetParameter(0);
+//     weight[second] = doubleGaussian->GetParameter(3);
+    center[first] = doubleGaussian->GetParameter(1);
+    center[second] = doubleGaussian->GetParameter(4);
+    sigma[first] = doubleGaussian->GetParameter(2);
+    sigma[second] = doubleGaussian->GetParameter(5);
+    
+    weightErr[first] = doubleGaussian->GetParError(0);
+    weightErr[second] = doubleGaussian->GetParError(3);
+    centerErr[first] = doubleGaussian->GetParError(1);
+    centerErr[second] = doubleGaussian->GetParError(4);
+    sigmaErr[first] = doubleGaussian->GetParError(2);
+    sigmaErr[second] = doubleGaussian->GetParError(5);
+    
+    chisquare = doubleGaussian->GetChisquare();
+    ndf = doubleGaussian->GetNDF();
+
+    result.push_back(weight[0]);
+    result.push_back(center[0]);
+    result.push_back(abs(sigma[0]));
+    result.push_back(weight[1]);
+    result.push_back(center[1]);
+    result.push_back(abs(sigma[1]));
+
+    result.push_back(weightErr[0]);
+    result.push_back(centerErr[0]);
+    result.push_back(sigmaErr[0]);
+    result.push_back(weightErr[1]);
+    result.push_back(centerErr[1]);
+    result.push_back(sigmaErr[1]);
+
+    result.push_back(chisquare);
+    result.push_back(ndf);
+
+    doubleGaussian->Delete();
+
+    return result;
+    
+}
+
 void effiPerPart(){
     
     TFile * outfile = new TFile("effiResults.root","RECREATE");
@@ -3214,13 +3303,19 @@ void comparer(){
     unsigned int ndetectors = detectornames.size();
     
     vector<string> boardnames;
-    boardnames.push_back("board6");
-    boardnames.push_back("board7");
-    boardnames.push_back("board8");
+//     boardnames.push_back("board6");
+//     boardnames.push_back("board7");
+//     boardnames.push_back("board8");
+    boardnames.push_back("");
     unsigned int nboards = boardnames.size();
     
+    double residualRange = 3.;
+//     double residualRange = 5.;
+    
     map< unsigned int , TString > variable = {
-        { 0 , "clusterQvsNstrips_near" } ,
+//         { 0 , "resVSslope_area" } 
+        { 0 , "uTPCresVSslope" } 
+//         { 0 , "clusterQvsNstrips_near" } ,
 //         { 0 , "clusterQvsSlope" } ,
 //         { 1 , "nStripsVSslope" } ,
 //         { 2 , "maxStripQvsSlope" } ,
@@ -3238,13 +3333,14 @@ void comparer(){
     
     TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root" , "RECREATE" );
     
-    vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
+//     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
+    vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/resolution/woCCCtt/uTPCt0/m8_eta3_" , "_fitNclust_inCRF.root" };
 
 //     map< string , vector< pair< unsigned int , string > > > measurements;
     map< string , map< unsigned int , string > > measurements;
     
     measurements["93:07"] = {
-//         { 520 , "520V_20190531_2009" } ,
+        { 520 , "520V_20190531_2009" } ,
         { 530 , "530V_20190531_0832" } ,
         { 540 , "540V_20190530_2006" } ,
         { 550 , "550V_20190530_0948" } ,
@@ -3253,7 +3349,7 @@ void comparer(){
     };
     
     measurements["85:15"] = {
-//         { 580 , "8515_580V_CJet8s_20190520_1827" } ,
+        { 580 , "8515_580V_CJet8s_20190520_1827" } ,
         { 610 , "8515_610V_CJet8s_20190520_0842" } ,
         { 615 , "8515_615V_CJet8s_20190519_0811" } ,
         { 620 , "8515_620V_CJet8s_20190516_1150" } ,
@@ -3263,8 +3359,8 @@ void comparer(){
     };
     
     measurements["80:20"] = {
-//         { 600 , "8020_600V_C475V_20190526_2145" } ,
-//         { 610 , "8020_610V_C475V_20190527_0825" } ,
+        { 600 , "8020_600V_C475V_20190526_2145" } ,
+        { 610 , "8020_610V_C475V_20190527_0825" } ,
         { 640 , "8020_640V_C475V_20190523_1918" } ,
         { 645 , "8020_645V_C475V_20190524_0843" } ,
         { 650 , "8020_650V_C475V_20190524_2023" } ,
@@ -3371,22 +3467,24 @@ void comparer(){
                     ampScan = new TGraphErrors*[parameter.size()];
                     for( auto p : parameter ) ampScan[p.first] = new TGraphErrors();
                     for( auto a : m.second ){
-                        if(
-                            ( d == "eta_in"  && b == "board8" && m.first == "85:15" && a.first == 635 ) ||
-                            ( d == "etaBot"  && b == "board7" && m.first == "85:15" && a.first == 615 ) ||
-                            ( d == "etaTop"  && b == "board7" && m.first == "80:20" && a.first == 610 ) ||
-                            ( d == "etaTop"  && b == "board8" && m.first == "80:20" && a.first == 610 ) ||
-                            ( d == "eta_out" && b == "board7" && m.first == "85:15" && a.first == 635 ) ||
-                            ( d == "etaBot"  && b == "board7" && m.first == "85:15" && a.first == 635 ) ||
-                            ( d == "etaBot"  && b == "board6" && m.first == "93:07" && a.first == 520 )
-                        ) continue;
+//                         if(
+//                             ( d == "eta_in"  && b == "board8" && m.first == "85:15" && a.first == 635 ) ||
+//                             ( d == "etaBot"  && b == "board7" && m.first == "85:15" && a.first == 615 ) ||
+//                             ( d == "etaTop"  && b == "board7" && m.first == "80:20" && a.first == 610 ) ||
+//                             ( d == "etaTop"  && b == "board8" && m.first == "80:20" && a.first == 610 ) ||
+//                             ( d == "eta_out" && b == "board7" && m.first == "85:15" && a.first == 635 ) ||
+//                             ( d == "etaBot"  && b == "board7" && m.first == "85:15" && a.first == 635 ) ||
+//                             ( d == "etaBot"  && b == "board6" && m.first == "93:07" && a.first == 520 )
+//                         ) continue;
                         name = preNsuffix.at(0) + a.second + preNsuffix.at(1);
                         infile = new TFile( name , "READ" );
                         if( !( infile->IsOpen() ) ){
                             cerr << " ERROR: could not open file \"" << name << "\"" << endl;
                             continue;
                         }
-                        name = v.second + "_" + b + "_" + d;
+                        name = v.second; 
+                        if( b != "" ) name += "_" + b;
+                        name += "_" + d;
                         readhist = (TH2I*)infile->Get( name );
                         if( readhist == NULL ){
                             cerr << " ERROR: could not read histogram \"" << name << "\"" << endl;
@@ -3411,6 +3509,10 @@ void comparer(){
 //                         else 
                         if( v.second == "nStripsVSslope" ){
                             projection->GetXaxis()->SetRangeUser( 1.5 , 10.5 );
+                        }
+                        else
+                        if( v.second == "resVSslope_area" || v.second == "uTPCresVSslope" ){
+                            projection->GetXaxis()->SetRangeUser( -residualRange , residualRange );
                         }
                         maximum = projection->GetMaximum();
                         mean = projection->GetMean();
@@ -3520,6 +3622,24 @@ void comparer(){
                                 ampScan[p+2]->SetPointError( ampScan[p+2]->GetN()-1 , 1. , function->GetParError(1) );
                             }
                         }
+                        else if( v.second == "resVSslope_area" || v.second == "uTPCresVSslope" ){
+                            vector<double> fitresults = fitDoubleGaussian( projection , residualRange );
+                            projection->Draw();
+                            gPad->Modified();
+                            gPad->Update();
+                            gPad->WaitPrimitive();
+                            ampScan[0]->SetPoint( ampScan[0]->GetN()-1 , a.first , fitresults.at(2) );
+                            ampScan[0]->SetPointError( ampScan[0]->GetN()-1 , 1. , fitresults.at(8) );
+                            ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , fitresults.at(5) );
+                            ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 1. , fitresults.at(11) );
+                            ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , fitresults.at(3) / fitresults.at(0) );
+                            ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , 1. , 
+                                                                                    sqrt( 
+                                                                                            pow( fitresults.at(9) / fitresults.at(0) , 2 ) +
+                                                                                            pow( fitresults.at(3) / pow( fitresults.at(0) , 2 ) * fitresults.at(6) , 2 )
+                                                                                        ) 
+                                                );
+                        }
                         else{
                             function = new TF1( "function" , "gaus" , mean - 5. * stdv , mean + 5. * stdv );
                             function->SetParameters( maximum , mean , stdv );
@@ -3541,6 +3661,7 @@ void comparer(){
                         name = name.ReplaceAll( "VSslope" , "" );
                         name = name.ReplaceAll( "vsSlope" , "" );
                         name = name.ReplaceAll( "_near" , "" );
+                        name = name.ReplaceAll( "_area" , "" );
                         name += "VSamplificationVoltage_";
                         name += p.second;
                         name += "_";
@@ -3615,9 +3736,18 @@ void comparer(){
     outfile->cd();
     
     for( auto m : measurements ){ 
-        for(unsigned int g=0; g<numberOfGainFitParameter; g++) gainVSpillarHeight[m.first][g]->Write();
-        for( auto p : parameter ) clusterQvsPillarHeight[m.first][p.first]->Write();
-        for(unsigned int p=0; p<2; p++) chargeIncreasePerStripVSpillarHeight[m.first][p]->Write();
+        for(unsigned int g=0; g<numberOfGainFitParameter; g++){ 
+            if( gainVSpillarHeight[m.first][g]->GetN() < 1 ) gainVSpillarHeight[m.first][g]->Delete();
+            else gainVSpillarHeight[m.first][g]->Write();
+        }
+        for( auto p : parameter ){ 
+            if( clusterQvsPillarHeight[m.first][p.first]->GetN() < 1 ) clusterQvsPillarHeight[m.first][p.first]->Delete();
+            else clusterQvsPillarHeight[m.first][p.first]->Write();
+        }
+        for(unsigned int p=0; p<2; p++){ 
+            if( chargeIncreasePerStripVSpillarHeight[m.first][p]->GetN() < 1 ) chargeIncreasePerStripVSpillarHeight[m.first][p]->Delete();
+            else chargeIncreasePerStripVSpillarHeight[m.first][p]->Write();
+        }
     }
     
     outfile->Close();
