@@ -35,25 +35,66 @@ const unsigned short apv_sending_order_table[128] = {0,32,64,96,8,40,72,104,16,4
     13,45,77,109,21,53,85,117,29,61,93,125,6,38,70,102,14,46,78,110,22,54,86,118,
     30,62,94,126,7,39,71,103,15,47,79,111,23,55,87,119,31,63,95,127};
 
-vector< vector<string> > getInput(string filename){
+// vector< vector<string> > getInput(string filename){
+//     vector< vector<string> > input;
+//     if(filename.compare("")==0) return input;
+//     ifstream ifile(filename.c_str());
+//     if(!(ifile)) return input;
+//     string line = "";
+//     string word = "";
+//     vector<string> dummy;
+//     while(getline(ifile, line)){
+//         stringstream sline(line);
+//         while(!(sline.eof())){ 
+//             sline >> skipws >> word;
+//             if(word!="")dummy.push_back(word);
+//         }
+//         if(dummy.size()>0) input.push_back(dummy);
+//         dummy.clear();
+//     }
+//     ifile.close();
+//     return input;
+// }
+
+vector< vector<string> > getInput( string filename){
+    
     vector< vector<string> > input;
-    if(filename.compare("")==0) return input;
+    
+    if( filename.compare("") == 0 ){ 
+        cout << " WARNING : no input to read from " << endl;
+        return input;
+    }
+    
     ifstream ifile(filename.c_str());
-    if(!(ifile)) return input;
+    if( !( ifile ) ){ 
+        cout << " WARNING : could not read input file " << filename << endl;
+        return input;
+    }
+    
     string line = "";
     string word = "";
     vector<string> dummy;
-    while(getline(ifile, line)){
+    
+    while( getline( ifile, line) ){
+        
         stringstream sline(line);
-        while(!(sline.eof())){ 
+        
+        while( !( sline.eof() ) ){ 
+            
             sline >> skipws >> word;
-            if(word!="")dummy.push_back(word);
+            if( word != "" ) dummy.push_back(word);
+            word="";
+            
         }
-        if(dummy.size()>0) input.push_back(dummy);
+        
+        if( dummy.size() > 0 ) input.push_back(dummy);
         dummy.clear();
     }
+    
     ifile.close();
+    
     return input;
+    
 }
 
 void printFile(string filename){
@@ -3303,10 +3344,10 @@ void comparer(){
     unsigned int ndetectors = detectornames.size();
     
     vector<string> boardnames;
-//     boardnames.push_back("board6");
-//     boardnames.push_back("board7");
-//     boardnames.push_back("board8");
-    boardnames.push_back("");
+    boardnames.push_back("board6");
+    boardnames.push_back("board7");
+    boardnames.push_back("board8");
+//     boardnames.push_back("");
     unsigned int nboards = boardnames.size();
     
     double residualRange = 3.;
@@ -3314,9 +3355,9 @@ void comparer(){
     
     map< unsigned int , TString > variable = {
 //         { 0 , "resVSslope_area" } 
-        { 0 , "uTPCresVSslope" } 
+//         { 0 , "uTPCresVSslope" } 
 //         { 0 , "clusterQvsNstrips_near" } ,
-//         { 0 , "clusterQvsSlope" } ,
+        { 0 , "clusterQvsSlope" } 
 //         { 1 , "nStripsVSslope" } ,
 //         { 2 , "maxStripQvsSlope" } ,
 //         { 3 , "fastestVSslope" } ,
@@ -3334,7 +3375,9 @@ void comparer(){
     TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root" , "RECREATE" );
     
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
-    vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/resolution/woCCCtt/uTPCt0/m8_eta3_" , "_fitNclust_inCRF.root" };
+//     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/resolution/woCCCtt/uTPCt0/m8_eta3_" , "_fitNclust_inCRF.root" };
+//     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/ctc/timed/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
+    vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
 
 //     map< string , vector< pair< unsigned int , string > > > measurements;
     map< string , map< unsigned int , string > > measurements;
@@ -3863,6 +3906,46 @@ void stacker(){
     
 }
 
+void overwriter(){
+    
+    vector< vector<string> > text = getInput("/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/ctc/ctcDependence.txt");
+    TString parameter = "cluTime";
+    TString filetag = "_CCC30up_fitNclust_inCRF_study.root";
+    
+    vector<string> detectornames;
+    detectornames.push_back("eta_out");
+    detectornames.push_back("eta_in");
+    detectornames.push_back("stereo_in");
+    detectornames.push_back("stereo_out");
+    detectornames.push_back("etaBot");
+    detectornames.push_back("etaTop");
+    unsigned int ndetectors = detectornames.size();
+    
+    TString name ,title;
+    int errorFlag;
+    
+    for(unsigned int l=0; l<text.size(); l++){
+        name = text.at(l).at(0);
+        if( !( name.Contains(filetag) ) ) continue;
+        title = name.ReplaceAll( filetag , "" );
+        for(unsigned int d=0; d<ndetectors; d++){
+            name = "root -l -n -x -q \'changeParameter.C(\"/project/etp3/mherrmann/analysis/parameterfiles/m8/CCC30up/parameter_SM2nDoublet_";
+            name += title;
+            name += ".txt\",\"";
+            name += detectornames.at(d);
+            name += "\",\"";
+            name += parameter;
+            name += "\",\"";
+            name += text.at(l+d+1).at(0);
+            name += "\",true)\'";
+            cout << " executing : \"" << name << "\"" << endl;
+            errorFlag = system( name );
+        }
+        l += ndetectors;
+    }
+    
+}
+
 void tester( TString filename="test.dat" , bool bugger=false ){
 //     getNoisy(filename);
 //     effiPerPart();
@@ -3890,5 +3973,6 @@ void tester( TString filename="test.dat" , bool bugger=false ){
 //     overlayer();
     comparer();
 //     stacker();
+//     overwriter();
 }
 
