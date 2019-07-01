@@ -19,6 +19,11 @@
 
 using namespace std;
 
+bool straightTracks[2] = { false , false };
+double straightNess[2] = { 1e-1 , 1e-1 };
+bool rejectMultipeScattering = false;
+double maximalScatter = 1e-2;
+
 int main(int argc, char* argv[]){
     
     TString inname = "";
@@ -41,6 +46,9 @@ int main(int argc, char* argv[]){
         " -p\tname of paramterfile  \t(default:  \"" << params << "\")\n"
         " -s\tstart event number    \t(default:  \"" << start << "\")\n"
         " -e\tend event number      \t(default:  \"" << end << "\"->whole file)\n"
+        " -x\ttrack straightness    \t(default:  " << straightNess[0] << " -> switched "<< straightTracks[0] <<")\n"
+        " -y\ttrack straightness    \t(default:  " << straightNess[1] << " -> switched "<< straightTracks[1] <<")\n"
+        " -r\treject scattering     \t(default:  " << maximalScatter << " -> switched "<< rejectMultipeScattering <<")\n"
         " -O\tonly cluster mode off \t(default:  \"" << only << "\")\n"
         " -L\tlarge partitions       \t(default:  \"" << largePartitions << "\")\n"
         " -D\tdebugging mode        \t(default:  \"" << bugger << "\")\n"
@@ -284,6 +292,7 @@ void analysis::investigateCRF(){
     TH2D** resNearHits = new TH2D*[ndetectors];
     TH2I** maxQstripVSstrip = new TH2I*[ndetectors];
     TH1D*** centralAreaHits = new TH1D**[ndetectors];
+    TH2D*** slopeVShits = new TH2D**[ndetectors];
     TH2I** chargeVSstrip_near;
     if(!onlyCluster){
         chargeVSstrip_near = new TH2I*[ndetectors];
@@ -559,6 +568,7 @@ void analysis::investigateCRF(){
         maxQstripVSstrip[d]->SetYTitle("charge max strip [ADC channel]");  
             
         centralAreaHits[d] = new TH1D*[2];
+        slopeVShits[d] = new TH2D*[3];
         
         for(unsigned int m=0; m<2; m++){
         
@@ -574,6 +584,22 @@ void analysis::investigateCRF(){
             else centralAreaHits[d][m] = new TH1D(histname, histname, detstrips.at(d).at(0), 0.5, 0.5+detstrips.at(d).at(0));
             centralAreaHits[d][m]->SetXTitle("stripnumber");
             centralAreaHits[d][m]->SetYTitle("hits"); 
+            
+        }
+        
+        for(unsigned int m=0; m<3; m++){
+        
+            histname = "slopeVShits";
+            if( m == 0 ) histname += "_CRF";
+            else if( m == 2 ) histname += "_uTPC";
+            if(ndetectors>1){ 
+                histname += "_";
+                histname += detectornames.at(d);
+            }
+            if( detstrips.at(d).at(1) > 0 ) slopeVShits[d][m] = new TH2D(histname, histname, detstrips.at(d).at(1)/128, 0.5, 0.5+detstrips.at(d).at(1), mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange);
+            else slopeVShits[d][m] = new TH2D(histname, histname, detstrips.at(d).at(0)/128, 0.5, 0.5+detstrips.at(d).at(0), mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange);
+            slopeVShits[d][m]->SetXTitle("stripnumber");
+            slopeVShits[d][m]->SetYTitle("slope reference track"); 
         
         }
         
@@ -1933,9 +1959,10 @@ void analysis::investigateCRF(){
 //         track[0][1] = slopeX;
 //         track[1][1] = slopeY[1];
         
-//         if( abs( slopeY[0] - slopeY[1] ) > 1e-2 ) continue;
-//         if( abs( mdtslope ) > 1e-1 ) continue;
-//         if( abs( slopeX ) > 1e-2 ) continue;
+        if( abs( interceptY[0]-interceptY[1] ) > 20. ) continue;
+        if( straightTracks[0] && abs( slopeX ) > straightNess[0] ) continue;
+        if( straightTracks[1] && abs( mdtslope ) > straightNess[1] ) continue;
+        if( rejectMultipeScattering &&  abs( slopeY[0] - slopeY[1] ) > maximalScatter ) continue;
         if( useNewXtrack && ( track[0][0] < trackWindow[0][0] || track[0][0] > trackWindow[0][1] || track[1][0] < trackWindow[1][0] || track[1][0] > trackWindow[1][1] ) ) continue;
 //         if( track[0][0] < -1100. || track[0][0] > -200. || track[1][0] < -200. || track[1][0] > 100.) continue;
         
@@ -2422,6 +2449,9 @@ void analysis::investigateCRF(){
             bool centralHit = false;
             
             CRFhits[d]->Fill( intersection.at(0), intersection.at(1));
+            
+            double mdtStripPosition = -1e6;
+            
             if( xpart >= 0 && xpart < divisions.at(d).at(0) && ypart >= 0 && ypart < divisions.at(d).at(1) ){ 
                 
                 numberOfCluster[d]->Fill( foundCluster[d][1], usedCluster[d][1]);
@@ -2433,8 +2463,10 @@ void analysis::investigateCRF(){
                 if( xpart > 0.3 * divisions.at(d).at(0) && xpart < 0.7 * divisions.at(d).at(0) ){
                     centralHit = true;
                     vector<double> trackINdet = GetPointDet( intersection.at(0), intersection.at(1), intersection.at(2), d, 0);
-                    double mdtStripPosition = trackINdet.at(1) / pitch.at(d) + detstrips.at(d).at(1) * 0.5;
+                    mdtStripPosition = trackINdet.at(1) / pitch.at(d) + detstrips.at(d).at(1) * 0.5;
                     centralAreaHits[d][0]->Fill( mdtStripPosition );
+                    if(useAngle) slopeVShits[d][0]->Fill( mdtStripPosition , mdtangle );
+                    else slopeVShits[d][0]->Fill( mdtStripPosition , mdtslope );
                 }
                 
                 if( !onlyCluster && leading[d][1] > -1 ){
@@ -2539,16 +2571,16 @@ void analysis::investigateCRF(){
                 
 //             double clusterposition = ( centroid->at( leading[d][1] ) - detstrips.at(d).at(1) * 0.5 ) * detpitch - detshift;
 //             if( flipCluster.at(d) && ( flip.at(d) == 2 || flip.at(d) == 3 ) ) clusterposition = - ( ( centroid->at( leading[d][1] ) - detstrips.at(d).at(1) * 0.5 ) * detpitch ) - detshift;
+
+            double flipSign = 1.;
+            if( flipCluster.at(d) && ( flip.at(d) == 2 || flip.at(d) == 3 ) ) flipSign = -1.;
+            
             double clusterposition = 
-                                        centroid->at( leading[d][1] ) * detpitch 
-                                            + detstrips.at(d).at(1) * ( (double)board + 0.5 ) / (double)nboards.at(d) * ( pitch.at(d) - detpitch ) 
-                                            - 0.5 * detstrips.at(d).at(1) * pitch.at(d) 
-                                            - detshift;
-            if( flipCluster.at(d) && ( flip.at(d) == 2 || flip.at(d) == 3 ) ) 
-                    clusterposition = 
-                                        -1.*( centroid->at( leading[d][1] ) * detpitch 
-                                            + detstrips.at(d).at(1) * ( (double)board + 0.5 ) / (double)nboards.at(d) * ( pitch.at(d) - detpitch ) 
-                                            - 0.5 * detstrips.at(d).at(1) * pitch.at(d) )
+                                    flipSign * ( 
+                                                centroid->at( leading[d][1] ) * detpitch 
+                                                + detstrips.at(d).at(1) * ( (double)board + 0.5 ) / (double)nboards.at(d) * ( pitch.at(d) - detpitch ) 
+                                                - 0.5 * detstrips.at(d).at(1) * pitch.at(d) 
+                                             )
                                             - detshift;
             vector<double> hitposition = GetPointGlobal( trackINdet.at(0), clusterposition, d, board);
             
@@ -2708,6 +2740,8 @@ void analysis::investigateCRF(){
             firstLayerBoard = board;
             firstLayer = d;
             
+            bool uTPCefficient = false;
+            
             if( 
 //                 abs( resMaxQ ) < effiRange.at(d) &&
 //                 size->at( leading[d][1] ) >= requiredForuTPC && 
@@ -2787,7 +2821,10 @@ void analysis::investigateCRF(){
                 if(useAngle) uTPCchi2VSslope[d]->Fill( mdtangle, uTPC_chi2NDF );
                 else uTPCchi2VSslope[d]->Fill( mdtslope, uTPC_chi2NDF );
                 
-                if( abs( uTPCresidual ) < effiRange.at(d) ) effi[d][xpart][ypart]->Fill(9.);
+                if( abs( uTPCresidual ) < effiRange.at(d) ){ 
+                    uTPCefficient = true;
+                    effi[d][xpart][ypart]->Fill(9.);
+                }
                 
                 if(!onlyCluster){
                     double meanClusterTime = 0.;
@@ -2958,6 +2995,15 @@ void analysis::investigateCRF(){
                 xpart < 0.7 * divisions.at(d).at(0) && 
                 nearest > -1 
             ){
+                
+                if( mdtStripPosition > -1e5 ){
+                    if(useAngle) slopeVShits[d][1]->Fill( mdtStripPosition , mdtangle );
+                    else slopeVShits[d][1]->Fill( mdtStripPosition , mdtslope );
+                    if(uTPCefficient){
+                        if(useAngle) slopeVShits[d][2]->Fill( mdtStripPosition , mdtangle );
+                        else slopeVShits[d][2]->Fill( mdtStripPosition , mdtslope );
+                    }
+                }
                 
                 if( onlyCluster ) centralAreaHits[d][1]->Fill( centroid->at( nearest ) );
                 else{
@@ -3213,6 +3259,7 @@ void analysis::investigateCRF(){
         resNearHits[d]->Write();
         maxQstripVSstrip[d]->Write();
         for(unsigned int m=0; m<2; m++) centralAreaHits[d][m]->Write();
+        for(unsigned int m=0; m<3; m++) slopeVShits[d][m]->Write();
         
         if(!onlyCluster){
             chargeVSstrip_near[d]->Write();
