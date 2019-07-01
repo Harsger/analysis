@@ -670,11 +670,12 @@ void amplificationScan(){
         
     vector<TString> mode = { "efficiency" , "charge" };
     map< string , TGraphErrors* > toIterateOver;
+    TFile * writefile;
     
     if( storeData ){
         TString name = ampScanDir;
         name += "_plots.root";
-        TFile * writefile = new TFile( name , "RECREATE" );
+        writefile = new TFile( name , "RECREATE" );
         writefile->cd();
         cout << " plots will be saved in : " << name << endl;
         for( auto m : mode ){
@@ -790,7 +791,7 @@ void amplificationScan(){
             gPad->SetGridy();
             gPad->Modified();
             gPad->Update();
-            gPad->WaitPrimitive();
+//            gPad->WaitPrimitive();
             
             name = outputDir;
             name += "/";
@@ -843,11 +844,45 @@ void amplificationScan(){
         
         g.second->GetYaxis()->SetRangeUser( 0. , 1. );
         
-        g.second->Draw("AP");
-        gPad->Modified();
-        gPad->Update();
-        gPad->WaitPrimitive();
+//         g.second->Draw("AP");
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
         
+    }
+    
+    if(storeData){
+        for( auto e : effiVSamp ){
+            TString effiName = e.first;
+            effiName = effiName.ReplaceAll( "efficiency" , "" );
+            TGraphErrors * efficiencyVScharge = new TGraphErrors();
+            TGraphErrors * chargeGraph;
+            for( auto c : chargeVSamp ){
+                TString chargeName = c.first;
+                chargeName = effiName.ReplaceAll( "charge" , "" );
+                if( effiName == chargeName ) chargeGraph = c.second;
+            }
+            if( chargeGraph == NULL ){
+                cout << " ERROR : charge graph not found for " << effiName << endl;
+                continue;
+            }
+            double  voltage ,
+                    efficiency , efficiencyError ,
+                    charge , chargeError;
+            for(unsigned int p=0; p<chargeGraph->GetN(); p++){
+                e.second->GetPoint( p , voltage , efficiency );
+                efficiencyError = e.second->GetErrorY( p );
+                chargeGraph->GetPoint( p , voltage , charge );
+                chargeError = chargeGraph->GetErrorY( p );
+                efficiencyVScharge->SetPoint( efficiencyVScharge->GetN() , charge , efficiency );
+                efficiencyVScharge->SetPointError( efficiencyVScharge->GetN()-1 , chargeError , efficiencyError );
+            }
+            writefile->cd();
+            effiName += "_efficiencyVScharge";
+            efficiencyVScharge->SetName(effiName);
+            efficiencyVScharge->SetTitle(effiName);
+            efficiencyVScharge->Write();
+        }
     }
     
 }
