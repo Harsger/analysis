@@ -19,6 +19,8 @@
 
 using namespace std;
 
+bool sample = false;
+
 int main(int argc, char* argv[]){
     
     TString inname = "";
@@ -43,6 +45,7 @@ int main(int argc, char* argv[]){
         " -e\tend event number      \t(default:  \"" << end << "\"->whole file)\n"
         " -O\tonly cluster mode off \t(default:  \"" << only << "\")\n"
         " -F\tfit noise signals     \t(default:  \"" << fitNoise << "\")\n"
+        " -S\tsave signal samples   \t(default:  \"" << sample << "\")\n"
         " -D\tdebugging mode        \t(default:  \"" << bugger << "\")\n"
         "\n"
         "output files are named : <inputname>_fitNclust_ana<start>to<end>.root\n"
@@ -51,7 +54,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "i:d:o:p:s:e:OFD")) != -1) {
+    while ((c = getopt (argc, argv, "i:d:o:p:s:e:OFSD")) != -1) {
         switch (c)
         {
         case 'i':
@@ -77,6 +80,9 @@ int main(int argc, char* argv[]){
             break;
         case 'F':
             fitNoise = true;
+            break;
+        case 'S':
+            sample = true;
             break;
         case 'D':
             bugger = true;
@@ -503,6 +509,24 @@ void analysis::fitNclust(){
     
     }
     
+    unsigned int sampleSize = 100;
+    unsigned int filledSamples = 0;
+    TGraphErrors *** uTPCfit = new TGraphErrors**[sampleSize];
+    TH2D ** eventdisplay = new TH2D*[sampleSize];
+    
+    for(unsigned int s=0; s<sampleSize; s++){
+        
+        uTPCfit[s] = new TGraphErrors*[3];
+        for(unsigned int t=0; t<3; t++){
+            uTPCfit[s][t] = new TGraphErrors();
+        }
+            
+        histname = "eventdisplay";
+        histname += s;
+        eventdisplay[s] = new TH2D(histname, histtitle, 10, 0.5, 10+0.5, ntimebins.at(0), 0., ntimebins.at(0));
+        
+    }
+    
     Long64_t entries = data->GetEntriesFast();
     
     if( !debug ) gROOT->SetBatch();
@@ -767,6 +791,7 @@ void analysis::fitNclust(){
         vector<double> timeFitError;
         vector<double> chargeOffset;
         vector<double> chargeBase;
+        vector<double> riseError;
         bool toBeSortedOut = false;
         
         for(unsigned int s=0; s<nstrips; s++){
@@ -824,6 +849,7 @@ void analysis::fitNclust(){
                 timeFitError.push_back(1e6);
                 chargeOffset.push_back(0.);
                 chargeBase.push_back(0.);
+                riseError.push_back(-1.);
                 
                 continue;
             }
@@ -869,6 +895,7 @@ void analysis::fitNclust(){
                     timeFitError.push_back( 1e6 );
                     chargeOffset.push_back(0.);
                     chargeBase.push_back(0.);
+                    riseError.push_back(-1.);
                     
                     sortOut.push_back(true);
                     
@@ -898,6 +925,7 @@ void analysis::fitNclust(){
                 ) 
             );
 //             timeFitError.push_back( inverseFermi->GetParError(1) );
+            riseError.push_back(inverseFermi->GetParError(2));
             chargeOffset.push_back( inverseFermi->GetParError(3) );
             
             inverseFermi->Delete();
@@ -971,6 +999,7 @@ void analysis::fitNclust(){
                     extrapolateTO * extrapolateTO * extrapolationfactor * extrapolationfactor * inverseFermi->GetParError(2) * inverseFermi->GetParError(2) 
                 );
 //                 timeFitError.at( stripindex) = inverseFermi->GetParError(1);
+                riseError.at(stripindex) = inverseFermi->GetParError(2);
                 chargeOffset.at( stripindex) = inverseFermi->GetParError(3);
                 
                 inverseFermi->Delete();
@@ -1358,6 +1387,48 @@ void analysis::fitNclust(){
             linearFit->Delete();
             timeVSstrip->Delete();
             
+            if( !(
+                sample &&
+                filledSamples < sampleSize &&
+                uTPCndf->at(c) > 0 &&
+                abs( uTPCchi2->at(c) / uTPCndf->at(c) - 1. ) < 0.2
+            ) ) continue;
+            
+            unsigned int firstStrip = 0;
+            
+            for(unsigned int s=0; s<clusterSize; s++){
+                
+                unsigned int stripindex = thisCluster.at(s);
+                
+                if( s == 0 ) firstStrip = number->at( stripindex );
+                
+                unsigned int stripNumber = number->at( stripindex ) - firstStrip + 1;
+                
+                for(int t=0; t<3; t++){
+                    
+                    uTPCfit[filledSamples][t]->SetPoint( 
+                                                            uTPCfit[filledSamples][t]->GetN(), 
+                                                            stripNumber, 
+                                                            turntime->at(stripindex) + (double)( t - 1 ) * extrapolationfactor * risetime->at(stripindex)
+                                                       );
+                    
+                    uTPCfit[filledSamples][t]->SetPointError( 
+                                                                uTPCfit[filledSamples][t]->GetN()-1, 
+                                                                0.288 * sqrt( 1. +  sumQ / ( clusterSize * maxcharge->at( stripindex ) ) ), 
+                                                                sqrt( 
+                                                                        pow ( timeFitError.at( stripindex ) , 2 ) +
+                                                                        pow( extrapolationfactor * riseError.at(stripindex) , 2 )
+                                                                    )
+                                                            );
+                    
+                }
+                
+                for(int t=0; t<ntimebins.at(cdet); t++) eventdisplay[filledSamples]->SetBinContent( stripNumber , t+1 , apv_q->at(stripindex).at(t) );
+                
+            }
+            
+            filledSamples++;
+            
         }
         
         if(debug && verbose) cout << " filling meta trees " << endl;
@@ -1476,6 +1547,8 @@ void analysis::fitNclust(){
             hitmap[d]->Fill( centroid->at(leading[d][0]), centroid->at(leading[d][1]));
         }
         
+        if( filledSamples >= sampleSize ) break;
+        
     }
    
     cout << " writing trees ... ";
@@ -1529,6 +1602,30 @@ void analysis::fitNclust(){
         }
         
         if( detstrips.at(d).at(0) > 0 && detstrips.at(d).at(1) > 0 ) hitmap[d]->Write();
+        
+    }
+    
+    for(unsigned int s=0; s<sampleSize; s++){
+        
+        if( !sample || uTPCfit[s][0]->GetN()<3 ){
+        
+            for(unsigned int t=0; t<3; t++) uTPCfit[s][t]->Delete();
+            eventdisplay[s]->Delete();
+            
+            continue;
+            
+        }
+        
+        for(unsigned int t=0; t<3; t++){ 
+            histname = "uTPCfit";
+            histname += s;
+            histname += "_";
+            histname += t;
+            uTPCfit[s][t]->SetName(histname);
+            uTPCfit[s][t]->SetTitle(histname);
+            uTPCfit[s][t]->Write();
+        }
+        eventdisplay[s]->Write();
         
     }
     
