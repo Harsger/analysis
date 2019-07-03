@@ -14,6 +14,7 @@
 
 #include <TString.h>
 #include <TFile.h>
+#include <TFitResult.h>
 
 #include "analysis.h"
 
@@ -280,6 +281,14 @@ void analysis::align(){
     unsigned int startAt = 0;
     
     if( specifier.Contains("difVSslope") ) startAt = 1;
+    
+    ofstream parameterCorrectionFile;
+    parameterCorrectionFile.open( "align" , std::ios_base::app );
+    parameterCorrectionFile << readname << "\t" << specifier << endl;
+    
+    ofstream pitchDeviationFile;
+    pitchDeviationFile.open( "pitchDeviation.txt" , std::ios_base::app );
+    pitchDeviationFile << readname << "\t" << specifier << endl;
     
     for(unsigned int d=startAt; d<ndetectors; d++){
         
@@ -826,7 +835,10 @@ void analysis::align(){
         vecdodummy.push_back(slopez);
         vecdodummy.push_back(slopez_err);
         corrections.push_back(vecdodummy);
-        vecdodummy.clear();   
+        vecdodummy.clear();  
+        
+        parameterCorrectionFile << fixed << setprecision(4) << fullSampleFit.at(d).at(0) << "\t" << fullSampleFit.at(d).at(2) 
+                        << "\t" << fixed << setprecision(6) << slopex << "\t" << slopey << "\t" << slopez << endl;
         
         for(unsigned int cy=0; cy<divisions.at(d).at(1); cy++){ 
             
@@ -910,9 +922,29 @@ void analysis::align(){
                 }
                 else projection->Fit(gaus,"RBQ0");
                 
+                if( abs( gaus->GetParameter(1) ) > 2. ) continue;
+                
                 resMeanVSmdtY->SetPoint( resMeanVSmdtY->GetN(), lowEdge + ( cx - 0.5 ) * step, gaus->GetParameter(1));
                 resMeanVSmdtY->SetPointError( resMeanVSmdtY->GetN()-1, 0.5*step, gaus->GetParError(1));
                 
+            }
+            
+            double boardWidth = length.at(d).at(1) / (double)nboards.at(d);
+            for(unsigned int b=0; b<nboards.at(d); b++){
+                double boardCenter = position.at(d).at(1) - 0.5 * length.at(d).at(1) + boardWidth * ( 0.5 + b );
+                linfit = new TF1( "linfit" , " [0] + [1] * ( x - [2] ) " , boardCenter - 0.4 * boardWidth , boardCenter + 0.4 * boardWidth );
+                linfit->SetParameters( 1. , 1. , boardCenter );
+                linfit->FixParameter( 2 , boardCenter );
+                resMeanVSmdtY->Fit( linfit , "RQBW" );
+                resMeanVSmdtY->Fit( linfit , "RQB" );
+                resMeanVSmdtY->Fit( linfit , "RQB" );
+                pitchDeviationFile << fixed << setprecision(5) << setw(8) << linfit->GetParameter(1) << "\t";
+                pitchDeviationFile << fixed << setprecision(3) << setw(5) << linfit->GetParameter(0) << endl;
+                resMeanVSmdtY->GetYaxis()->SetRangeUser(-1.,1.);
+                resMeanVSmdtY->Draw("AP");
+                gPad->Modified();
+                gPad->Update();
+                gPad->WaitPrimitive();
             }
         
             title = "resVSstrip";
@@ -930,6 +962,8 @@ void analysis::align(){
                 }
                 resVSslope = (TH2I*)infile->Get(title);
             }
+            
+            resVSslope->RebinX(4);
             
             xbins = resVSslope->GetXaxis()->GetNbins();
             lowEdge = resVSslope->GetXaxis()->GetXmin();
@@ -1026,9 +1060,12 @@ void analysis::align(){
         
         cout << " done " << endl;
         
-    }    
-        
+    }
+    
     cout << endl;
+    
+    parameterCorrectionFile.close();
+    pitchDeviationFile.close();
     
     cout << " " << readname << endl;
     cout << " detector ";
@@ -1651,8 +1688,8 @@ void analysis::resolution(){
             
             residualWidth = sqrt( fitresults.at(2) * fitresults.at(2) - crfRes.at(b-1).at(0) * crfRes.at(b-1).at(0) );
             residualWidthError = sqrt( 
-                                        pow( 2. * fitresults.at(2) * fitresults.at(8) / residualWidth , 2 ) +
-                                        pow( 2. * crfRes.at(b-1).at(0) * crfRes.at(b-1).at(1) / residualWidth , 2 )
+                                        pow( fitresults.at(2) * fitresults.at(8) / residualWidth , 2 ) +
+                                        pow( crfRes.at(b-1).at(0) * crfRes.at(b-1).at(1) / residualWidth , 2 )
                                             
                                     );
             
@@ -2981,10 +3018,12 @@ void analysis::study(){
     vector<double> highEdge { 0., 0., 0.};
     vector<double> step { 0., 0., 0.};
     
-    TCanvas * toprint = new TCanvas("toprint","toprint",200,10,600,400);
-    toprint->SetGrid();
-    gSystem->Unlink("resVSclustertimeVSangle.gif");
+//     TCanvas * toprint = new TCanvas("toprint","toprint",200,10,600,400);
+//     toprint->SetGrid();
+//     gSystem->Unlink("resVSclustertimeVSangle.gif");
 //     gSystem->Exec("rm resVSclustertimeVSangle.gif");
+    
+    vector<double> dependencies;
     
     for(unsigned int d=0; d<ndetectors; d++){
         
@@ -3076,14 +3115,14 @@ void analysis::study(){
 //                 slice->GetXaxis()->SetRangeUser( firstTime.at(d), lastTime.at(d));
                 slice->GetXaxis()->SetRangeUser( timeMean+2.*timeSTDV, timeMean-2.*timeSTDV);
                 
-                if( d==1 && m==1 ){
-                    slice->Draw("colz");
-                    toprint->Modified();
-                    toprint->Update();
-                    if( a == nbins.at(0) ) toprint->Print("resVSclustertimeVSangle.gif++");
-                    else toprint->Print("resVSclustertimeVSangle.gif+25");
-//                     continue;
-                }
+//                 if( d==1 && m==1 ){
+//                     slice->Draw("colz");
+//                     toprint->Modified();
+//                     toprint->Update();
+//                     if( a == nbins.at(0) ) toprint->Print("resVSclustertimeVSangle.gif++");
+//                     else toprint->Print("resVSclustertimeVSangle.gif+25");
+// //                     continue;
+//                 }
                 
                 if(debug){ 
                     slice->Write();
@@ -3142,11 +3181,12 @@ void analysis::study(){
                 cluTimeSlopeVSslope->GetXaxis()->SetRangeUser( lowerXlimit , upperXlimit );
                 TF1 * linearfit = new TF1( "linearfit", "[0]+[1]*x", lowerXlimit, upperXlimit);
                 cluTimeSlopeVSslope->Fit( linearfit, "RQB");
+                dependencies.push_back( linearfit->GetParameter(1) );
                 cout << " " << detectornames.at(d) << " cluTimeSlopeVSslope fit slope " << linearfit->GetParameter(1) << " +/- " << linearfit->GetParError(1) << " => v_drift " << linearfit->GetParameter(1)/25. << " mm / ns" << endl;
-                cluTimeSlopeVSslope->Draw("AP");
-                gPad->Modified();
-                gPad->Update();
-                gPad->WaitPrimitive();
+//                 cluTimeSlopeVSslope->Draw("AP");
+//                 gPad->Modified();
+//                 gPad->Update();
+//                 gPad->WaitPrimitive();
             }
             
             cluTimeInterceptVSslope->Write();
@@ -3155,6 +3195,13 @@ void analysis::study(){
         }    
         
     }
+    
+    ofstream textfile;
+    textfile.open( "ctcDependence.txt" , std::ios_base::app );
+    textfile << readname << endl;
+    for(unsigned int d=0; d<ndetectors; d++)
+        textfile << fixed << setprecision(3) << setw(5) << dependencies.at(d) << endl;
+    textfile.close();
     
 }
 
@@ -3168,6 +3215,8 @@ void analysis::precision(){
     TH2I * readhist;
     TH1D * slice;
     
+    TF1 * fitfunction;
+    
     TString title, sliceTitle;
     
     vector<double> fitresults; 
@@ -3176,6 +3225,10 @@ void analysis::precision(){
     vector<double> lowEdge { 0., 0.};
     vector<double> highEdge { 0., 0.};
     vector<double> step { 0., 0.};
+    
+    ofstream textfile;
+    textfile.open( "precision" , std::ios_base::app );
+    textfile << readname << endl;
     
     for(unsigned int d=0; d<ndetectors; d++){
         
@@ -3344,21 +3397,43 @@ void analysis::precision(){
                 upperXlimit = position.at(d).at(0)+length.at(d).at(0)/3.;
             }
             
-            TF1 * linfit = new TF1("linfit","pol1",lowerXlimit,upperXlimit);
-//             linfit->SetParameters( 0., 0.1);
+            fitfunction = new TF1("fitfunction","pol1",lowerXlimit,upperXlimit);
+//             fitfunction->SetParameters( 0., 0.1);
             
             resVSscinX->GetXaxis()->SetRangeUser(lowerXlimit,upperXlimit);
             resVSscinX->GetYaxis()->SetRangeUser(-1.,1.);
-            resVSscinX->Fit(linfit,"RQ");
+            resVSscinX->Fit(fitfunction,"REQS");
+            
+            cout << " board " << b << " \t shift " << fitparameter.at(1) << " +/- " <<  fitparameter.at(7) << " \t rotation " << fitfunction->GetParameter(1) << " +/- " << fitfunction->GetParError(1) << endl;
+            textfile << fixed << setprecision(3) << setw(5) << fitparameter.at(1) << " \t " << fixed << setprecision(5) << setw(8) << fitfunction->GetParameter(1) << " \t ";
                
 //             if(debug){
-                resVSscinX->Draw();
-                gPad->Modified();
-                gPad->Update();
-                gPad->WaitPrimitive();
+//                 resVSscinX->Draw();
+//                 gPad->Modified();
+//                 gPad->Update();
+//                 gPad->WaitPrimitive();
+//             }
+                
+//             fitfunction = new TF1("fitfunction","pol2",lowerXlimit,upperXlimit);
+            fitfunction = new TF1("fitfunction"," [0] + [1] * ( x - [2] )^2 ",lowerXlimit,upperXlimit);
+            fitfunction->SetParameters( 0.1 , 1e-5 , position.at(d).at(0) );
+            fitfunction->SetParLimits( 2 , lowerXlimit , upperXlimit );
+            
+            resVSscinX->GetYaxis()->SetRangeUser(-0.3,0.3);
+            resVSscinX->Fit(fitfunction,"REQS");
+//             TFitResultPtr r = resVSscinX->Fit(fitfunction,"REQS");
+            
+//             r->Print("V");
+               
+//             if(debug){
+//                 resVSscinX->Draw();
+//                 gPad->Modified();
+//                 gPad->Update();
+//                 gPad->WaitPrimitive();
 //             }
             
-            cout << " board " << b << " \t shift " << fitparameter.at(1) << " +/- " <<  fitparameter.at(7) << " \t rotation " << linfit->GetParameter(1) << " +/- " << linfit->GetParError(1) << endl;
+            textfile << fixed << setprecision(3) << setw(5) << fitfunction->GetParameter(0) << " \t ";
+            textfile << scientific << setprecision(4) << fitfunction->GetParameter(1) << endl;
         
             outfile->cd();
             
@@ -3369,6 +3444,8 @@ void analysis::precision(){
         }
         
     }
+    
+    textfile.close();
 
 }
 
