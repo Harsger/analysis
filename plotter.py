@@ -126,6 +126,33 @@ from array import array
         #[ "" , "Ar-CO2_80-20" , "80:20" ] ,
         #[ "" , "Ar-CO2_70-30" , "70:30" ] 
     #]
+
+#preNsuffix = [ "/project/etp3/mherrmann/driftSimulation/evaluated/Ar-CO2-H2O_0.01to0.3.root" , "" ]
+
+#plotTags = [
+        #[ "" , "Ar-CO2-H2O_92.9907-6.9993-0.01" , "0.01" ] ,
+        ##[ "" , "Ar-CO2-H2O_92.9814-6.9986-0.02" , "0.02" ] ,
+        ##[ "" , "Ar-CO2-H2O_92.9535-6.9965-0.05" , "0.05" ] ,
+        #[ "" , "Ar-CO2-H2O_92.907-6.993-0.1" , "0.10" ] ,
+        ##[ "" , "Ar-CO2-H2O_92.8977-6.9923-0.11" , "0.11" ] ,
+        ##[ "" , "Ar-CO2-H2O_92.8884-6.9916-0.12" , "0.12" ] ,
+        ##[ "" , "Ar-CO2-H2O_92.8605-6.9895-0.15" , "0.15" ] ,
+        #[ "" , "Ar-CO2-H2O_92.814-6.986-0.2" , "0.20" ] ,
+        ##[ "" , "Ar-CO2-H2O_92.8047-6.9853-0.21" , "0.21" ] ,
+        ##[ "" , "Ar-CO2-H2O_92.7954-6.9846-0.22" , "0.22" ] ,
+        ##[ "" , "Ar-CO2-H2O_92.7675-6.9825-0.25" , "0.25" ] ,
+        #[ "" , "Ar-CO2-H2O_92.721-6.979-0.3"    , "0.30" ] 
+    #]
+
+#preNsuffix = [ "/project/etp3/mherrmann/driftSimulation/evaluated/Ar-CO2-N2-02_air0.1to5.root" , "" ]
+
+#plotTags = [
+        #[ "" , "Ar-CO2-N2-O2_92.07-6.93-0.785-0.215_air-1.0" , "1%" ] ,
+        #[ "" , "Ar-CO2-N2-O2_91.14-6.86-1.57-0.43_air-2.0"   , "2%" ] ,
+        #[ "" , "Ar-CO2-N2-O2_90.21-6.79-2.355-0.645_air-3.0" , "3%" ] ,
+        #[ "" , "Ar-CO2-N2-O2_89.28-6.72-3.14-0.86_air-4.0"   , "4%" ] ,
+        #[ "" , "Ar-CO2-N2-O2_88.35-6.65-3.925-1.075_air-5.0" , "5%" ] 
+    #]
     
 #preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF_cluPro.root" ]
 
@@ -233,6 +260,17 @@ from array import array
         #[ "" , "clusterQVSamplificationVoltage_mean_eta_out_board8_8020"  , "mean" ] ,
         #[ "" , "clusterQVSamplificationVoltage_stdv_eta_out_board8_8020"  , "std. dev." ] 
     #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/" , "m8_gasStudy_woPillarCorrelation.root" ]
+
+#plotTags = [ 
+        #[ "" , "clusterQVSamplificationVoltage_MPV_eta_out_board8_9307"   , "MPV        93:07 U_{drift}=300V" ] ,
+        #[ "" , "clusterQVSamplificationVoltage_mean_eta_out_board8_9307"  , "mean" ] ,
+        #[ "" , "clusterQVSamplificationVoltage_MPV_eta_out_board8_8515"   , "MPV        85:15 U_{drift}=300V" ] ,
+        #[ "" , "clusterQVSamplificationVoltage_mean_eta_out_board8_8515"  , "mean" ] ,
+        #[ "" , "clusterQVSamplificationVoltage_MPV_eta_out_board8_8020"   , "MPV        80:20 U_{drift}=475V" ] ,
+        #[ "" , "clusterQVSamplificationVoltage_mean_eta_out_board8_8020"  , "mean" ] 
+    #]
 
 #preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/" , "m8_gasStudy_nStrips.root" ]
 
@@ -254,14 +292,14 @@ from array import array
 #preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/" , "m8_gasStudy_resolution.root" ]
 
 #plotTags = [ 
-        #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_9307"   , "narrow [#mum]   93:07 U_{drift}=300V" ] ,
-        #[ "" , "resVSamplificationVoltage_MPV_eta_out_board8_9307"    , "broad [#mum]" ] ,
+        #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_9307"   , "narrow [mm]   93:07 U_{drift}=300V" ] ,
+        #[ "" , "resVSamplificationVoltage_MPV_eta_out_board8_9307"    , "broad [mm]" ] ,
         #[ "" , "resVSamplificationVoltage_sigma_eta_out_board8_9307"  , "ratio broad to narrow gaussian" ] ,
-        #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_8515"   , "narrow [#mum]   85:15 U_{drift}=300V" ] ,
-        #[ "" , "resVSamplificationVoltage_MPV_eta_out_board8_8515"    , "broad [#mum]" ] ,
+        #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_8515"   , "narrow [mm]   85:15 U_{drift}=300V" ] ,
+        #[ "" , "resVSamplificationVoltage_MPV_eta_out_board8_8515"    , "broad [mm]" ] ,
         #[ "" , "resVSamplificationVoltage_sigma_eta_out_board8_8515"  , "ratio broad to narrow gaussian" ] ,
-        #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_8020"   , "narrow [#mum]   80:20 U_{drift}=475V" ] ,
-        #[ "" , "resVSamplificationVoltage_MPV_eta_out_board8_8020"    , "broad [#mum]" ] ,
+        #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_8020"   , "narrow [mm]   80:20 U_{drift}=475V" ] ,
+        #[ "" , "resVSamplificationVoltage_MPV_eta_out_board8_8020"    , "broad [mm]" ] ,
         #[ "" , "resVSamplificationVoltage_sigma_eta_out_board8_8020"  , "ratio broad to narrow gaussian" ] 
     #]
 
@@ -274,7 +312,63 @@ from array import array
         #[ "" , "resVSamplificationVoltage_MPV_eta_out_board8_8020"    , "broad" ] 
     #]
 
-preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy_" , "esolution3mm.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/" , "m8_gasStudy_MDTresolution4mm.root" ]
+
+#plotTags = [ 
+        #[ "" , "interceptDifVSamplificationVoltage_mean_eta_out__9307"   , "narrow [mm]   93:07 U_{drift}=300V" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_MPV_eta_out__9307"    , "broad [mm]" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_sigma_eta_out__9307"  , "ratio broad to narrow gaussian" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_mean_eta_out__8515"   , "narrow [mm]   85:15 U_{drift}=300V" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_MPV_eta_out__8515"    , "broad [mm]" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_sigma_eta_out__8515"  , "ratio broad to narrow gaussian" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_mean_eta_out__8020"   , "narrow [mm]   80:20 U_{drift}=475V" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_MPV_eta_out__8020"    , "broad [mm]" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_sigma_eta_out__8020"  , "ratio broad to narrow gaussian" ] 
+    #]
+
+#plotTags = [ 
+        #[ "" , "interceptDifVSamplificationVoltage_mean_eta_out__8020"     , "eo narrow [mm]"           ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_MPV_eta_out__8020"      , "eo broad [mm]"            ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_sigma_eta_out__8020"    , "eo ratio broad to narrow" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_mean_eta_in__8020"      , "ei narrow [mm]"           ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_MPV_eta_in__8020"       , "ei broad [mm]"            ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_sigma_eta_in__8020"     , "ei ratio broad to narrow" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_mean_stereo_in__8020"   , "si narrow [mm]"           ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_MPV_stereo_in__8020"    , "si broad [mm]"            ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_sigma_stereo_in__8020"  , "si ratio broad to narrow" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_mean_stereo_out__8020"  , "so narrow [mm]"           ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_MPV_stereo_out__8020"   , "so broad [mm]"            ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_sigma_stereo_out__8020" , "so ratio broad to narrow" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_mean_etaBot__8020"      , "eb narrow [mm]"           ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_MPV_etaBot__8020"       , "eb broad [mm]"            ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_sigma_etaBot__8020"     , "eb ratio broad to narrow" ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_mean_etaTop__8020"      , "et narrow [mm]"           ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_MPV_etaTop__8020"       , "et broad [mm]"            ] ,
+        #[ "" , "interceptDifVSamplificationVoltage_sigma_etaTop__8020"     , "et ratio broad to narrow" ] 
+    #]
+
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy_" , ".root" ]
+
+#plotTags = [ 
+        #[ "2meanQperMeanNstrips_3sigmaPerMPV" , "clusterQvsNstripsVSamplificationVoltage_sigma_eta_out_board8_9307" , "sigma / MPV   93:07 U_{drift}=300V" ] ,
+        #[ "2MPVqPerMeanNstrips_3stdvPerMean"  , "clusterQvsNstripsVSamplificationVoltage_sigma_eta_out_board8_9307" , "std. dev. / mean" ] ,
+        #[ "2meanQperMeanNstrips_3sigmaPerMPV" , "clusterQvsNstripsVSamplificationVoltage_sigma_eta_out_board8_8515" , "sigma / MPV   85:15 U_{drift}=300V" ] ,
+        #[ "2MPVqPerMeanNstrips_3stdvPerMean"  , "clusterQvsNstripsVSamplificationVoltage_sigma_eta_out_board8_8515" , "std. dev. / mean" ] ,
+        #[ "2meanQperMeanNstrips_3sigmaPerMPV" , "clusterQvsNstripsVSamplificationVoltage_sigma_eta_out_board8_8020" , "sigma / MPV   80:20 U_{drift}=475V" ] ,
+        #[ "2MPVqPerMeanNstrips_3stdvPerMean"  , "clusterQvsNstripsVSamplificationVoltage_sigma_eta_out_board8_8020" , "std. dev. / mean" ] 
+    #]
+
+#plotTags = [ 
+        #[ "2MPVqPerMeanNstrips_3stdvPerMean"  , "clusterQvsNstripsVSamplificationVoltage_MPV_eta_out_board8_9307" , "MPV   93:07 U_{drift}=300V" ] ,
+        #[ "2meanQperMeanNstrips_3sigmaPerMPV" , "clusterQvsNstripsVSamplificationVoltage_MPV_eta_out_board8_9307" , "mean" ] ,
+        #[ "2MPVqPerMeanNstrips_3stdvPerMean"  , "clusterQvsNstripsVSamplificationVoltage_MPV_eta_out_board8_8515" , "MPV   85:15 U_{drift}=300V" ] ,
+        #[ "2meanQperMeanNstrips_3sigmaPerMPV" , "clusterQvsNstripsVSamplificationVoltage_MPV_eta_out_board8_8515" , "mean" ] ,
+        #[ "2MPVqPerMeanNstrips_3stdvPerMean"  , "clusterQvsNstripsVSamplificationVoltage_MPV_eta_out_board8_8020" , "MPV   80:20 U_{drift}=475V" ] ,
+        #[ "2meanQperMeanNstrips_3sigmaPerMPV" , "clusterQvsNstripsVSamplificationVoltage_MPV_eta_out_board8_8020" , "mean" ] 
+    #]
+
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy_" , "esolution3mm.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy_CCC30up_" , "esolution3mm.root" ]
 
 #plotTags = [ 
         #[ "centroidR" , "resVSamplificationVoltage_mean_eta_out__9307"       , "centroid narrow   93:07 U_{drift}=300V" ] ,
@@ -291,14 +385,35 @@ preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasSt
         #[ "uTPCr"     , "uTPCresVSamplificationVoltage_MPV_eta_out__8020"    , "uTPC broad" ] 
     #]
 
-plotTags = [ 
-        [ "centroidR" , "resVSamplificationVoltage_sigma_eta_out__9307"       , "centroid   93:07 U_{drift}=300V" ] ,
-        [ "uTPCr"     , "uTPCresVSamplificationVoltage_sigma_eta_out__9307"    , "uTPC" ] ,
-        [ "centroidR" , "resVSamplificationVoltage_sigma_eta_out__8515"       , "centroid   85:15 U_{drift}=300V" ] ,
-        [ "uTPCr"     , "uTPCresVSamplificationVoltage_sigma_eta_out__8515"    , "uTPC" ] ,
-        [ "centroidR" , "resVSamplificationVoltage_sigma_eta_out__8020"       , "centroid   80:20 U_{drift}=475V" ] ,
-        [ "uTPCr"     , "uTPCresVSamplificationVoltage_sigma_eta_out__8020"    , "uTPC" ] 
-    ]
+#plotTags = [ 
+        #[ "centroidR" , "resVSamplificationVoltage_sigma_eta_out__9307"       , "centroid   93:07 U_{drift}=300V" ] ,
+        #[ "uTPCr"     , "uTPCresVSamplificationVoltage_sigma_eta_out__9307"    , "uTPC" ] ,
+        #[ "centroidR" , "resVSamplificationVoltage_sigma_eta_out__8515"       , "centroid   85:15 U_{drift}=300V" ] ,
+        #[ "uTPCr"     , "uTPCresVSamplificationVoltage_sigma_eta_out__8515"    , "uTPC" ] ,
+        #[ "centroidR" , "resVSamplificationVoltage_sigma_eta_out__8020"       , "centroid   80:20 U_{drift}=475V" ] ,
+        #[ "uTPCr"     , "uTPCresVSamplificationVoltage_sigma_eta_out__8020"    , "uTPC" ] 
+    #]
+
+#plotTags = [ 
+        #[ "centroidR" , "resVSamplificationVoltage_sigma_etaBot__9307"        , "centroid   93:07 U_{drift}=300V" ] ,
+        #[ "uTPCr"     , "uTPCresVSamplificationVoltage_sigma_etaBot__9307"    , "uTPC" ] ,
+        #[ "ctcR"      , "resVSamplificationVoltage_sigma_etaBot__9307"        , "cluster time corrected" ] ,
+        #[ "centroidR" , "resVSamplificationVoltage_sigma_etaBot__8515"        , "centroid   85:15 U_{drift}=300V" ] ,
+        #[ "uTPCr"     , "uTPCresVSamplificationVoltage_sigma_etaBot__8515"    , "uTPC" ] ,
+        #[ "ctcR"      , "resVSamplificationVoltage_sigma_etaBot__8515"        , "cluster time corrected" ] ,
+        #[ "centroidR" , "resVSamplificationVoltage_sigma_etaBot__8020"        , "centroid   80:20 U_{drift}=475V" ] ,
+        #[ "uTPCr"     , "uTPCresVSamplificationVoltage_sigma_etaBot__8020"    , "uTPC" ] ,
+        #[ "ctcR"      , "resVSamplificationVoltage_sigma_etaBot__8020"        , "cluster time corrected" ] 
+    #]
+
+#plotTags = [ 
+        #[ "uTPCr"         , "uTPCresVSamplificationVoltage_mean_eta_out__9307" , "inflection   93:07 U_{drift}=300V" ] ,
+        #[ "CCC30up_uTPCr" , "uTPCresVSamplificationVoltage_mean_eta_out__9307" , "maximum      CCC 30%" ] ,
+        #[ "uTPCr"         , "uTPCresVSamplificationVoltage_mean_eta_out__8515" , "inflection   85:15 U_{drift}=300V" ] ,
+        #[ "CCC30up_uTPCr" , "uTPCresVSamplificationVoltage_mean_eta_out__8515" , "maximum      CCC 30%" ] ,
+        #[ "uTPCr"         , "uTPCresVSamplificationVoltage_mean_eta_out__8020" , "inflection   80:20 U_{drift}=475V" ] ,
+        #[ "CCC30up_uTPCr" , "uTPCresVSamplificationVoltage_mean_eta_out__8020" , "maximum      CCC 30%" ] 
+    #]
 
 #preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/" , "m8_gasStudy_clusterQvsPillarHeight.root" ]
 
@@ -323,6 +438,27 @@ plotTags = [
         #[ "9307" , "L1L7charge"  , "93:07 U_{drift}=300V" ] ,
         #[ "8515" , "L1L7charge"  , "85:15 U_{drift}=300V" ] ,
         #[ "8020" , "L1L7charge"  , "80:20 U_{drift}=475V" ] 
+    #]
+
+#plotTags = [ 
+        #[ "9307" , "L1L7_efficiencyVScharge"  , "93:07 U_{drift}=300V" ] ,
+        #[ "8515" , "L1L7_efficiencyVScharge"  , "85:15 U_{drift}=300V" ] ,
+        #[ "8020" , "L1L7_efficiencyVScharge"  , "80:20 U_{drift}=475V" ] 
+    #]
+
+#plotTags = [ 
+        #[ "9307" , "L1L7_efficiencyVScharge"  , "L1L7 93:07 U_{drift}=300V" ] ,
+        #[ "9307" , "L2R6_efficiencyVScharge"  , "L2R6" ] ,
+        #[ "9307" , "L3R6_efficiencyVScharge"  , "L3R6" ] ,
+        #[ "9307" , "L4L7_efficiencyVScharge"  , "L4L7" ] ,
+        #[ "8515" , "L1L7_efficiencyVScharge"  , "L1L7 85:15 U_{drift}=300V" ] ,
+        #[ "8515" , "L2R6_efficiencyVScharge"  , "L2R6" ] ,
+        #[ "8515" , "L3R6_efficiencyVScharge"  , "L3R6" ] ,
+        #[ "8515" , "L4L7_efficiencyVScharge"  , "L4L7" ] ,
+        #[ "8020" , "L1L7_efficiencyVScharge"  , "L1L7 80:20 U_{drift}=475V" ] ,
+        #[ "8020" , "L2R6_efficiencyVScharge"  , "L2R6" ] ,
+        #[ "8020" , "L3R6_efficiencyVScharge"  , "L3R6" ] ,
+        #[ "8020" , "L4L7_efficiencyVScharge"  , "L4L7" ] 
     #]
 
 #preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF_cluPro.root" ]
@@ -354,6 +490,72 @@ plotTags = [
         #[ "" , "centroidBroadNarrowRatio_eta_out"       , "eta out" ] ,
         #[ "" , "mdtResidualBroadNarrowRatio_at_eta_out" , "MDT" ] 
     #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/uTPCt0/resolution/" , "m8_eta3_570V_20190528_1223_CCC30up_fitNclust_inCRF_resolution.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/uTPCt0/resolution/" , "m8_eta3_8515_620V_C380V_CJet8s_20190521_1829_CCC30up_fitNclust_inCRF_resolution.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/uTPCt0/resolution/" , "m8_eta3_8020_640V_C475V_20190523_1918_CCC30up_fitNclust_inCRF_resolution.root" ]
+
+#plotTags = [ 
+        #[ "" , "centroidBroad_etaBot"           , "centroid broad" ] ,
+        #[ "" , "mdtResolutionBroad_at_etaBot"   , "MDT broad" ] ,
+        #[ "" , "centroidNarrow_etaBot"          , "centroid narrow" ] ,
+        #[ "" , "mdtResolutionNarrow_at_etaBot"  , "MDT narrow" ] 
+    #]
+
+#plotTags = [ 
+        #[ "" , "centroidBroadNarrowRatio_etaBot"       , "centroid" ] ,
+        #[ "" , "mdtResidualBroadNarrowRatio_at_etaBot" , "MDT" ] 
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m12/qaqc/ampScan_plots.root" , "" ]
+
+#plotTags = [ 
+        #[ "" , "L1R8charge" , "eta out board8right alternative mesh" ] ,
+        #[ "" , "L2R8charge" , "eta in board8right series mesh" ] ,
+        #[ "" , "L3R8charge" , "stereo in board8right series mesh" ] ,
+        #[ "" , "L4R8charge" , "stereo out board8right alternative mesh" ] 
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/m3_560V_0920to30_f0" , "_align.root" ]
+
+#plotTags = [ 
+        #[ "4" ,      "eta_out_deltaZvsX"  , "average MDTs" ] , 
+        #[ "2_MDT0" , "eta_out_deltaZvsX"  , "MDT 0"        ] ,
+        #[ "3_MDT1" , "eta_out_deltaZvsX"  , "MDT 1"        ] 
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/" , "_CCC30up_fitNclust_inCRF_resolution.root" ]
+
+#plotTags = [ 
+        #[ "uTPCt0/resolution/m8_eta3_570V_20190528_1223"                   , "centroidResolutionTrackCor_etaBot" , "centroid   93:07 U_{amp}=570V U_{drift}=300V" ] ,
+        #[ "uTPCt0/resolution/m8_eta3_570V_20190528_1223"                   , "uTPCResolutionTrackCor_etaBot"     , "uTPC" ] ,
+        #[ "ctc/resolution/m8_eta3_570V_20190528_1223"                      , "centroidResolutionTrackCor_etaBot" , "cluster time corrected" ] ,
+        #[ "uTPCt0/resolution/m8_eta3_8515_620V_C380V_CJet8s_20190521_1829" , "centroidResolutionTrackCor_etaBot" , "centroid   85:15 U_{amp}=620V U_{drift}=380V" ] ,
+        #[ "uTPCt0/resolution/m8_eta3_8515_620V_C380V_CJet8s_20190521_1829" , "uTPCResolutionTrackCor_etaBot"     , "uTPC" ] ,
+        #[ "ctc/resolution/m8_eta3_8515_620V_C380V_CJet8s_20190521_1829"    , "centroidResolutionTrackCor_etaBot" , "cluster time corrected" ] ,
+        #[ "uTPCt0/resolution/m8_eta3_8020_640V_C475V_20190523_1918"        , "centroidResolutionTrackCor_etaBot" , "centroid   80:20 U_{amp}=640V U_{drift}=475V" ] ,
+        #[ "uTPCt0/resolution/m8_eta3_8020_640V_C475V_20190523_1918"        , "uTPCResolutionTrackCor_etaBot"     , "uTPC" ] ,
+        #[ "ctc/resolution/m8_eta3_8020_640V_C475V_20190523_1918"           , "centroidResolutionTrackCor_etaBot" , "cluster time corrected" ] 
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/" , "sm2_m3_565V_20180913_1507_tt_fitNclust_inCRF_precision.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/rotationCorrected/" , "sm2_m3_565V_20180913_1507_tt_fitNclust_inCRF_precision.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/rotationCorrected/" , "m8_eta3_570V_20190528_1223_fitNclust_inCRF_precision.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/rotationCorrected/" , "m5_560V_eta3_620V_8515_20190301_1053_fitNclust_inCRF_precision.root" ]
+preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/rotationCorrected/" , "m0_20171120_1717_woCCCtt_fitNclust_inCRF_precision.root" ]
+
+#plotTags = [ 
+        #[ "" , "resMeanVSscinX_board6_eta_out"  , "small board"   ] , 
+        #[ "" , "resMeanVSscinX_board7_eta_out"  , "central board" ] ,
+        #[ "" , "resMeanVSscinX_board8_eta_out"  , "large board"   ] 
+    #]
+
+plotTags = [ 
+        [ "" , "resMeanVSscinX_board8_eta_out"    , "eta out"   ] , 
+        [ "" , "resMeanVSscinX_board8_eta_in"     , "eta in" ] ,
+        [ "" , "resMeanVSscinX_board8_stereo_in"  , "stereo in"   ] ,
+        [ "" , "resMeanVSscinX_board8_stereo_out" , "stereo out"   ] 
+    ]
 
 def main(argv):
     
@@ -369,24 +571,55 @@ def main(argv):
             #[ 21 , 4 ]
         #]
 
+    plotStyle=[
+            [ 20 ,  1 ] ,
+            [ 24 ,  2 ] ,
+            [ 22 ,  4 ] ,
+            [ 26 ,  6 ] ,
+            [ 21 ,  9 ] ,
+            [ 25 , 46 ] ,
+            [ 29 , 28 ] ,
+            [ 30 , 42 ] 
+        ]
+
     #plotStyle=[
-            #[ 20 ,  1 ] ,
-            #[ 24 ,  2 ] ,
-            #[ 22 ,  4 ] ,
-            #[ 26 ,  6 ] ,
-            #[ 21 ,  9 ] ,
-            #[ 25 , 46 ] ,
-            #[ 29 , 28 ] ,
-            #[ 30 , 42 ] 
+            #[ 20 , 46 ] ,
+            #[ 24 , 28 ] ,
+            #[ 22 , 42 ] 
         #]
 
     #plotStyle=[
+            #[ 20 , 49 ] ,
+            #[ 20 , 48 ] ,
+            #[ 20 , 47 ] ,
             #[ 20 , 46 ] ,
             #[ 20 , 45 ] ,
             #[ 20 , 44 ] ,
             #[ 20 , 43 ] ,
             #[ 20 , 42 ] ,
-            #[ 20 , 41 ] 
+            #[ 20 , 41 ] ,
+            #[ 20 , 40 ] 
+        #]
+
+    #plotStyle=[
+            #[ 20 ,  1 ] ,
+            #[ 22 ,  1 ] ,
+            #[ 21 ,  1 ] ,
+            #[ 20 ,  2 ] ,
+            #[ 22 ,  2 ] ,
+            #[ 21 ,  2 ] ,
+            #[ 20 ,  4 ] ,
+            #[ 22 ,  4 ] ,
+            #[ 21 ,  4 ] ,
+            #[ 20 ,  6 ] ,
+            #[ 22 ,  6 ] ,
+            #[ 21 ,  6 ] ,
+            #[ 20 ,  9 ] ,
+            #[ 22 ,  9 ] ,
+            #[ 21 ,  9 ] ,
+            #[ 20 , 46 ] ,
+            #[ 22 , 46 ] ,
+            #[ 21 , 46 ] 
         #]
 
     #plotStyle=[
@@ -416,14 +649,14 @@ def main(argv):
             #[ 22 ,  4 ] 
         #]
 
-    plotStyle=[
-            [ 20 ,  1 ] ,
-            [ 24 ,  1 ] ,
-            [ 22 ,  2 ] ,
-            [ 26 ,  2 ] ,
-            [ 21 ,  4 ] ,
-            [ 25 ,  4 ] 
-        ]
+    #plotStyle=[
+            #[ 20 ,  1 ] ,
+            #[ 24 ,  1 ] ,
+            #[ 22 ,  2 ] ,
+            #[ 26 ,  2 ] ,
+            #[ 21 ,  4 ] ,
+            #[ 25 ,  4 ] 
+        #]
     
     plotter = TMultiGraph()
     #plotter = HistStack()
@@ -472,8 +705,8 @@ def main(argv):
     #plotter.GetXaxis().SetTitle( "angle reference track [#circ]" )
     #plotter.GetXaxis().SetRangeUser( -25. , 25. )
     
-    plotter.GetXaxis().SetTitle( "amplification voltage [V]" )
-    plotter.GetXaxis().SetRangeUser( 500. , 700. )
+    #plotter.GetXaxis().SetTitle( "amplification voltage [V]" )
+    #plotter.GetXaxis().SetRangeUser( 500. , 700. )
     
     #plotter.GetXaxis().SetTitle( "drift field [V/cm]" )
     #plotter.GetXaxis().SetRangeUser( 0. , 1000. )
@@ -484,22 +717,39 @@ def main(argv):
     #plotter.GetXaxis().SetTitle( "pillar height [#mum]" )
     #plotter.GetXaxis().SetRangeUser( 110. , 130. )
     
+    #plotter.GetXaxis().SetTitle( "MPV cluster charge [ADC channel]" )
+    #plotter.GetXaxis().SetRangeUser
+    
+    plotter.GetXaxis().SetTitle( "position along strips (by scintillators) [mm]" )
+    #plotter.GetXaxis().SetRangeUser( -1000. , 1000. )
+    
+    #plotter.GetYaxis().SetTitle( "drift velocity [#mum/ns]" )
+    #plotter.GetYaxis().SetRangeUser( 0. , 60.0 )
+    
     #plotter.GetYaxis().SetTitle( "residual width [mm]" )
     #plotter.GetYaxis().SetRangeUser( 0. , 2.0 )
     
-    plotter.GetYaxis().SetTitle( "ratio broad to narrow gaussian" )
-    plotter.GetYaxis().SetRangeUser( 0. , 1.5 )
+    #plotter.GetYaxis().SetTitle( "resolution [mm]" )
+    #plotter.GetYaxis().SetRangeUser( 0. , 0.7 )
     
-    #plotter.GetYaxis().SetTitle( "MPV cluster charge [ADC channel]" )
+    #plotter.GetYaxis().SetTitle( "ratio broad to narrow gaussian" )
+    #plotter.GetYaxis().SetRangeUser( 0. , 1.2 )
+    
+    plotter.GetYaxis().SetTitle( "residual mean [mm]" )
+    plotter.GetYaxis().SetRangeUser( -1. , 1. )
+    
+    #plotter.GetYaxis().SetTitle( "cluster charge [ADC channel]" )
+    #plotter.GetYaxis().SetRangeUser( 0. , 1500. )
     #plotter.GetYaxis().SetRangeUser( 0. , 3000. )
     
     #plotter.GetYaxis().SetTitle( "longitudinal diffusion [mm/#sqrt{mm}]" )
     #plotter.GetYaxis().SetRangeUser( 0. , 6. )
     
     #plotter.GetYaxis().SetTitle( "coincidence efficiency" )
+    #plotter.GetYaxis().SetTitle( "5 mm efficiency" )
     #plotter.GetYaxis().SetRangeUser( 0. , 1. )
     
-    plotter.Draw("APL")
+    plotter.Draw("AP")
     #plotter.SetTitle("eta in")
     #plotter.Draw("APL")
     can.BuildLegend()
