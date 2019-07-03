@@ -892,8 +892,8 @@ void analysis::readParameter(){
         vecvecdoubledummy.clear();
     }  
     
-    trackWindow[0][0] = -1000.;
-    trackWindow[0][1] =  1000.;
+    trackWindow[0][0] = -2000.;
+    trackWindow[0][1] =  2000.;
     trackWindow[1][0] = -1000.;
     trackWindow[1][1] =  1000.;
 
