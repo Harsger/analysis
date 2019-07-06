@@ -211,9 +211,20 @@ void analysis::study(){
     slopeDifferenceVSslope->SetYTitle("MDT slope difference");   
                 
     histname = "interceptDifVSslopeDif";
-    TH2I* interceptDifVSslopeDif = new TH2I(histname, histname, 2000, -0.1, 0.1, 2000, -100., 100.);
+    TH2I* interceptDifVSslopeDif = new TH2I(histname, histname, 2000, -1., 1., 2000, -100., 100.);
     interceptDifVSslopeDif->SetXTitle("MDT slope difference");
     interceptDifVSslopeDif->SetYTitle("MDT intercept difference [mm]"); 
+    
+    TH2I** trackDifVSz = new TH2I*[2];
+    
+    for(unsigned int i=0; i<2; i++){
+        histname = "trackDifVSz";
+        if( i == 0 ) histname += "OUT";
+        else histname += "IN";
+        trackDifVSz[i] = new TH2I(histname, histname, binning[2], range[2][0], range[2][1], 4000, -100., 100.);
+        trackDifVSz[i]->SetXTitle("z (position between MDTs) [mm]");
+        trackDifVSz[i]->SetYTitle("MDT track difference [mm]"); 
+    }
     
     TH3D * intersect = new TH3D( "intersect" , "intersect" , binning[0] , range[0][0] , range[0][1] , binning[1] , range[1][0] , range[1][1] , binning[2] , range[2][0] , range[2][1] );
     TH3D * intersectWeight = new TH3D( "intersectWeight" , "intersectWeight" , binning[0] , range[0][0] , range[0][1] , binning[1] , range[1][0] , range[1][1] , binning[2] , range[2][0] , range[2][1] );
@@ -292,6 +303,9 @@ void analysis::study(){
         }
         
     }   
+    
+    double binWidth[3];
+    for(unsigned int c=0; c<3; c++) binWidth[c] = ( range[c][1] - range[c][0] ) / (double)binning[c];
    
     unsigned int toStart;
     unsigned int toEnd;
@@ -400,6 +414,23 @@ void analysis::study(){
             
         }
         
+        int outORin = -1;
+        
+        if( ix > 500. ) outORin = 0;
+        else if(
+            ix            <  -100. &&
+            ix            > -1100. &&
+            meanIntercept <   300. &&
+            meanIntercept >  -900.
+        ) outORin = 1;
+        else continue;
+        
+        for(unsigned int z=1; z<=binning[2]; z++){
+            double zPos = range[2][0] + binWidth[2] * ( (double)z - 0.5 );
+            double residual = ( iy[0] + sy[0] * zPos ) - ( iy[1] + sy[1] * zPos );
+            trackDifVSz[outORin]->Fill( zPos , residual );
+        }
+        
     }
    
     cout << " writing results ... ";
@@ -411,6 +442,8 @@ void analysis::study(){
     interceptDifVSslope->Write();
     slopeDifferenceVSslope->Write();
     interceptDifVSslopeDif->Write();
+    
+    for(unsigned int i=0; i<2; i++) trackDifVSz[i]->Write(); 
     
     intersect->Write();
     intersectWeight->Write();
