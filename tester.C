@@ -3376,19 +3376,21 @@ void comparer(
     unsigned int ndetectors = detectornames.size();
     
     vector<string> boardnames;
-    boardnames.push_back("board6");
-    boardnames.push_back("board7");
-    boardnames.push_back("board8");
-//     boardnames.push_back("");
+//     boardnames.push_back("board6");
+//     boardnames.push_back("board7");
+//     boardnames.push_back("board8");
+    boardnames.push_back("");
     unsigned int nboards = boardnames.size();
     
-    double residualRange = 3.;
+//     double residualRange = 3.;
+    double residualRange = 4.;
 //     double residualRange = 5.;
     
     map< unsigned int , TString > variable = {
+        { 0 , "interceptDifVSslope_at" } ,
 //         { 0 , "resVSslope_area" } 
 //         { 0 , "uTPCresVSslope" } 
-        { 0 , "clusterQvsNstrips_near" } ,
+//         { 0 , "clusterQvsNstrips_near" } 
 //         { 0 , "clusterQvsSlope" } 
 //         { 1 , "nStripsVSslope" } ,
 //         { 2 , "maxStripQvsSlope" } ,
@@ -3804,7 +3806,11 @@ void comparer(
                                 ampScan[p+2]->SetPointError( ampScan[p+2]->GetN()-1 , voltageError , function->GetParError(1) );
                             }
                         }
-                        else if( v.second == "resVSslope_area" || v.second == "uTPCresVSslope" ){
+                        else if( 
+                            v.second == "resVSslope_area" || 
+                            v.second == "uTPCresVSslope"  ||
+                            v.second == "interceptDifVSslope_at"
+                        ){
                             vector<double> fitresults = fitDoubleGaussian( projection , residualRange );
                             projection->Draw();
                             gPad->Modified();
@@ -3844,6 +3850,7 @@ void comparer(
                         name = name.ReplaceAll( "vsSlope" , "" );
                         name = name.ReplaceAll( "_near" , "" );
                         name = name.ReplaceAll( "_area" , "" );
+                        name = name.ReplaceAll( "_at" , "" );
                         name += "VSamplificationVoltage_";
                         name += p.second;
                         name += "_";
