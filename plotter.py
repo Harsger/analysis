@@ -542,7 +542,7 @@ from array import array
 #preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/rotationCorrected/" , "sm2_m3_565V_20180913_1507_tt_fitNclust_inCRF_precision.root" ]
 #preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/rotationCorrected/" , "m8_eta3_570V_20190528_1223_fitNclust_inCRF_precision.root" ]
 #preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/rotationCorrected/" , "m5_560V_eta3_620V_8515_20190301_1053_fitNclust_inCRF_precision.root" ]
-preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/rotationCorrected/" , "m0_20171120_1717_woCCCtt_fitNclust_inCRF_precision.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/rotationCorrected/" , "m0_20171120_1717_woCCCtt_fitNclust_inCRF_precision.root" ]
 
 #plotTags = [ 
         #[ "" , "resMeanVSscinX_board6_eta_out"  , "small board"   ] , 
@@ -550,11 +550,18 @@ preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison
         #[ "" , "resMeanVSscinX_board8_eta_out"  , "large board"   ] 
     #]
 
+#plotTags = [ 
+        #[ "" , "resMeanVSscinX_board8_eta_out"    , "eta out"   ] , 
+        #[ "" , "resMeanVSscinX_board8_eta_in"     , "eta in" ] ,
+        #[ "" , "resMeanVSscinX_board8_stereo_in"  , "stereo in"   ] ,
+        #[ "" , "resMeanVSscinX_board8_stereo_out" , "stereo out"   ] 
+    #]
+    
+preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/" , "m3_560V_0920to30_f04_resolution.root" ]
+
 plotTags = [ 
-        [ "" , "resMeanVSscinX_board8_eta_out"    , "eta out"   ] , 
-        [ "" , "resMeanVSscinX_board8_eta_in"     , "eta in" ] ,
-        [ "" , "resMeanVSscinX_board8_stereo_in"  , "stereo in"   ] ,
-        [ "" , "resMeanVSscinX_board8_stereo_out" , "stereo out"   ] 
+        [ "" , "centroidResolutionTrackCor_eta_out" , "eta out"   ] , 
+        [ "" , "centroidResolutionTrackCor_eta_in"  , "eta in" ] 
     ]
 
 def main(argv):
@@ -565,22 +572,22 @@ def main(argv):
     #gStyle.SetOptTitle(1)
     #gStyle.SetPadTopMargin(0.5);
 
-    #plotStyle=[
-            #[ 20 , 1 ] ,
-            #[ 22 , 2 ] ,
-            #[ 21 , 4 ]
-        #]
-
     plotStyle=[
-            [ 20 ,  1 ] ,
-            [ 24 ,  2 ] ,
-            [ 22 ,  4 ] ,
-            [ 26 ,  6 ] ,
-            [ 21 ,  9 ] ,
-            [ 25 , 46 ] ,
-            [ 29 , 28 ] ,
-            [ 30 , 42 ] 
+            [ 20 , 1 ] ,
+            [ 22 , 2 ] ,
+            [ 21 , 4 ]
         ]
+
+    #plotStyle=[
+            #[ 20 ,  1 ] ,
+            #[ 24 ,  2 ] ,
+            #[ 22 ,  4 ] ,
+            #[ 26 ,  6 ] ,
+            #[ 21 ,  9 ] ,
+            #[ 25 , 46 ] ,
+            #[ 29 , 28 ] ,
+            #[ 30 , 42 ] 
+        #]
 
     #plotStyle=[
             #[ 20 , 46 ] ,
@@ -699,8 +706,8 @@ def main(argv):
         plotter.Add( capture , "P" )
         #legend.AddEntry()
     
-    #plotter.GetXaxis().SetTitle( "slope reference track" )
-    #plotter.GetXaxis().SetRangeUser( -0.5 , 0.5 )
+    plotter.GetXaxis().SetTitle( "slope reference track" )
+    plotter.GetXaxis().SetRangeUser( -0.5 , 0.5 )
     
     #plotter.GetXaxis().SetTitle( "angle reference track [#circ]" )
     #plotter.GetXaxis().SetRangeUser( -25. , 25. )
@@ -720,7 +727,7 @@ def main(argv):
     #plotter.GetXaxis().SetTitle( "MPV cluster charge [ADC channel]" )
     #plotter.GetXaxis().SetRangeUser
     
-    plotter.GetXaxis().SetTitle( "position along strips (by scintillators) [mm]" )
+    #plotter.GetXaxis().SetTitle( "position along strips (by scintillators) [mm]" )
     #plotter.GetXaxis().SetRangeUser( -1000. , 1000. )
     
     #plotter.GetYaxis().SetTitle( "drift velocity [#mum/ns]" )
@@ -729,21 +736,21 @@ def main(argv):
     #plotter.GetYaxis().SetTitle( "residual width [mm]" )
     #plotter.GetYaxis().SetRangeUser( 0. , 2.0 )
     
-    #plotter.GetYaxis().SetTitle( "resolution [mm]" )
+    plotter.GetYaxis().SetTitle( "resolution [mm]" )
     #plotter.GetYaxis().SetRangeUser( 0. , 0.7 )
     
     #plotter.GetYaxis().SetTitle( "ratio broad to narrow gaussian" )
     #plotter.GetYaxis().SetRangeUser( 0. , 1.2 )
     
-    plotter.GetYaxis().SetTitle( "residual mean [mm]" )
-    plotter.GetYaxis().SetRangeUser( -1. , 1. )
+    #plotter.GetYaxis().SetTitle( "residual mean [mm]" )
+    #plotter.GetYaxis().SetRangeUser( -1. , 1. )
     
     #plotter.GetYaxis().SetTitle( "cluster charge [ADC channel]" )
     #plotter.GetYaxis().SetRangeUser( 0. , 1500. )
     #plotter.GetYaxis().SetRangeUser( 0. , 3000. )
     
     #plotter.GetYaxis().SetTitle( "longitudinal diffusion [mm/#sqrt{mm}]" )
-    #plotter.GetYaxis().SetRangeUser( 0. , 6. )
+    plotter.GetYaxis().SetRangeUser( 0. , 6. )
     
     #plotter.GetYaxis().SetTitle( "coincidence efficiency" )
     #plotter.GetYaxis().SetTitle( "5 mm efficiency" )
