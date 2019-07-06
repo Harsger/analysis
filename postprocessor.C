@@ -26,6 +26,16 @@ bool constantMDTresolution = false;
 
 void evaluateStripChargeDistribution( TH2I * chargeVSstrip , vector< vector<double> > &maxima );
 
+void getWidthNratio( 
+    TH2I * distributionVSdependence , 
+    TGraphErrors *& narrow , 
+    TGraphErrors *& broad , 
+    TGraphErrors *& ratio ,
+    double fitrange = 3., 
+    double fitcenter = 0.
+);
+vector<double> twoGaus( TH1I * hist, bool bugger , double fitrange = 3. , double fitcenter = 0.);
+
 int main(int argc, char* argv[]){
     
     TString mode = "";
@@ -488,6 +498,9 @@ void analysis::align(){
         double zcor = 0.;
         double zerr = 0.;
         
+        vector<double> yValues;
+        vector<double> yWeights;
+        
         unsigned int npartitions = divisions.at(d).at(0) * divisions.at(d).at(1);
         unsigned int tooFew = 0;
         double sumYweights = 0.;
@@ -590,6 +603,9 @@ void analysis::align(){
                 yerr += ( linfit->GetParError(0) * linfit->GetParError(0) * partitionEntries );
                 sumYweights += partitionEntries / linfit->GetParError(0);
                 
+                yValues.push_back(linfit->GetParameter(0));
+                yWeights.push_back(partitionEntries / linfit->GetParError(0));
+                
                 deltaY->SetBinContent(cx+1,cy+1,linfit->GetParameter(0));   
                 deltaY->SetBinError(cx+1,cy+1,linfit->GetParError(0)); 
                 
@@ -645,6 +661,19 @@ void analysis::align(){
 //         cout << sumZweights << endl;
         zcor /= sumZweights;
         zerr = sqrt( zerr / (double)sumEntries );
+        
+        double stdvYvalues = 0;
+        double weightYvalues = 0;
+        for(unsigned int v=0; v<yValues.size(); v++){
+            stdvYvalues += pow( yValues.at(v) - ycor , 2 ) * yWeights.at(v);
+            weightYvalues += yWeights.at(v);
+        }
+        stdvYvalues = sqrt( stdvYvalues / weightYvalues / ( (double)yValues.size() - 1. ) * (double)yValues.size() );
+        
+        TH1I * residualDistribution = (TH1I*)(sumHist->ProjectionY());
+        vector<double> gausResults = fitDoubleGaussian( residualDistribution , debug );
+        
+        pitchDeviationFile << position.at(d).at(2) << "\t" << angle.at(d).at(2) << "\t" << stdvYvalues << "\t" << gausResults.at(2) << "\t" << gausResults.at(5) << "\t" << gausResults.at(3)/gausResults.at(0) << endl;
         
         cout << fixed << setprecision(4) << " ycor \t = \t " << ycor << " \t +- " << yerr << endl;
         vecdodummy.push_back(ycor);
@@ -938,13 +967,13 @@ void analysis::align(){
                 resMeanVSmdtY->Fit( linfit , "RQBW" );
                 resMeanVSmdtY->Fit( linfit , "RQB" );
                 resMeanVSmdtY->Fit( linfit , "RQB" );
-                pitchDeviationFile << fixed << setprecision(5) << setw(8) << linfit->GetParameter(1) << "\t";
-                pitchDeviationFile << fixed << setprecision(3) << setw(5) << linfit->GetParameter(0) << endl;
+//                 pitchDeviationFile << fixed << setprecision(5) << setw(8) << linfit->GetParameter(1) << "\t";
+//                 pitchDeviationFile << fixed << setprecision(3) << setw(5) << linfit->GetParameter(0) << endl;
                 resMeanVSmdtY->GetYaxis()->SetRangeUser(-1.,1.);
-                resMeanVSmdtY->Draw("AP");
-                gPad->Modified();
-                gPad->Update();
-                gPad->WaitPrimitive();
+//                 resMeanVSmdtY->Draw("AP");
+//                 gPad->Modified();
+//                 gPad->Update();
+//                 gPad->WaitPrimitive();
             }
         
             title = "resVSstrip";
@@ -1458,6 +1487,20 @@ void analysis::resolution(){
             centroidResolutionTrackCorWeighted->SetPointError(centroidResolutionTrackCorWeighted->GetN()-1,0.5*step,residualWidthError);
             
         } 
+        
+//         TString names[3];
+//         names[0] = centroidNarrow->GetName();
+//         names[1] = centroidBroad->GetName();
+//         names[2] = centroidBroadNarrowRatio->GetName();
+//         
+//         getWidthNratio( resVSslope , centroidNarrow , centroidBroad , centroidBroadNarrowRatio , fitrange );
+//         
+//         centroidNarrow->SetName(names[0]);
+//         centroidBroad->SetName(names[1]);
+//         centroidBroadNarrowRatio->SetName(names[2]);
+//         centroidNarrow->SetTitle(names[0]);
+//         centroidBroad->SetTitle(names[1]);
+//         centroidBroadNarrowRatio->SetTitle(names[2]);
         
         title = "resVSslope_sum";
         if(ndetectors>1){ 
@@ -3690,3 +3733,164 @@ void evaluateStripChargeDistribution( TH2I * chargeVSstrip , vector< vector<doub
     }
     
 }
+
+void getWidthNratio( 
+    TH2I * distributionVSdependence , 
+    TGraphErrors *& narrow , 
+    TGraphErrors *& broad , 
+    TGraphErrors *& ratio ,
+    double fitrange , 
+    double fitcenter
+){
+    
+    narrow = new TGraphErrors();
+    broad = new TGraphErrors();
+    ratio = new TGraphErrors();
+      
+    unsigned int nbins = distributionVSdependence->GetXaxis()->GetNbins();
+    double lowEdge = distributionVSdependence->GetXaxis()->GetXmin();
+    double highEdge = distributionVSdependence->GetXaxis()->GetXmax();
+    double step = (highEdge-lowEdge)/(double)(nbins);
+    
+    TH1D * projection;
+    TString name;
+    
+    for(unsigned int b=1; b<=nbins; b++){
+        
+        name = distributionVSdependence->GetName();
+        name += "_";
+        name += b;
+        
+        projection = distributionVSdependence->ProjectionY( name , b , b );
+        
+        vector<double> fitresults = twoGaus( (TH1I*)projection , false , fitrange , fitcenter );
+        
+        projection->GetXaxis()->SetRangeUser( fitcenter-fitrange , fitcenter+fitrange );
+        
+//         projection->Draw();
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
+        
+        narrow->SetPoint( narrow->GetN() , lowEdge+step*(b-0.5) , fitresults.at(2) );
+        narrow->SetPointError( narrow->GetN()-1 , step*0.5 , fitresults.at(8) );
+        
+        broad->SetPoint( broad->GetN() , lowEdge+step*(b-0.5) , fitresults.at(5) );
+        broad->SetPointError( broad->GetN()-1 , step*0.5 , fitresults.at(11) );
+        
+        ratio->SetPoint( ratio->GetN() , lowEdge+step*(b-0.5) , fitresults.at(3) / fitresults.at(0) );
+        ratio->SetPointError( 
+                                ratio->GetN()-1 , 
+                                step*0.5 , 
+                                sqrt( 
+                                        pow( fitresults.at(9) / fitresults.at(0) , 2 ) + 
+                                        pow( fitresults.at(3) / pow( fitresults.at(0) , 2 ) * fitresults.at(6) , 2 )
+                                )
+                            );
+        
+    }
+    
+}
+
+vector<double> twoGaus( TH1I * hist, bool bugger , double fitrange , double fitcenter ){
+  
+    vector<double> result;
+
+    double upper = fitcenter + fitrange;
+    double lower = fitcenter - fitrange;
+    
+    hist->GetXaxis()->SetRangeUser( upper , lower );
+    
+    double mean = hist->GetMean();
+    double maximum = hist->GetBinContent(hist->GetMaximumBin());
+    double deviation = hist->GetStdDev();
+
+    double weight[2];
+    double center[2];
+    double sigma[2];
+    double weightErr[2];
+    double centerErr[2];
+    double sigmaErr[2];
+    double chisquare;
+    double ndf;
+    
+    TF1 * doubleGaussian = new TF1( "doubleGaussian" , "[0] * ( exp( -0.5 * ( ( x - [1] ) / [2] )**2 ) + [3] * exp( -0.5 * ( ( x - [1] ) / ( [2] + [4] ) )**2 ) )" , lower , upper );
+    
+    doubleGaussian->SetParameter( 0 , maximum );
+//     doubleGaussian->SetParLimits( 0 , maximum*0.1 , maximum*10. );
+    
+    doubleGaussian->SetParameter( 1 , mean );
+    doubleGaussian->SetParLimits( 1 , lower , upper );
+    
+    doubleGaussian->SetParameter( 2 , deviation );
+    doubleGaussian->SetParLimits( 2 , deviation*0.01 , deviation*2. );
+    
+    doubleGaussian->FixParameter( 3 , 0.1 );
+//     doubleGaussian->SetParameter( 3 , 0.2 );
+//     doubleGaussian->SetParLimits( 3 , 0. , 2. );
+    
+    doubleGaussian->SetParameter( 4 , 0.1*deviation );
+    doubleGaussian->SetParLimits( 4 , 0. , deviation*10. );
+        
+    hist->Fit(doubleGaussian,"RQB");
+    hist->Fit(doubleGaussian,"RQB");
+    hist->Fit(doubleGaussian,"RQ");
+
+    TF1 * singleGaus = new TF1("singleGaus","gaus",lower,upper);
+    
+    singleGaus->SetParameters( 
+                                doubleGaussian->GetParameter(0), 
+                                doubleGaussian->GetParameter(1), 
+                                doubleGaussian->GetParameter(2)
+                             );
+    double integral0 = singleGaus->Integral(lower,upper);
+    
+    singleGaus->SetParameters( 
+                                doubleGaussian->GetParameter(0) * doubleGaussian->GetParameter(3), 
+                                doubleGaussian->GetParameter(1), 
+                                doubleGaussian->GetParameter(2) + doubleGaussian->GetParameter(4)
+                             );
+    double integral1 = singleGaus->Integral(lower,upper);
+
+    result.push_back( integral0                                                         );
+    result.push_back( doubleGaussian->GetParameter(1)                                   );
+    result.push_back( doubleGaussian->GetParameter(2)                                   );
+    result.push_back( integral1                                                         );
+    result.push_back( doubleGaussian->GetParameter(1)                                   );
+    result.push_back( doubleGaussian->GetParameter(2) + doubleGaussian->GetParameter(4) );
+    
+    double gausNormalization = 1. /sqrt( 2 * TMath::Pi() );
+                                        
+    result.push_back( 
+                        sqrt(
+                                pow( doubleGaussian->GetParError(0) * doubleGaussian->GetParameter(2) , 2 ) + 
+                                pow( doubleGaussian->GetParameter(0) * doubleGaussian->GetParError(2) , 2 )
+                            ) * gausNormalization                 
+                    );
+    result.push_back( doubleGaussian->GetParError(1) );
+    result.push_back( doubleGaussian->GetParError(2) );
+    result.push_back( 
+                        sqrt(
+                                pow( ( doubleGaussian->GetParameter(2) + doubleGaussian->GetParameter(4) ) , 2  ) 
+                                * (
+                                    pow( doubleGaussian->GetParError(0) * doubleGaussian->GetParameter(3) , 2 ) + 
+                                    pow( doubleGaussian->GetParameter(0) * doubleGaussian->GetParError(3) , 2 )  
+                                ) +  
+                                pow( ( doubleGaussian->GetParameter(0) * doubleGaussian->GetParameter(3) ) , 2  )
+                                * ( pow( doubleGaussian->GetParError(2) , 2 ) + pow( doubleGaussian->GetParError(4) , 2 ) )
+                            ) * gausNormalization                 
+                    );
+    result.push_back( doubleGaussian->GetParError(1) );
+    result.push_back( sqrt( pow( doubleGaussian->GetParError(2) , 2 ) + pow( doubleGaussian->GetParError(4) , 2 ) ) );
+
+    result.push_back(doubleGaussian->GetChisquare());
+    result.push_back(doubleGaussian->GetNDF());
+
+    doubleGaussian->Delete();
+
+    return result;
+    
+}
+
+
+
