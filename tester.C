@@ -3336,7 +3336,7 @@ void estimateFitParameter( TGraphErrors * toBeFitted , unsigned int function , d
 void comparer(
     TString outname = "",
     unsigned int functionTOuse = 2,
-    unsigned int plotTOuse = 1,
+    int plotTOuse = -1,
     unsigned int valueTOuse = 0,
     unsigned int numberOfGainFitParameter = 1
 ){
@@ -3371,15 +3371,15 @@ void comparer(
     detectornames.push_back("eta_in");
     detectornames.push_back("stereo_in");
     detectornames.push_back("stereo_out");
-    detectornames.push_back("etaBot");
-    detectornames.push_back("etaTop");
+//     detectornames.push_back("etaBot");
+//     detectornames.push_back("etaTop");
     unsigned int ndetectors = detectornames.size();
     
     vector<string> boardnames;
-//     boardnames.push_back("board6");
-//     boardnames.push_back("board7");
-//     boardnames.push_back("board8");
-    boardnames.push_back("");
+    boardnames.push_back("board6");
+    boardnames.push_back("board7");
+    boardnames.push_back("board8");
+//     boardnames.push_back("");
     unsigned int nboards = boardnames.size();
     
 //     double residualRange = 3.;
@@ -3387,12 +3387,12 @@ void comparer(
 //     double residualRange = 5.;
     
     map< unsigned int , TString > variable = {
-        { 0 , "interceptDifVSslope_at" } ,
+//         { 0 , "interceptDifVSslope_at" } ,
 //         { 0 , "resVSslope_area" } 
 //         { 0 , "uTPCresVSslope" } 
 //         { 0 , "clusterQvsNstrips_near" } 
 //         { 0 , "clusterQvsSlope" } 
-//         { 1 , "nStripsVSslope" } ,
+        { 1 , "nStripsVSslope" } 
 //         { 2 , "maxStripQvsSlope" } ,
 //         { 3 , "fastestVSslope" } ,
 //         { 4 , "slowestVSslope" } ,
@@ -3407,47 +3407,59 @@ void comparer(
     };
     
 //     TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root" , "RECREATE" );
-    if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root";
+//     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root";
+    if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/summary/m3_driftScan_nStrips.root";
     TFile * outfile = new TFile( outname , "RECREATE" );
     
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/resolution/woCCCtt/uTPCt0/m8_eta3_" , "_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/ctc/timed/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
-    vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
+//     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
+    vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/driftScan/sm2_m3_560V_C" , "V_woCCC.root" };
 
 //     map< string , vector< pair< unsigned int , string > > > measurements;
 //     map< string , map< unsigned int , string > > measurements;
     map< string , map< unsigned int , pair< string , double > > > measurements;
     
     measurements["93:07"] = {
-        { 520 , { "520V_20190531_2009" , 969. } } ,
-        { 530 , { "530V_20190531_0832" , 971. } } ,
-        { 540 , { "540V_20190530_2006" , 972. } } ,
-        { 550 , { "550V_20190530_0948" , 971. } } ,
-        { 560 , { "560V_20190529_0815" , 966. } } ,
-        { 570 , { "570V_20190528_1223" , 958. } } 
+        { 100 , { "100" , 1. } } ,
+        { 150 , { "150" , 1. } } ,
+        { 200 , { "200" , 1. } } ,
+        { 250 , { "250" , 1. } } ,
+        { 300 , { "300" , 1. } } ,
+        { 350 , { "350" , 1. } } ,
+        { 400 , { "400" , 1. } } 
     };
     
-    measurements["85:15"] = {
-        { 580 , { "8515_580V_CJet8s_20190520_1827" , 953. } } ,
-        { 610 , { "8515_610V_CJet8s_20190520_0842" , 948. } } ,
-        { 615 , { "8515_615V_CJet8s_20190519_0811" , 949. } } ,
-        { 620 , { "8515_620V_CJet8s_20190516_1150" , 956. } } ,
-        { 625 , { "8515_625V_CJet8s_20190517_0901" , 952. } } ,
-        { 630 , { "8515_630V_CJet8s_20190517_2033" , 951. } } ,
-        { 635 , { "8515_635V_CJet8s_20190518_1213" , 949. } }
-    };
-    
-    measurements["80:20"] = {
-        { 600 , { "8020_600V_C475V_20190526_2145" , 958. } } ,
-        { 610 , { "8020_610V_C475V_20190527_0825" , 955. } } ,
-        { 640 , { "8020_640V_C475V_20190523_1918" , 962. } } ,
-        { 645 , { "8020_645V_C475V_20190524_0843" , 960. } } ,
-        { 650 , { "8020_650V_C475V_20190524_2023" , 960. } } ,
-        { 655 , { "8020_655V_C475V_20190525_1204" , 960. } } , 
-        { 660 , { "8020_660V_C475V_20190525_1938" , 962. } } ,
-        { 665 , { "8020_665V_C475V_20190526_1054" , 960. } }
-    }; 
+//     measurements["93:07"] = {
+//         { 520 , { "520V_20190531_2009" , 969. } } ,
+//         { 530 , { "530V_20190531_0832" , 971. } } ,
+//         { 540 , { "540V_20190530_2006" , 972. } } ,
+//         { 550 , { "550V_20190530_0948" , 971. } } ,
+//         { 560 , { "560V_20190529_0815" , 966. } } ,
+//         { 570 , { "570V_20190528_1223" , 958. } } 
+//     };
+//     
+//     measurements["85:15"] = {
+//         { 580 , { "8515_580V_CJet8s_20190520_1827" , 953. } } ,
+//         { 610 , { "8515_610V_CJet8s_20190520_0842" , 948. } } ,
+//         { 615 , { "8515_615V_CJet8s_20190519_0811" , 949. } } ,
+//         { 620 , { "8515_620V_CJet8s_20190516_1150" , 956. } } ,
+//         { 625 , { "8515_625V_CJet8s_20190517_0901" , 952. } } ,
+//         { 630 , { "8515_630V_CJet8s_20190517_2033" , 951. } } ,
+//         { 635 , { "8515_635V_CJet8s_20190518_1213" , 949. } }
+//     };
+//     
+//     measurements["80:20"] = {
+//         { 600 , { "8020_600V_C475V_20190526_2145" , 958. } } ,
+//         { 610 , { "8020_610V_C475V_20190527_0825" , 955. } } ,
+//         { 640 , { "8020_640V_C475V_20190523_1918" , 962. } } ,
+//         { 645 , { "8020_645V_C475V_20190524_0843" , 960. } } ,
+//         { 650 , { "8020_650V_C475V_20190524_2023" , 960. } } ,
+//         { 655 , { "8020_655V_C475V_20190525_1204" , 960. } } , 
+//         { 660 , { "8020_660V_C475V_20190525_1938" , 962. } } ,
+//         { 665 , { "8020_665V_C475V_20190526_1054" , 960. } }
+//     }; 
     
     map< string , pair< double , double > > pillarHeights = { // m8 and eta3
         { "eta_out_board6"    , { 120.3 , 1.9 } } ,
@@ -3593,10 +3605,10 @@ void comparer(
                         highEdge.at(1) = readhist->GetYaxis()->GetXmax();
                         step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
                         projection = readhist->ProjectionY();
-//                         if( v.second == "clusterQvsSlope" ){
-//                             projection->GetXaxis()->SetRangeUser( 300. , 5000. );
-//                         }
-//                         else 
+                        if( v.second == "clusterQvsSlope" ){
+                            projection->GetXaxis()->SetRangeUser( 300. , 5000. );
+                        }
+                        else 
                         if( v.second == "nStripsVSslope" ){
                             projection->GetXaxis()->SetRangeUser( 1.5 , 10.5 );
                         }
@@ -3646,13 +3658,23 @@ void comparer(
                                                                                     sqrt( pow( meanError / a.second.second , 2 ) + pow( mean / pow( a.second.second , 2 ) * pressureError , 2 ) ) 
                                                         );
                             }
+                            else{
+                                ampScan[0]->SetPoint( ampScan[0]->GetN()-1 , 
+                                                                                a.first , 
+                                                                                mean 
+                                                    );
+                                ampScan[0]->SetPointError( ampScan[0]->GetN()-1 , 
+                                                                                    voltageError , 
+                                                                                    meanError 
+                                );
+                            }
                             function = new TF1( "function" , "landau" , 300. , 5000. );
                             function->SetParameters( maximum , mean , stdv );
                             projection->Fit( function , "RQB" );
-    //                         projection->Draw();
-    //                         gPad->Modified();
-    //                         gPad->Update();
-    //                         gPad->WaitPrimitive();
+                            projection->Draw();
+                            gPad->Modified();
+                            gPad->Update();
+                            gPad->WaitPrimitive();
                             if( function->GetParameter(1) <= 0. ){ 
                                 infile->Close();
                                 continue;
@@ -3694,6 +3716,16 @@ void comparer(
                                 ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 
                                                                                     sqrt( pow( voltageError / a.second.second , 2 ) + pow( MPV / pow( a.second.second , 2 ) * pressureError  , 2 ) ) , 
                                                                                     sqrt( pow( MPVerror / a.second.second , 2 ) + pow( MPV / pow( a.second.second , 2 ) * pressureError , 2 ) ) 
+                                                        );
+                            }
+                            else{
+                                ampScan[2]->SetPoint( ampScan[2]->GetN()-1 , 
+                                                                                a.first , 
+                                                                                MPV 
+                                                    );
+                                ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , 
+                                                                                    voltageError , 
+                                                                                    MPVerror
                                                         );
                             }
                             if(
