@@ -673,7 +673,18 @@ void analysis::align(){
         TH1I * residualDistribution = (TH1I*)(sumHist->ProjectionY());
         vector<double> gausResults = fitDoubleGaussian( residualDistribution , debug );
         
-        pitchDeviationFile << position.at(d).at(2) << "\t" << angle.at(d).at(2) << "\t" << stdvYvalues << "\t" << gausResults.at(2) << "\t" << gausResults.at(5) << "\t" << gausResults.at(3)/gausResults.at(0) << endl;
+//         pitchDeviationFile << position.at(d).at(2) << "\t" << angle.at(d).at(2) << "\t" << stdvYvalues << "\t" << gausResults.at(2) << "\t" << gausResults.at(5) << "\t" << gausResults.at(3)/gausResults.at(0) << endl;
+        pitchDeviationFile << "{" << 
+//                                         position.at(d).at(2) << "," << 
+                                        angle.at(d).at(0) << "," << 
+                                        angle.at(d).at(1) << "," << 
+                                        angle.at(d).at(2) << "," << 
+                                        stdvYvalues << "," << 
+                                        gausResults.at(2) << "," << 
+                                        gausResults.at(8) << "," << 
+                                        gausResults.at(3)/gausResults.at(0) << "," << 
+                                        sqrt( pow( gausResults.at(9)/gausResults.at(0) , 2 ) + pow( gausResults.at(3)/pow(gausResults.at(0),2)*gausResults.at(6) , 2 ) )
+        << "}," << endl;
         
         cout << fixed << setprecision(4) << " ycor \t = \t " << ycor << " \t +- " << yerr << endl;
         vecdodummy.push_back(ycor);
@@ -3431,6 +3442,17 @@ void analysis::precision(){
 //             if( d==3 && b==1 ) debug = true;
             fitparameter = fitDoubleGaussian((TH1I*)residual,debug);
 //             if( d==3 && b==1 ) debug = false;
+            textfile << "{ " << 
+                                position.at(d).at(2) << " , " << 
+                                angleCor.at(d).at(b).at(2) << " , " << 
+                                fitparameter.at(2) << " , " << 
+                                fitparameter.at(8) << " , " << 
+                                fitparameter.at(5) << " , " << 
+                                fitparameter.at(11) << " , " << 
+                                fitparameter.at(3)/fitparameter.at(0) << " , " << 
+                                sqrt( pow( fitparameter.at(9)/fitparameter.at(0) , 2 ) + pow( fitparameter.at(3)/pow(fitparameter.at(0),2)*fitparameter.at(6) , 2 ) )
+            
+            << " } " << endl;
             
             double lowerXlimit = position.at(d).at(0)-length.at(d).at(0)*0.5;
             double upperXlimit = position.at(d).at(0)+length.at(d).at(0)*0.5;
@@ -3448,7 +3470,7 @@ void analysis::precision(){
             resVSscinX->Fit(fitfunction,"REQS");
             
             cout << " board " << b << " \t shift " << fitparameter.at(1) << " +/- " <<  fitparameter.at(7) << " \t rotation " << fitfunction->GetParameter(1) << " +/- " << fitfunction->GetParError(1) << endl;
-            textfile << fixed << setprecision(3) << setw(5) << fitparameter.at(1) << " \t " << fixed << setprecision(5) << setw(8) << fitfunction->GetParameter(1) << " \t ";
+//             textfile << fixed << setprecision(3) << setw(5) << fitparameter.at(1) << " \t " << fixed << setprecision(5) << setw(8) << fitfunction->GetParameter(1) << " \t ";
                
 //             if(debug){
 //                 resVSscinX->Draw();
@@ -3475,8 +3497,8 @@ void analysis::precision(){
 //                 gPad->WaitPrimitive();
 //             }
             
-            textfile << fixed << setprecision(3) << setw(5) << fitfunction->GetParameter(0) << " \t ";
-            textfile << scientific << setprecision(4) << fitfunction->GetParameter(1) << endl;
+//             textfile << fixed << setprecision(3) << setw(5) << fitfunction->GetParameter(0) << " \t ";
+//             textfile << scientific << setprecision(4) << fitfunction->GetParameter(1) << endl;
         
             outfile->cd();
             
