@@ -3392,11 +3392,12 @@ void comparer(
 //         { 0 , "uTPCresVSslope" } 
 //         { 0 , "clusterQvsNstrips_near" } 
 //         { 0 , "clusterQvsSlope" } 
-        { 1 , "nStripsVSslope" } 
+//         { 1 , "nStripsVSslope" } 
 //         { 2 , "maxStripQvsSlope" } ,
 //         { 3 , "fastestVSslope" } ,
 //         { 4 , "slowestVSslope" } ,
 //         { 5 , "timeDifVSslope" } 
+        { 0 , "stripTimeVSslope" } 
     };
     
     map< unsigned int , string> parameter = {
@@ -3408,27 +3409,39 @@ void comparer(
     
 //     TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root" , "RECREATE" );
 //     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root";
-    if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/summary/m3_driftScan_nStrips.root";
+//     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/summary/m3_driftScan_nStrips.root";
+    if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_baseline.root";
     TFile * outfile = new TFile( outname , "RECREATE" );
     
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/resolution/woCCCtt/uTPCt0/m8_eta3_" , "_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/ctc/timed/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
-    vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/driftScan/sm2_m3_560V_C" , "V_woCCC.root" };
+//     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C" , "_fitNclust_inCRF.root" };
+    vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C" , ".root" };
 
 //     map< string , vector< pair< unsigned int , string > > > measurements;
 //     map< string , map< unsigned int , string > > measurements;
     map< string , map< unsigned int , pair< string , double > > > measurements;
     
-    measurements["93:07"] = {
-        { 100 , { "100" , 1. } } ,
-        { 150 , { "150" , 1. } } ,
-        { 200 , { "200" , 1. } } ,
-        { 250 , { "250" , 1. } } ,
-        { 300 , { "300" , 1. } } ,
-        { 350 , { "350" , 1. } } ,
-        { 400 , { "400" , 1. } } 
+    measurements["woCCC"] = {
+        { 100 , { "100V_woCCC" , 1. } } ,
+        { 150 , { "150V_woCCC" , 1. } } ,
+        { 200 , { "200V_woCCC" , 1. } } ,
+        { 250 , { "250V_woCCC" , 1. } } ,
+        { 300 , { "300V_woCCC" , 1. } } ,
+        { 350 , { "350V_woCCC" , 1. } } ,
+        { 400 , { "400V_woCCC" , 1. } } 
+    };
+    
+    measurements["CCC30"] = {
+        { 100 , { "100V_CCC30up" , 1. } } ,
+        { 150 , { "150V_CCC30up" , 1. } } ,
+        { 200 , { "200V_CCC30up" , 1. } } ,
+        { 250 , { "250V_CCC30up" , 1. } } ,
+        { 300 , { "300V_CCC30up" , 1. } } ,
+        { 350 , { "350V_CCC30up" , 1. } } ,
+        { 400 , { "400V_CCC30up" , 1. } } 
     };
     
 //     measurements["93:07"] = {
@@ -3586,6 +3599,7 @@ void comparer(
                         name = v.second; 
                         if( b != "" ) name += "_" + b;
                         name += "_" + d;
+                        name += "_baseline_maxStrip";
                         readhist = (TH2I*)infile->Get( name );
                         if( readhist == NULL ){
                             cerr << " ERROR: could not read histogram \"" << name << "\"" << endl;
@@ -3859,6 +3873,48 @@ void comparer(
                                                                                             pow( fitresults.at(3) / pow( fitresults.at(0) , 2 ) * fitresults.at(6) , 2 )
                                                                                         ) 
                                                 );
+                        }
+                        else if( v.second == "stripTimeVSslope" ){
+                            name = name.ReplaceAll( "VSslope" , "inclinedTracks" );
+                            projection = readhist->ProjectionY( name , 1 , 10 );
+                            name += "_up";
+                            projection->Add( readhist->ProjectionY( name , nbins.at(1)-9 , nbins.at(1) ) );
+                            maximum = projection->GetMaximum();
+                            mean = projection->GetMean();
+                            meanError = projection->GetMeanError();
+                            stdv = projection->GetStdDev();
+                            stdvError = projection->GetStdDevError();
+                            ampScan[0]->SetPoint( ampScan[0]->GetN()-1 , a.first , mean );
+                            ampScan[0]->SetPointError( ampScan[0]->GetN()-1 , voltageError , meanError );
+                            ampScan[1]->SetPoint( ampScan[1]->GetN()-1 , a.first , stdv );
+                            ampScan[1]->SetPointError( ampScan[1]->GetN()-1 , voltageError , stdvError );
+                            function = new TF1( "function" , " [0] / ( 1 + exp( ( [1] - x ) / [2] ) )" , mean - 3 * stdv , mean );
+                            function->SetParameters( maximum , mean-stdv , 1. );
+                            projection->Fit( function , "RQB" );
+                            projection->Draw();
+                            gPad->Modified();
+                            gPad->Update();
+                            gPad->WaitPrimitive();
+                            MPV = function->GetParameter( 1 );
+                            MPVerror = function->GetParError( 1 );
+                            function = new TF1( "function" , " [0] / ( 1 + exp( ( x - [1] ) / [2] ) )" , mean , mean + 3 * stdv );
+                            function->SetParameters( maximum , mean+stdv , 1. );
+                            projection->Fit( function , "RQB" );
+                            projection->Draw();
+                            gPad->Modified();
+                            gPad->Update();
+                            gPad->WaitPrimitive();
+                            mean = function->GetParameter( 1 );
+                            meanError = function->GetParError( 1 );
+                            double leftSlope = function->GetParameter( 2 );
+                            double leftError = function->GetParError( 2 );
+                            ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , mean - MPV );
+                            ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , voltageError , sqrt( pow( meanError , 2 ) + pow( MPVerror , 2 ) ) );
+                            double rightSlope = function->GetParameter( 2 );
+                            double rightError = function->GetParError( 2 );
+                            ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , rightSlope );
+                            ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , voltageError , rightError );
+                            
                         }
                         else{
                             function = new TF1( "function" , "gaus" , mean - 5. * stdv , mean + 5. * stdv );
