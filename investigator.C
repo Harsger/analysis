@@ -339,12 +339,14 @@ void analysis::investigateCRF(){
     TH2I*** chargeVSvariation_near_board;
     TH2I*** chargeVSclusterStrip_board;
     TH2I**** chargePositionVSslope_board;
+    TH2I***** stripTimeVSslope_board;
     if(!onlyCluster){ 
         risetimeVScharge_near_board = new TH2I**[ndetectors];
         starttimeVSslope_near_board = new TH2I**[ndetectors];
         chargeVSvariation_near_board = new TH2I**[ndetectors];
         chargeVSclusterStrip_board = new TH2I**[ndetectors];
         chargePositionVSslope_board = new TH2I***[ndetectors];
+        stripTimeVSslope_board = new TH2I****[ndetectors];
     }
     
     TH2I*** firstTimeDifVSscinXperYpart = new TH2I**[ndetectors];
@@ -937,6 +939,7 @@ void analysis::investigateCRF(){
             chargeVSvariation_near_board[d] = new TH2I*[nboards.at(d)];
             chargeVSclusterStrip_board[d] = new TH2I*[nboards.at(d)];
             chargePositionVSslope_board[d] = new TH2I**[nboards.at(d)];
+            stripTimeVSslope_board[d] = new TH2I***[nboards.at(d)];
         }
         
         for(unsigned int b=0; b<nboards.at(d); b++){
@@ -1102,6 +1105,35 @@ void analysis::investigateCRF(){
                     else chargePositionVSslope_board[d][b][h] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 21 , -10.5 , 10.5 );
                     chargePositionVSslope_board[d][b][h]->SetXTitle("slope y (average MDTs)");
                     chargePositionVSslope_board[d][b][h]->SetYTitle("strip in cluster");  
+                }
+                
+                stripTimeVSslope_board[d][b] = new TH2I**[3];
+                
+                for(unsigned int t=0; t<3; t++){
+                    
+                    stripTimeVSslope_board[d][b][t] = new TH2I*[2];
+                    
+                    for(unsigned int m=0; m<2; m++){
+                        
+                        histname = "stripTimeVSslope_board";
+                        if(nboards.at(d)>1){
+                            if( nboards.at(d) == 3 ) histname += b+6;
+                            else histname += b;
+                        }
+                        if(ndetectors>1){ 
+                            histname += "_";
+                            histname += detectornames.at(d);
+                        }
+                        if( t == 0 ) histname += "_baseline";
+                        else if( t == 1 ) histname += "_inflection";
+                        else if( t == 2 ) histname += "_maximum";
+                        if( m > 0 ) histname += "_maxStrip";
+                        stripTimeVSslope_board[d][b][t][m] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 270, 0., 27. );
+                        stripTimeVSslope_board[d][b][t][m]->SetXTitle("slope y (average MDTs)");
+                        stripTimeVSslope_board[d][b][t][m]->SetYTitle("strip time [25 ns]");  
+                        
+                    }
+                    
                 }
             
             }
@@ -1948,6 +1980,9 @@ void analysis::investigateCRF(){
         double mdtslope = 0.5 * ( slopeY[0] + slopeY[1] );
         double mdtangle = atan( mdtslope ) * 180. / TMath::Pi();
         double scinangle = atan( slopeX ) * 180. / TMath::Pi();
+        
+        double precisionTrackSlope = mdtslope;
+        if(useAngle) precisionTrackSlope = mdtangle;
         
         double track[2][2];
         track[0][0] = interceptX;
@@ -2964,6 +2999,8 @@ void analysis::investigateCRF(){
                         unsigned int stripindex = 0;
                         int frontStrip = -1;
 //                         double typeConversionAdd = centroid->at(nearest) - (int)centroid->at(nearest);
+                        int maxStrip = -1;
+                        double maxStripCharge = -1e3;
                         for(unsigned int s=0; s<size->at(nearest); s++){
                             stripindex = strips->at(nearest).at(s);
                             risetimeVScharge_near_board[d][nearboard]->Fill( maxcharge->at(stripindex), risetime->at(stripindex) * 25.);
@@ -2981,8 +3018,20 @@ void analysis::investigateCRF(){
                                 chargePositionVSslope_board[d][nearboard][0]->Fill( mdtslope , stripInCluster );
                                 chargePositionVSslope_board[d][nearboard][1]->Fill( mdtslope , stripInCluster , maxcharge->at(stripindex) );
                             }
+                            for(unsigned int t=0; t<3; t++){
+                                stripTimeVSslope_board[d][nearboard][t][0]->Fill( precisionTrackSlope , ( turntime->at(stripindex) + ( (double)t - 1. ) * extrapolationfactor * risetime->at(stripindex) ) );
+                            }
+                            if( maxcharge->at(stripindex) > maxStripCharge ){
+                                maxStripCharge = maxcharge->at(stripindex);
+                                maxStrip = stripindex;
+                            }
                             if( frontStrip < 0 ) frontStrip = number->at(stripindex);
                             if( abs( mdtangle ) < 2. )  chargeVSclusterStrip_board[d][nearboard]->Fill( number->at(stripindex) - frontStrip + 1 , maxcharge->at(stripindex) );
+                        }
+                        if( maxStrip > -1 ){
+                            for(unsigned int t=0; t<3; t++){
+                                stripTimeVSslope_board[d][nearboard][t][1]->Fill( precisionTrackSlope , ( turntime->at(maxStrip) + ( (double)t - 1. ) * extrapolationfactor * risetime->at(maxStrip) ) );
+                            }
                         }
                     }
                 }
@@ -3283,6 +3332,11 @@ void analysis::investigateCRF(){
                 chargeVSvariation_near_board[d][b]->Write();
                 chargeVSclusterStrip_board[d][b]->Write();
                 for(unsigned int h=0; h<2; h++) chargePositionVSslope_board[d][b][h]->Write();
+                for(unsigned int t=0; t<3; t++){ 
+                    for(unsigned int m=0; m<2; m++){ 
+                        stripTimeVSslope_board[d][b][t][m]->Write();
+                    }
+                }
             }
             
         }
