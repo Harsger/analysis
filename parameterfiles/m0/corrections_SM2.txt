@@ -1,0 +1,31 @@
+FEC 0 triggerOffset 590.6 
+FEC 1 triggerOffset 621.4 
+FEC 2 triggerOffset 630.7 
+FEC 3 triggerOffset 627.0 
+FEC 4 triggerOffset 213.3 
+FEC 5 triggerOffset 213.2 
+
+unix start 1508191200 end 1513033200
+
+eta_out    minClusterSize 2 effiRange 5
+eta_in     minClusterSize 2 effiRange 5
+stereo_in  minClusterSize 2 effiRange 5
+stereo_out minClusterSize 2 effiRange 5
+
+eta_out FECnAPV 5 12 shift -0.425 FECnAPV 5 13 shift -0.425
+eta_in FEC 2 shift 0.425
+
+eta_out    board 0 angle 2  -8e-5 board 1 angle 2  -3e-5 board 2 angle 2   1e-5
+eta_in     board 0 angle 2   0e-5 board 1 angle 2   3e-5 board 2 angle 2  -2e-5
+stereo_in  board 0 angle 2 -59e-5 board 1 angle 2 -75e-5 board 2 angle 2 -64e-5
+stereo_out board 0 angle 2  76e-5 board 1 angle 2  77e-5 board 2 angle 2  54e-5
+
+eta_out    FEC 0 shift  0.040 FEC 1 shift  0.040 FEC 2 shift -0.039 FEC 3 shift -0.039 FEC 4 shift  0.024 FEC 5 shift  0.024
+eta_in     FEC 0 shift  0.014 FEC 1 shift  0.014 FEC 2 shift -0.062 FEC 3 shift -0.062 FEC 4 shift -0.044 FEC 5 shift -0.044
+stereo_in  FEC 0 shift -0.453 FEC 1 shift -0.453 FEC 2 shift -0.679 FEC 3 shift -0.679 FEC 4 shift -0.545 FEC 5 shift -0.545
+stereo_out FEC 0 shift  0.277 FEC 1 shift  0.277 FEC 2 shift  0.220 FEC 3 shift  0.220 FEC 4 shift  0.521 FEC 5 shift  0.521
+
+eta_out    FEC 0 pitch 0.42507 FEC 1 pitch 0.42507 FEC 2 pitch 0.42527 FEC 3 pitch 0.42527 FEC 4 pitch 0.42509 FEC 5 pitch 0.42509
+eta_in     FEC 0 pitch 0.42504 FEC 1 pitch 0.42504 FEC 2 pitch 0.42511 FEC 3 pitch 0.42511 FEC 4 pitch 0.42511 FEC 5 pitch 0.42511
+stereo_in  FEC 0 pitch 0.42539 FEC 1 pitch 0.42539 FEC 2 pitch 0.42513 FEC 3 pitch 0.42513 FEC 4 pitch 0.42492 FEC 5 pitch 0.42492
+stereo_out FEC 0 pitch 0.42503 FEC 1 pitch 0.42503 FEC 2 pitch 0.42492 FEC 3 pitch 0.42492 FEC 4 pitch 0.42479 FEC 5 pitch 0.42479

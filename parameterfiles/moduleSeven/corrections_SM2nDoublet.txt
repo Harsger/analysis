@@ -16,3 +16,22 @@ stereo_in  minClusterSize 2 effiRange 5
 stereo_out minClusterSize 2 effiRange 5
 etaBot     minClusterSize 2 effiRange 5
 etaTop     minClusterSize 2 effiRange 5
+
+etaBot FECnAPV 7 13 shift -0.425
+etaTop FECnAPV 6  1 shift  0.425 FECnAPV 8 6 shift -0.425
+
+eta_out    board 0 angle 2    2e-5 board 1 angle 2    5e-5 board 2 angle 2   8e-5
+eta_in     board 0 angle 2   -2e-5 board 1 angle 2   -2e-5 board 2 angle 2   4e-5
+stereo_in  board 0 angle 2  -50e-5 board 1 angle 2  -56e-5 board 2 angle 2 -53e-5
+stereo_out board 0 angle 2   68e-5 board 1 angle 2   70e-5 board 2 angle 2  54e-5
+
+eta_out    FEC 0 shift -0.032 FEC 1 shift -0.032 FEC 2 shift -0.011 FEC 3 shift -0.011 FEC 4 shift  0.031 FEC 5 shift  0.031
+eta_in     FEC 0 shift -0.182 FEC 1 shift -0.182 FEC 2 shift -0.198 FEC 3 shift -0.198 FEC 4 shift -0.149 FEC 5 shift -0.149
+stereo_in  FEC 0 shift -0.329 FEC 1 shift -0.329 FEC 2 shift -0.537 FEC 3 shift -0.537 FEC 4 shift -0.480 FEC 5 shift -0.480
+stereo_out FEC 0 shift -0.565 FEC 1 shift -0.565 FEC 2 shift -0.396 FEC 3 shift -0.396 FEC 4 shift -0.190 FEC 5 shift -0.190
+
+eta_out    FEC 0 pitch 0.42506 FEC 1 pitch 0.42506 FEC 2 pitch 0.42500 FEC 3 pitch 0.42500 FEC 4 pitch 0.42504 FEC 5 pitch 0.42504
+eta_in     FEC 0 pitch 0.42507 FEC 1 pitch 0.42507 FEC 2 pitch 0.42498 FEC 3 pitch 0.42498 FEC 4 pitch 0.42506 FEC 5 pitch 0.42506
+stereo_in  FEC 0 pitch 0.42486 FEC 1 pitch 0.42486 FEC 2 pitch 0.42476 FEC 3 pitch 0.42476 FEC 4 pitch 0.42472 FEC 5 pitch 0.42472
+stereo_out FEC 0 pitch 0.42469 FEC 1 pitch 0.42469 FEC 2 pitch 0.42468 FEC 3 pitch 0.42468 FEC 4 pitch 0.42471 FEC 5 pitch 0.42471
+

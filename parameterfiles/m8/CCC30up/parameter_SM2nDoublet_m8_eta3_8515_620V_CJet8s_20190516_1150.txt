@@ -1,0 +1,11 @@
+properties_SM2nDoublet.txt 
+fecmap_SM2nDoublet.txt 
+corrections_SM2nDoublet.txt 
+boardmap_SM2nDoublet.txt 
+detectorname #xstrips #ystrips pitch   xlength ylength #divisionsX #divisionsY positionX positionY positionZ angleX  angleY  angleZ    layer flip uTPCtime CCCfactor driftVelocity cluTime 
+eta_out      0        3072     0.425   1600    1305.6  16          24          -571.4    -276.29   126.21    -0.0085 -0.0041 0.00247   3     0    11.798   -0.3      0.047         -0.528  
+eta_in       0        3072     0.425   1600    1305.6  16          24          -571.4    -276.29   142.67    -0.0085 -0.0041 0.00247   2     0    11.879   0.3       0.047         0.524   
+stereo_in    0        3072     0.42485 1600    1305.6  16          24          -571.4    -276.29   159.52    -0.0085 -0.0041 -0.023716 100   0    11.734   -0.3      0.047         -0.480  
+stereo_out   0        3072     0.42485 1600    1305.6  16          24          -571.4    -276.29   176.42    -0.0085 -0.0041 0.028656  -100  0    11.950   0.3       0.047         0.494   
+etaBot       0        3072     0.425   1600    1305.6  16          24          -571.4    -274.60   -21.01    -0.0034 0.0060  -0.00045  4     0    12.150   -0.3      0.047         -0.546  
+etaTop       0        3072     0.425   1600    1305.6  16          24          -571.4    -274.60   -4.51     -0.0034 0.0060  -0.00045  5     0    14.545   0.3       0.047         0.355   
