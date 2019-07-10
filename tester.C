@@ -3410,7 +3410,9 @@ void comparer(
 //     TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root" , "RECREATE" );
 //     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root";
 //     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/summary/m3_driftScan_nStrips.root";
-    if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_baseline.root";
+//     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_baseline.root";
+//     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_inflection.root";
+    if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_maximum.root";
     TFile * outfile = new TFile( outname , "RECREATE" );
     
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
@@ -3501,8 +3503,17 @@ void comparer(
         ampScanFitRange[1] = 1.;
     }
     
+    double extrapolationfactor = (log(81)/1.6);
+    
     double pressureError = 2.;
     double voltageError = 1.;
+    
+    double centiINmilli = 0.1;
+    double microINmilli = 1e3;
+    double timeBinWidth = 25.;
+    
+    double driftGap = 5.; 
+    double gapError = 0.1;
     
     TString name;
     TString title;
@@ -3599,7 +3610,10 @@ void comparer(
                         name = v.second; 
                         if( b != "" ) name += "_" + b;
                         name += "_" + d;
-                        name += "_baseline_maxStrip";
+//                         name += "_baseline";
+//                         name += "_inflection";
+                        name += "_maximum";
+//                         name += "_maxStrip";
                         readhist = (TH2I*)infile->Get( name );
                         if( readhist == NULL ){
                             cerr << " ERROR: could not read histogram \"" << name << "\"" << endl;
@@ -3888,33 +3902,67 @@ void comparer(
                             ampScan[0]->SetPointError( ampScan[0]->GetN()-1 , voltageError , meanError );
                             ampScan[1]->SetPoint( ampScan[1]->GetN()-1 , a.first , stdv );
                             ampScan[1]->SetPointError( ampScan[1]->GetN()-1 , voltageError , stdvError );
-                            function = new TF1( "function" , " [0] / ( 1 + exp( ( [1] - x ) / [2] ) )" , mean - 3 * stdv , mean );
-                            function->SetParameters( maximum , mean-stdv , 1. );
+//                             function = new TF1( "function" , " [0] / ( 1 + exp( ( [1] - x ) / [2] ) ) " , mean - 3 * stdv , mean );
+//                             function->SetParameters( maximum , mean-stdv , 1. );
+                            function = new TF1( "function" , " [0] / ( 1 + exp( ( [1] - x ) / [2] ) ) + [3] " , mean - 3 * stdv , mean );
+                            function->SetParameters( maximum , mean-stdv , 1. , 1. );
                             projection->Fit( function , "RQB" );
-                            projection->Draw();
-                            gPad->Modified();
-                            gPad->Update();
-                            gPad->WaitPrimitive();
+//                             projection->Draw();
+//                             gPad->Modified();
+//                             gPad->Update();
+//                             gPad->WaitPrimitive();
                             MPV = function->GetParameter( 1 );
                             MPVerror = function->GetParError( 1 );
-                            function = new TF1( "function" , " [0] / ( 1 + exp( ( x - [1] ) / [2] ) )" , mean , mean + 3 * stdv );
-                            function->SetParameters( maximum , mean+stdv , 1. );
-                            projection->Fit( function , "RQB" );
-                            projection->Draw();
-                            gPad->Modified();
-                            gPad->Update();
-                            gPad->WaitPrimitive();
-                            mean = function->GetParameter( 1 );
-                            meanError = function->GetParError( 1 );
                             double leftSlope = function->GetParameter( 2 );
                             double leftError = function->GetParError( 2 );
-                            ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , mean - MPV );
-                            ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , voltageError , sqrt( pow( meanError , 2 ) + pow( MPVerror , 2 ) ) );
+//                             function = new TF1( "function" , " [0] / ( 1 + exp( ( x - [1] ) / [2] ) )" , mean , mean + 3 * stdv );
+//                             function->SetParameters( maximum , mean+stdv , 1. );
+                            function = new TF1( "function" , " [0] / ( 1 + exp( ( x - [1] ) / [2] ) ) + [3] " , mean , mean + 3 * stdv );
+                            function->SetParameters( maximum , mean+stdv , 1. , 1. );
+                            projection->Fit( function , "RQB" );
+//                             projection->Draw();
+//                             gPad->Modified();
+//                             gPad->Update();
+//                             gPad->WaitPrimitive();
+                            mean = function->GetParameter( 1 );
+                            meanError = function->GetParError( 1 );
                             double rightSlope = function->GetParameter( 2 );
                             double rightError = function->GetParError( 2 );
+                            ampScan[2]->SetPoint( 
+                                                    ampScan[2]->GetN() , 
+                                                    a.first / ( driftGap * centiINmilli ) , 
+//                                                     ( driftGap * microINmilli ) / ( ( mean - MPV + extrapolationfactor * ( leftSlope + rightSlope ) ) * timeBinWidth ) 
+//                                                     ( driftGap * microINmilli ) / ( ( mean - MPV + extrapolationfactor * rightSlope ) * timeBinWidth ) 
+                                                    ( driftGap * microINmilli ) / ( ( mean - MPV ) * timeBinWidth ) 
+                                                );
+                            ampScan[2]->SetPointError( 
+                                                        ampScan[2]->GetN()-1 , 
+                                                        sqrt( 
+                                                                pow( voltageError / ( driftGap * centiINmilli ) , 2 ) + 
+                                                                pow( a.first / pow( driftGap * centiINmilli , 2 ) * gapError * centiINmilli , 2 ) 
+                                                            ) , 
+                                                        sqrt( 
+/////////
+//                                                                 pow( ( gapError * microINmilli ) / ( ( mean - MPV + extrapolationfactor * ( leftSlope + rightSlope ) ) * timeBinWidth ) , 2 ) + 
+//                                                                 pow( ( driftGap * microINmilli ) / pow( ( mean - MPV + extrapolationfactor * ( leftSlope + rightSlope ) ) * timeBinWidth  , 2 ) , 2 ) * 
+//                                                                 pow( timeBinWidth , 2 ) * (
+//                                                                     pow( meanError , 2 ) + pow( MPVerror , 2 ) + 
+//                                                                     pow( extrapolationfactor , 2 ) * ( pow( leftError , 2 ) + pow( rightError , 2 ) )
+//                                                                 )
+//////////
+//                                                                 pow( ( gapError * microINmilli ) / ( ( mean - MPV + extrapolationfactor * rightSlope ) * timeBinWidth ) , 2 ) + 
+//                                                                 pow( ( driftGap * microINmilli ) / pow( ( mean - MPV + extrapolationfactor * rightSlope ) * timeBinWidth  , 2 ) , 2 ) * 
+//                                                                 pow( timeBinWidth , 2 ) * (
+//                                                                     pow( meanError , 2 ) + pow( MPVerror , 2 ) + 
+//                                                                     pow( extrapolationfactor * rightError , 2 ) 
+//                                                                 )
+                                                                pow( ( gapError * microINmilli ) / ( ( mean - MPV ) * timeBinWidth ) , 2 ) + 
+                                                                pow( ( driftGap * microINmilli ) / pow( ( mean - MPV ) * timeBinWidth  , 2 ) , 2 ) * 
+                                                                pow( timeBinWidth , 2 ) * ( pow( meanError , 2 ) + pow( MPVerror , 2 ) )
+                                                            ) 
+                                                     );
                             ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , rightSlope );
                             ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , voltageError , rightError );
-                            
                         }
                         else{
                             function = new TF1( "function" , "gaus" , mean - 5. * stdv , mean + 5. * stdv );
