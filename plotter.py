@@ -304,6 +304,12 @@ from array import array
     #]
 
 #plotTags = [ 
+        #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_9307"   , "93:07 U_{drift}=300V" ] ,
+        #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_8515"   , "85:15 U_{drift}=300V" ] ,
+        #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_8020"   , "80:20 U_{drift}=475V" ] 
+    #]
+
+#plotTags = [ 
         #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_9307"   , "narrow   93:07 U_{drift}=300V" ] ,
         #[ "" , "resVSamplificationVoltage_MPV_eta_out_board8_9307"    , "broad" ] ,
         #[ "" , "resVSamplificationVoltage_mean_eta_out_board8_8515"   , "narrow   85:15 U_{drift}=300V" ] ,
@@ -557,11 +563,53 @@ from array import array
         #[ "" , "resMeanVSscinX_board8_stereo_out" , "stereo out"   ] 
     #]
     
-preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/" , "m3_560V_0920to30_f04_resolution.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/" , "m3_560V_0920to30_f04_resolution.root" ]
+
+#plotTags = [ 
+        #[ "" , "centroidResolutionTrackCor_eta_out" , "eta out"   ] , 
+        #[ "" , "centroidResolutionTrackCor_eta_in"  , "eta in" ] 
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/summary/" , "m3_driftScan_clusterQ.root" ]
+
+#plotTags = [ 
+        #[ "" , "clusterQVSamplificationVoltage_MPV_eta_in_board7_9307"   , "MPV" ] ,
+        #[ "" , "clusterQVSamplificationVoltage_sigma_eta_in_board7_9307" , "sigma" ] ,
+        #[ "" , "clusterQVSamplificationVoltage_mean_eta_in_board7_9307"  , "mean" ] ,
+        #[ "" , "clusterQVSamplificationVoltage_stdv_eta_in_board7_9307"  , "std. dev." ] ,
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/summary/" , "m3_driftScan_nStrips.root" ]
+
+#plotTags = [ 
+        #[ "" , "nStripsVSamplificationVoltage_mean_eta_in_board7_9307"  , "mean" ] ,
+        #[ "" , "nStripsVSamplificationVoltage_stdv_eta_in_board7_9307"  , "std. dev." ] ,
+        #[ "" , "nStripsVSamplificationVoltage_MPV_eta_in_board7_9307"   , "difference inclined - straight" ] ,
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/calibrated/" , "_fitNclust_inCRF_resolution.root" ]
+
+#plotTags = [ 
+        #[ "m0_20171120_1717_woCCCtt"              , "centroidResolutionTrackCor_eta_in" , "M0"  ] ,
+        #[ "sm2_m1_570V_ZS2_20180604_0841"         , "centroidResolutionTrackCor_eta_in" , "M1"  ] ,
+        #[ "sm2_m3_565V_20180913_1507_tt"          , "centroidResolutionTrackCor_eta_in" , "M3"  ] ,
+        #[ "m5_560V_eta3_620V_8515_20190301_1053"  , "centroidResolutionTrackCor_eta_in" , "M5"  ] ,
+        #[ "m6_570V_eta3_660V_C250V_20190120_1328" , "centroidResolutionTrackCor_eta_in" , "M6"  ] ,
+        #[ "m7_570V_eta3_660V_C250V_20190205_1010" , "centroidResolutionTrackCor_eta_in" , "M7"  ] ,
+        #[ "m8_eta3_570V_20190528_1223"            , "centroidResolutionTrackCor_eta_in" , "M8"  ] ,
+        #[ "m12_560V_20190619_0833"                , "centroidResolutionTrackCor_eta_in" , "M12" ] 
+    #]
+    
+preNsuffix = [ "/project/etp" , ".root" ]
 
 plotTags = [ 
-        [ "" , "centroidResolutionTrackCor_eta_out" , "eta out"   ] , 
-        [ "" , "centroidResolutionTrackCor_eta_in"  , "eta in" ] 
+        [ "4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_baseline"   , "stripTimeVSamplificationVoltage_MPV_eta_in_board7_woCCC" , "no correction baseline"   ] ,
+        [ "4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_baseline"   , "stripTimeVSamplificationVoltage_MPV_eta_in_board7_CCC30" , "CCC 30% baseline"         ] ,
+        [ "4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_inflection" , "stripTimeVSamplificationVoltage_MPV_eta_in_board7_woCCC" , "no correction inflection" ] ,
+        [ "4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_inflection" , "stripTimeVSamplificationVoltage_MPV_eta_in_board7_CCC30" , "CCC 30% inflection"       ] ,
+        [ "4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_maximum"    , "stripTimeVSamplificationVoltage_MPV_eta_in_board7_woCCC" , "no correction maximum"    ] ,
+        [ "4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_maximum"    , "stripTimeVSamplificationVoltage_MPV_eta_in_board7_CCC30" , "CCC 30% maximum"          ] ,
+        [ "3/mherrmann/driftSimulation/evaluated/Ar_100to70_CO2"                                        , "Ar-CO2_93-7"                                             , "simulation" ] 
     ]
 
 def main(argv):
@@ -572,11 +620,11 @@ def main(argv):
     #gStyle.SetOptTitle(1)
     #gStyle.SetPadTopMargin(0.5);
 
-    plotStyle=[
-            [ 20 , 1 ] ,
-            [ 22 , 2 ] ,
-            [ 21 , 4 ]
-        ]
+    #plotStyle=[
+            #[ 20 , 1 ] ,
+            #[ 22 , 2 ] ,
+            #[ 21 , 4 ]
+        #]
 
     #plotStyle=[
             #[ 20 ,  1 ] ,
@@ -656,14 +704,15 @@ def main(argv):
             #[ 22 ,  4 ] 
         #]
 
-    #plotStyle=[
-            #[ 20 ,  1 ] ,
-            #[ 24 ,  1 ] ,
-            #[ 22 ,  2 ] ,
-            #[ 26 ,  2 ] ,
-            #[ 21 ,  4 ] ,
-            #[ 25 ,  4 ] 
-        #]
+    plotStyle=[
+            [ 20 ,  1 ] ,
+            [ 24 ,  1 ] ,
+            [ 22 ,  2 ] ,
+            [ 26 ,  2 ] ,
+            [ 21 ,  4 ] ,
+            [ 25 ,  4 ] ,
+            [  5 ,  3 ] 
+        ]
     
     plotter = TMultiGraph()
     #plotter = HistStack()
@@ -703,7 +752,8 @@ def main(argv):
         
         #print str(plot[2])+"\t"+str(fitter.GetParameter(1))+" +/- "+str(fitter.GetParError(1))
         
-        plotter.Add( capture , "P" )
+        #plotter.Add( capture , "P" )
+        plotter.Add( capture , "PL" )
         #legend.AddEntry()
     
     plotter.GetXaxis().SetTitle( "slope reference track" )
@@ -715,8 +765,11 @@ def main(argv):
     #plotter.GetXaxis().SetTitle( "amplification voltage [V]" )
     #plotter.GetXaxis().SetRangeUser( 500. , 700. )
     
-    #plotter.GetXaxis().SetTitle( "drift field [V/cm]" )
-    #plotter.GetXaxis().SetRangeUser( 0. , 1000. )
+    #plotter.GetXaxis().SetTitle( "drift voltage [V]" )
+    #plotter.GetXaxis().SetRangeUser( 0. , 500. )
+    
+    plotter.GetXaxis().SetTitle( "drift field [V/cm]" )
+    plotter.GetXaxis().SetRangeUser( 190. , 810. )
     
     #plotter.GetXaxis().SetTitle( "number of strips in cluster" )
     #plotter.GetXaxis().SetRangeUser( 1.5 , 10.5 )
@@ -730,13 +783,13 @@ def main(argv):
     #plotter.GetXaxis().SetTitle( "position along strips (by scintillators) [mm]" )
     #plotter.GetXaxis().SetRangeUser( -1000. , 1000. )
     
-    #plotter.GetYaxis().SetTitle( "drift velocity [#mum/ns]" )
-    #plotter.GetYaxis().SetRangeUser( 0. , 60.0 )
+    plotter.GetYaxis().SetTitle( "drift velocity [#mum/ns]" )
+    plotter.GetYaxis().SetRangeUser( 15. , 50.0 )
     
-    #plotter.GetYaxis().SetTitle( "residual width [mm]" )
-    #plotter.GetYaxis().SetRangeUser( 0. , 2.0 )
+    #plotter.GetYaxis().SetTitle( "residual narrow width [mm]" )
+    #plotter.GetYaxis().SetRangeUser( 0. , 0.7 )
     
-    plotter.GetYaxis().SetTitle( "resolution [mm]" )
+    #plotter.GetYaxis().SetTitle( "resolution [mm]" )
     #plotter.GetYaxis().SetRangeUser( 0. , 0.7 )
     
     #plotter.GetYaxis().SetTitle( "ratio broad to narrow gaussian" )
@@ -747,22 +800,25 @@ def main(argv):
     
     #plotter.GetYaxis().SetTitle( "cluster charge [ADC channel]" )
     #plotter.GetYaxis().SetRangeUser( 0. , 1500. )
-    #plotter.GetYaxis().SetRangeUser( 0. , 3000. )
+    #plotter.GetYaxis().SetRangeUser( 0. , 2000. )
+    
+    #plotter.GetYaxis().SetTitle( "number of strips in cluster" )
+    #plotter.GetYaxis().SetRangeUser( 0. , 5.5 )
     
     #plotter.GetYaxis().SetTitle( "longitudinal diffusion [mm/#sqrt{mm}]" )
-    plotter.GetYaxis().SetRangeUser( 0. , 6. )
+    #plotter.GetYaxis().SetRangeUser( 0. , 6. )
     
     #plotter.GetYaxis().SetTitle( "coincidence efficiency" )
     #plotter.GetYaxis().SetTitle( "5 mm efficiency" )
     #plotter.GetYaxis().SetRangeUser( 0. , 1. )
     
-    plotter.Draw("AP")
+    #plotter.Draw("AP")
+    plotter.Draw("APL")
     #plotter.SetTitle("eta in")
-    #plotter.Draw("APL")
     can.BuildLegend()
     #legend.Draw()
     
-    gPad.SetGridx()
+    #gPad.SetGridx()
     gPad.SetGridy()
       
     gPad.Modified()
