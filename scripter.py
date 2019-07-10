@@ -2,7 +2,7 @@
 
 import sys, getopt
 import os
-#import ROOT
+import ROOT
 import time
 import math
 import csv
@@ -90,8 +90,14 @@ def main(argv):
     
     for filename in infiles:
         
-        readname = str(datapath)+"/"+str(filename)
-        fullcommand = str(commandStart) + str(readname) + str(endCommand)
+        #readname = str(datapath)+"/"+str(filename)
+        readname = filename
+        #fullcommand = str(commandStart) + str(readname) + str(endCommand)
+        
+        measurementTag = readname
+        measurementTag = measurementTag.replace( specifier , "" )
+        
+        fullcommand = str(commandStart) + str(measurementTag) + ".txt -i " + str(readname)
         
         count += 1
         print " job "+str(count)+" / "+str(numberOfFiles)+" : "+str(fullcommand)
@@ -100,3 +106,5 @@ def main(argv):
 
 if __name__ == "__main__":
   main(sys.argv[1:])
+  
+  #python scripter.py -c '/project/etp3/mherrmann/analysis/investigateCRF -o /project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/ctc/timed -d /project/etp4/mherrmann/fitteddata/m8/CCC30up -p /project/etp3/mherrmann/analysis/parameterfiles/m8/CCC30up/parameter_SM2nDoublet_' -d /project/etp4/mherrmann/fitteddata/m8/CCC30up -i m8_eta3_ -s _CCC30up_fitNclust_inCRF.root
