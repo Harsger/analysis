@@ -23,6 +23,10 @@ bool straightTracks[2] = { false , false };
 double straightNess[2] = { 1e-1 , 1e-1 };
 bool rejectMultipeScattering = false;
 double maximalScatter = 1e-2;
+bool skipTimes = false;
+unsigned int stopUnixtime = 2e9;
+bool stripAnalysis = false;
+bool angularReconstruction = false;
 
 int main(int argc, char* argv[]){
     
@@ -49,8 +53,11 @@ int main(int argc, char* argv[]){
         " -x\ttrack straightness    \t(default:  " << straightNess[0] << " -> switched "<< straightTracks[0] <<")\n"
         " -y\ttrack straightness    \t(default:  " << straightNess[1] << " -> switched "<< straightTracks[1] <<")\n"
         " -r\treject scattering     \t(default:  " << maximalScatter << " -> switched "<< rejectMultipeScattering <<")\n"
+        " -u\tunixtime to skip      \t(default:  " << stopUnixtime << " -> switched "<< skipTimes <<")\n"
+        " -A\tangular evaluation    \t(default:  \"" << angularReconstruction << "\")\n"
         " -O\tonly cluster mode off \t(default:  \"" << only << "\")\n"
-        " -L\tlarge partitions       \t(default:  \"" << largePartitions << "\")\n"
+        " -L\tlarge partitions      \t(default:  \"" << largePartitions << "\")\n"
+        " -S\tstrip analysis        \t(default:  \"" << stripAnalysis << "\")\n"
         " -D\tdebugging mode        \t(default:  \"" << bugger << "\")\n"
         "\n"
         "output files are named : <inputname>_inCRF<start>to<end>.root\n"
@@ -59,7 +66,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "i:d:o:p:s:e:OLD")) != -1) {
+    while ((c = getopt (argc, argv, "i:d:o:p:s:e:x:y:r:u:AOLSD")) != -1) {
         switch (c)
         {
         case 'i':
@@ -80,11 +87,33 @@ int main(int argc, char* argv[]){
         case 'e':
             end = atoi(optarg);
             break;
+        case 'x':
+            straightTracks[0] = true;
+            straightNess[0] = atof(optarg);
+            break;
+        case 'y':
+            straightTracks[1] = true;
+            straightNess[1] = atof(optarg);
+            break;
+        case 'r':
+            rejectMultipeScattering = true;
+            maximalScatter = atof(optarg);
+            break;
+        case 'u':
+            skipTimes = true;
+            stopUnixtime = atof(optarg);
+            break;
+        case 'A':
+            angularReconstruction = false;
+            break;
         case 'O':
             only = false;
             break;
         case 'L':
             largePartitions = true;
+            break;
+        case 'S':
+            stripAnalysis = true;
             break;
         case 'D':
             bugger = true;
@@ -104,8 +133,10 @@ int main(int argc, char* argv[]){
     cout << " processing events  : " << start << " to " << end << "\n";
     cout << " paramterfile       : " << params << "\n";
     if(largePartitions) cout << " using 5 x 7 partitions " << endl;
+    if(stripAnalysis) cout << " doing strip analysis " << endl;
     if(only) cout << " only cluster mode " << endl;
     
+    if(stripAnalysis) only = false;
     
     TString readname = indirectory;
     if(indirectory!="") readname += "/";
@@ -178,6 +209,8 @@ int main(int argc, char* argv[]){
         }
     }
     
+    if( angularReconstruction ) invest->useAngle = true;
+    
     invest->investigateCRF();
     
     infile->Close();
@@ -228,6 +261,8 @@ void analysis::investigateCRF(){
             if( detstrips.at(d).at(1) < 1 ) nOnlyX++;
         }
     }
+    
+    if(stripAnalysis) onlyCluster = true;
     
     TString histname, histtitle, axetitle; 
                 
@@ -394,6 +429,13 @@ void analysis::investigateCRF(){
     TH3I** uTPCresVScluTimeVSslope = new TH3I*[ndetectors];
     TH3I** centroidResVScluTimeVSslope = new TH3I*[ndetectors];
     
+    TH3I*** uTPCresVScluTimeVSslope_signal;
+    TH3I*** centroidResVScluTimeVSslope_signal;
+    if( !onlyCluster || stripAnalysis){
+        uTPCresVScluTimeVSslope_signal = new TH3I**[ndetectors];
+        centroidResVScluTimeVSslope_signal = new TH3I**[ndetectors];
+    }
+    
     TH1I**** fastestTime = new TH1I***[ndetectors];
     TH1I**** slowestTime = new TH1I***[ndetectors];
     TH1I**** clusterQ = new TH1I***[ndetectors];
@@ -422,6 +464,7 @@ void analysis::investigateCRF(){
     TH2I** resXvsPhi_stereo;
     TH2I*** stereoHitmap;
     TH2I*** stereoClusterCharge;
+    TH2I*** stereoCenter;
     
     TH2I* newInterceptVSscinIntercept; 
     TH2I* newSlopeVSscinSlope;
@@ -1111,9 +1154,9 @@ void analysis::investigateCRF(){
                 
                 for(unsigned int t=0; t<3; t++){
                     
-                    stripTimeVSslope_board[d][b][t] = new TH2I*[2];
+                    stripTimeVSslope_board[d][b][t] = new TH2I*[4];
                     
-                    for(unsigned int m=0; m<2; m++){
+                    for(unsigned int m=0; m<4; m++){
                         
                         histname = "stripTimeVSslope_board";
                         if(nboards.at(d)>1){
@@ -1127,7 +1170,9 @@ void analysis::investigateCRF(){
                         if( t == 0 ) histname += "_baseline";
                         else if( t == 1 ) histname += "_inflection";
                         else if( t == 2 ) histname += "_maximum";
-                        if( m > 0 ) histname += "_maxStrip";
+                        if( m == 1 ) histname += "_maxStrip";
+                        else if( m == 2 ) histname += "_first";
+                        else if( m == 3 ) histname += "_last";
                         stripTimeVSslope_board[d][b][t][m] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 270, 0., 27. );
                         stripTimeVSslope_board[d][b][t][m]->SetXTitle("slope y (average MDTs)");
                         stripTimeVSslope_board[d][b][t][m]->SetYTitle("strip time [25 ns]");  
@@ -1292,6 +1337,43 @@ void analysis::investigateCRF(){
                 uTPCslopeVSslope_nStrips[d][n] = new TH2I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 1000, -5., 5.);
                 uTPCslopeVSslope_nStrips[d][n]->SetXTitle("slope y (average MDTs)");
                 uTPCslopeVSslope_nStrips[d][n]->SetYTitle("1 / uTPC slope [strip / 25 ns]");  
+            }
+            
+        }
+        
+        if( !onlyCluster || stripAnalysis ){
+                
+            uTPCresVScluTimeVSslope_signal[d] = new TH3I*[3];
+            centroidResVScluTimeVSslope_signal[d] = new TH3I*[3];
+                
+            for(unsigned int t=0; t<3; t++){
+            
+                histname = "uTPCresVScluTimeVSslope_signal";
+                if( t == 0 ) histname += "Baseline";
+                else if( t == 1 ) histname += "Inflection";
+                else if( t == 2 ) histname += "Maximum";
+                if(ndetectors>1){ 
+                    histname += "_";
+                    histname += detectornames.at(d);
+                }
+                uTPCresVScluTimeVSslope_signal[d][t] = new TH3I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 290, -2., 27., 1000, -10., 10.);
+                uTPCresVScluTimeVSslope_signal[d][t]->SetXTitle("slope y (average MDTs)");
+                uTPCresVScluTimeVSslope_signal[d][t]->SetYTitle("charge averaged clustertime [ns]"); 
+                uTPCresVScluTimeVSslope_signal[d][t]->SetZTitle("uTPC residual [mm]"); 
+            
+                histname = "centroidResVScluTimeVSslope_signal";
+                if( t == 0 ) histname += "Baseline";
+                else if( t == 1 ) histname += "Inflection";
+                else if( t == 2 ) histname += "Maximum";
+                if(ndetectors>1){ 
+                    histname += "_";
+                    histname += detectornames.at(d);
+                }
+                centroidResVScluTimeVSslope_signal[d][t] = new TH3I(histname, histname, mdtSlopeDivision, -mdtSlopeRange, mdtSlopeRange, 290, -2., 27., 1000, -10., 10.);
+                centroidResVScluTimeVSslope_signal[d][t]->SetXTitle("slope y (average MDTs)");
+                centroidResVScluTimeVSslope_signal[d][t]->SetYTitle("charge averaged clustertime [ns]"); 
+                centroidResVScluTimeVSslope_signal[d][t]->SetZTitle("centroid residual [mm]"); 
+                
             }
             
         }
@@ -1462,7 +1544,7 @@ void analysis::investigateCRF(){
                 histname += "_y";
                 histname += cy;
 //                 effi[d][cx][cy] = new TH1I(histname, histname, 10, 0.5, 10.5);
-                effi[d][cx][cy] = new TH1I(histname, histname, 12, 0.5, 12.5);
+                effi[d][cx][cy] = new TH1I(histname, histname, 20, 0.5, 20.5);
                 effi[d][cx][cy]->SetXTitle("efficiency stage");
                 effi[d][cx][cy]->SetYTitle("counts");  
                 
@@ -1690,6 +1772,8 @@ void analysis::investigateCRF(){
         stereoHitmap = new TH2I**[nstereo];
         stereoClusterCharge = new TH2I**[nstereo];
         
+        stereoCenter = new TH2I**[nstereo];
+        
         for(unsigned int l=0; l<nstereo; l++){
             
             histname = "resVSmdtY_stereo";
@@ -1823,6 +1907,23 @@ void analysis::investigateCRF(){
                 
             }
             
+            stereoCenter[l] = new TH2I*[2];
+    
+            for(unsigned int s=0; s<2; s++){
+        
+                unsigned int nonPrecisionBinning = 80;
+                histname = "stereoCenter";
+                histname += l;
+                if(s == 1 ){ 
+                    histname += "_newX";
+//                     nonPrecisionBinning = 400;
+                }
+                stereoCenter[l][s] = new TH2I( histname, histname, nonPrecisionBinning, -2000., 2000., 220, -1100., 1100.);
+                stereoCenter[l][s]->SetXTitle("x [mm]");
+                stereoCenter[l][s]->SetYTitle("y [mm]");
+                
+            }
+            
         }
       
     }
@@ -1950,8 +2051,12 @@ void analysis::investigateCRF(){
 //         toEnd = toStart + 2;
         cout << " ... debugging ... " << endl;
     }
+    
+    if(stripAnalysis) onlyCluster = false;
         
     initMetaLeafs();
+    
+    if(stripAnalysis) onlyCluster = true;
    
     if(debug) cout << " start : " << startevent << " \t end : " << endevent << endl;
     
@@ -1963,8 +2068,6 @@ void analysis::investigateCRF(){
     cout << " total events " << entries << endl;
 
     for (Long64_t entry=toStart; entry<toEnd; entry++) {
-        
-//         if( unixtime > 1540060000 ) continue;
     
         if( entry%100000 == 0 || debug ) cout << "--------------event_" << entry << "_" << endl;
 
@@ -1973,7 +2076,9 @@ void analysis::investigateCRF(){
         
         cluster->GetEntry(entry);
         CRF->GetEntry(entry);
-        if(!onlyCluster) strip->GetEntry(entry);
+        if( !onlyCluster || stripAnalysis ) strip->GetEntry(entry);
+        
+        if( skipTimes && unixtime > stopUnixtime ) continue;
         
         if(debug && verbose) cout << " interceptX " << interceptX << " \t slopeX " << slopeX << " \t interceptY " << interceptY[0] << " " << interceptY[1] << " \t slopeY " << slopeY[0] << " " << slopeY[1] << endl;
         
@@ -2328,7 +2433,7 @@ void analysis::investigateCRF(){
                                
                 double stereoPosition = 0.5 * stripDif / sin( stereoAngle ) 
                                                                             - deltaZ * 0.5 / tan( stereoAngle ) * tan( theta ) * sin( phi )
-                                                                            - deltaZ * 0.5 * tan( theta ) * cos( phi )
+//                                                                             - deltaZ * 0.5 * tan( theta ) * cos( phi )
                                                                             ;
                 
                 vector<double> recopos = GetStereoPointGlobal( stereoPosition, etaPosition - detstrips.at(d).at(1) * pitch.at(d) * 0.5, d, other, board);
@@ -2351,6 +2456,11 @@ void analysis::investigateCRF(){
                     posDifVSscinX_board[sl][board]->Fill( stereoIntersection.at(0), stripDif);
                     resVSscinX_stereo_board[sl][board]->Fill( stereoIntersection.at(0), stereoRes);
                 }
+                
+//                 if( abs( stripDif/detpitch ) < 1. ){
+                    stereoCenter[sl][0]->Fill( stereoIntersection.at(0) , stereoIntersection.at(1) );
+                    stereoCenter[sl][1]->Fill( recopos.at(0) , stereoIntersection.at(1) , stripDif/detpitch );
+//                 }
                 
                 double resXstereo = recopos.at(0) - stereoIntersection.at(0);
                 allStereoRes += resXstereo * resXstereo;
@@ -2492,6 +2602,7 @@ void analysis::investigateCRF(){
                 numberOfCluster[d]->Fill( foundCluster[d][1], usedCluster[d][1]);
                 effi[d][xpart][ypart]->Fill(1.);
                 if( abs( mdtangle ) > 10. ) effi[d][xpart][ypart]->Fill(11.);
+                else effi[d][xpart][ypart]->Fill(13.);
                 
                 interceptDifVSslopeDif_at[d][0]->Fill( abs( slopeY[0] - slopeY[1] ) , interceptY[0] - interceptY[1] );
                 
@@ -2734,7 +2845,19 @@ void analysis::investigateCRF(){
             
             if(useAngle) centroidResVScluTimeVSslope[d]->Fill( mdtangle, averagetime->at( leading[d][1] ), resMaxQ);
             else centroidResVScluTimeVSslope[d]->Fill( mdtslope, averagetime->at( leading[d][1] ), resMaxQ);
-//             else centroidResVScluTimeVSslope[d]->Fill( sin( mdtangle * TMath::Pi()/180.), averagetime->at( leading[d][1] ), resMaxQ);
+            
+            double chargeTimes[3] = { 0. , 0. , 0. };
+            if(!onlyCluster || stripAnalysis){
+                for(unsigned int t=0; t<3; t++){ 
+                    for(unsigned int s=0; s<size->at(leading[d][1]); s++){
+                        unsigned int stripindex = strips->at(leading[d][1]).at(s); 
+                        chargeTimes[t] += ( turntime->at( stripindex ) + ( (double)t - 1. ) * extrapolationfactor * risetime->at( stripindex ) ) * maxcharge->at( stripindex );
+                    }
+                    chargeTimes[t] /= chargesum->at(leading[d][1]);
+                    centroidResVScluTimeVSslope_signal[d][t]->Fill( precisionTrackSlope, chargeTimes[t], resMaxQ);
+                }
+            }
+            
             
             if( board < nboards.at(d) ){
                 
@@ -2778,9 +2901,10 @@ void analysis::investigateCRF(){
             bool uTPCefficient = false;
             
             if( 
+                true
 //                 abs( resMaxQ ) < effiRange.at(d) &&
 //                 size->at( leading[d][1] ) >= requiredForuTPC && 
-                size->at( leading[d][1] ) >= 3 /*&& */
+//                 size->at( leading[d][1] ) >= 3 /*&& */
 //                 uTPCchi2->at( leading[d][1] ) / uTPCndf->at( leading[d][1] ) < 100. &&
 //                 abs( 1. / uTPCslope->at( leading[d][1] ) ) > 0.05 /*&&*/
 //                 CCCfactor.at(d) * uTPCslope->at( leading[d][1] ) * mdtslope >= 0.
@@ -2861,7 +2985,11 @@ void analysis::investigateCRF(){
                     effi[d][xpart][ypart]->Fill(9.);
                 }
                 
+                if(!onlyCluster || stripAnalysis)
+                    for(unsigned int t=0; t<3; t++) uTPCresVScluTimeVSslope_signal[d][t]->Fill( precisionTrackSlope, chargeTimes[t], uTPCresidual);
+                
                 if(!onlyCluster){
+                    uTPCresVSjitter_fec[d][fec]->Fill( triggerOffset.at(fec) - timeCorrection->at( strips->at( leading[d][1] ).at( size->at( leading[d][1] )/2 ) ), uTPCresidual);
                     double meanClusterTime = 0.;
                     for(unsigned int s=0; s<size->at(leading[d][1]); s++) meanClusterTime += turntime->at( strips->at(leading[d][1]).at(s) );
                     meanClusterTime /= size->at(leading[d][1]);
@@ -2872,8 +3000,6 @@ void analysis::investigateCRF(){
                     if(useAngle) uTPCresVScluTimeVSslope[d]->Fill( mdtangle, averagetime->at( leading[d][1] ), uTPCresidual);
                     else uTPCresVScluTimeVSslope[d]->Fill( mdtslope, averagetime->at( leading[d][1] ), uTPCresidual);
                 }
-                
-                if(!onlyCluster) uTPCresVSjitter_fec[d][fec]->Fill( triggerOffset.at(fec) - timeCorrection->at( strips->at( leading[d][1] ).at( size->at( leading[d][1] )/2 ) ), uTPCresidual);
                 
                 double uTPCdifCentroid = uTPChit.at(1) - hitposition.at(1);
                 
@@ -2980,6 +3106,8 @@ void analysis::investigateCRF(){
                     resNearHits[d]->Fill( intersection.at(0), intersection.at(1), near);
                     inEffiRange[d] = true;
                     effi[d][xpart][ypart]->Fill(4.);
+                    if( abs(mdtangle) > 10. ) effi[d][xpart][ypart]->Fill(15.);
+                    else effi[d][xpart][ypart]->Fill(14.);
                     clusterQvsNstrips_near_board[d][nearboard]->Fill( size->at( nearest ), chargesum->at(nearest));
                     if(useAngle){ 
                         clusterQvsSlope_board[d][nearboard]->Fill( mdtangle,  chargesum->at(nearest));
@@ -2999,8 +3127,11 @@ void analysis::investigateCRF(){
                         unsigned int stripindex = 0;
                         int frontStrip = -1;
 //                         double typeConversionAdd = centroid->at(nearest) - (int)centroid->at(nearest);
+                        double timing;
                         int maxStrip = -1;
                         double maxStripCharge = -1e3;
+                        int firstNlast[3][2] = { { -1 , -1 } , { -1 , -1 } , { -1 , -1 } };
+                        double earlyNlate[3][2] = { { 1e3 , -1e3 } , { 1e3 , -1e3 } , { 1e3 , -1e3 } };
                         for(unsigned int s=0; s<size->at(nearest); s++){
                             stripindex = strips->at(nearest).at(s);
                             risetimeVScharge_near_board[d][nearboard]->Fill( maxcharge->at(stripindex), risetime->at(stripindex) * 25.);
@@ -3019,7 +3150,16 @@ void analysis::investigateCRF(){
                                 chargePositionVSslope_board[d][nearboard][1]->Fill( mdtslope , stripInCluster , maxcharge->at(stripindex) );
                             }
                             for(unsigned int t=0; t<3; t++){
-                                stripTimeVSslope_board[d][nearboard][t][0]->Fill( precisionTrackSlope , ( turntime->at(stripindex) + ( (double)t - 1. ) * extrapolationfactor * risetime->at(stripindex) ) );
+                                timing = ( turntime->at(stripindex) + ( (double)t - 1. ) * extrapolationfactor * risetime->at(stripindex) );
+                                stripTimeVSslope_board[d][nearboard][t][0]->Fill( precisionTrackSlope , timing );
+                                if( timing < earlyNlate[t][0] ){
+                                    earlyNlate[t][0] = timing;
+                                    firstNlast[t][0] = stripindex;
+                                }
+                                if( timing > earlyNlate[t][1] ){
+                                    earlyNlate[t][1] = timing;
+                                    firstNlast[t][1] = stripindex;
+                                }
                             }
                             if( maxcharge->at(stripindex) > maxStripCharge ){
                                 maxStripCharge = maxcharge->at(stripindex);
@@ -3030,7 +3170,9 @@ void analysis::investigateCRF(){
                         }
                         if( maxStrip > -1 ){
                             for(unsigned int t=0; t<3; t++){
-                                stripTimeVSslope_board[d][nearboard][t][1]->Fill( precisionTrackSlope , ( turntime->at(maxStrip) + ( (double)t - 1. ) * extrapolationfactor * risetime->at(maxStrip) ) );
+                                stripTimeVSslope_board[d][nearboard][t][1]->Fill( precisionTrackSlope , turntime->at(maxStrip) + ( (double)t - 1. ) * extrapolationfactor * risetime->at(maxStrip) );
+                                stripTimeVSslope_board[d][nearboard][t][2]->Fill( precisionTrackSlope , earlyNlate[t][0] );
+                                stripTimeVSslope_board[d][nearboard][t][3]->Fill( precisionTrackSlope , earlyNlate[t][1] );
                             }
                         }
                     }
@@ -3139,10 +3281,14 @@ void analysis::investigateCRF(){
             }
             
             effi[d][partition[d][0]][partition[d][1]]->Fill(6.);
+            if( abs(mdtangle) > 10. ) effi[d][partition[d][0]][partition[d][1]]->Fill(16.);
+            else effi[d][partition[d][0]][partition[d][1]]->Fill(17.);
             
             if( inEffiRange[d] ){ 
                 if(debug && verbose) cout << " given " << endl;
                 effi[d][partition[d][0]][partition[d][1]]->Fill(7.);
+                if( abs(mdtangle) > 10. ) effi[d][partition[d][0]][partition[d][1]]->Fill(18.);
+                else effi[d][partition[d][0]][partition[d][1]]->Fill(19.);
             }
             else if(debug && verbose) cout << " NOT given " << endl;
             
@@ -3333,7 +3479,7 @@ void analysis::investigateCRF(){
                 chargeVSclusterStrip_board[d][b]->Write();
                 for(unsigned int h=0; h<2; h++) chargePositionVSslope_board[d][b][h]->Write();
                 for(unsigned int t=0; t<3; t++){ 
-                    for(unsigned int m=0; m<2; m++){ 
+                    for(unsigned int m=0; m<4; m++){ 
                         stripTimeVSslope_board[d][b][t][m]->Write();
                     }
                 }
@@ -3412,6 +3558,17 @@ void analysis::investigateCRF(){
             
             }
         
+        } 
+        
+        if( !onlyCluster || stripAnalysis ){
+            
+            for(unsigned int t=0; t<3; t++){ 
+                
+                uTPCresVScluTimeVSslope_signal[d][t]->Write();
+                centroidResVScluTimeVSslope_signal[d][t]->Write();
+                
+            }
+            
         }
         
         uTPCresVScluTimeVSslope[d]->Write();
@@ -3494,6 +3651,8 @@ void analysis::investigateCRF(){
                 stereoClusterCharge[l][e]->Write();
                 
             }
+            
+            for(unsigned int s=0; s<2; s++) stereoCenter[l][s]->Write();
             
         }
         
