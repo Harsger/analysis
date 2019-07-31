@@ -2623,7 +2623,10 @@ void extensiveAlignment(
 ){
         
     TFile * infile = new TFile( filename , "READ" );
-    TFile * outfile = new TFile( "extensiveAlignment.root" , "RECREATE" );
+    
+    TString outname = filename;
+    outname = outname.ReplaceAll( "align.root" , "extra.root" );
+    TFile * outfile = new TFile( outname , "RECREATE" );
     
     vector<string> detectornames = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
     unsigned int ndetectors = detectornames.size();
@@ -2650,7 +2653,8 @@ void extensiveAlignment(
     for(unsigned int d=0; d<ndetectors; d++){
         
         title = detectornames.at(d);
-        title += "_deltaY_mean";
+        title += "_deltaY";
+//         title += "_deltaY_mean";
         readhist = (TH2I*)infile->Get(title);
                 
         nbins.at(0) = readhist->GetXaxis()->GetNbins();
@@ -3058,7 +3062,13 @@ void clusterProperties( TString filename ){
         { 4 , "maxStripQvsSlope" } ,
         { 5 , "fastestVSslope" } ,
         { 6 , "slowestVSslope" } ,
-        { 7 , "timeDifVSslope" } 
+        { 7 , "timeDifVSslope" } ,
+        { 8 , "stripTimeVSslope" } ,
+        { 9 , "stripTimeVSslope" } ,
+        { 10 , "stripTimeVSslope" } ,
+        { 11 , "stripTimeVSslope" } ,
+        { 12 , "stripTimeVSslope" } ,
+        { 13 , "stripTimeVSslope" } 
     };
     
     vector<unsigned int> nbins { 0, 0};
@@ -3089,6 +3099,12 @@ void clusterProperties( TString filename ){
                     name += "_";
                     name += detectornames.at(d);
                 }
+                if( m.first == 8 ) name += "_baseline";
+                if( m.first == 9 ) name += "_inflection";
+                if( m.first == 10 ) name += "_maximum";
+                if( m.first == 11 ) name += "_baseline_maxStrip";
+                if( m.first == 12 ) name += "_inflection_maxStrip";
+                if( m.first == 13 ) name += "_maximum_maxStrip";
                 
                 readhist = (TH2I*)infile->Get(name);
                 
@@ -3407,20 +3423,38 @@ void comparer(
         { 3 , "sigma" }
     };
     
+    TString addPhrase = "";
+    if( functionTOuse == 0 ) addPhrase += "_baseline";
+    else if( functionTOuse == 1 ) addPhrase += "_inflection";
+    else if( functionTOuse == 2 ) addPhrase += "_maximum";
+    
 //     TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root" , "RECREATE" );
-//     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root";
-//     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/summary/m3_driftScan_nStrips.root";
-//     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_baseline.root";
-//     if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_inflection.root";
-    if( outname == "" ) outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_maximum.root";
+    if( outname == "" ){
+        outname = "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root";
+//         outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/summary/m3_driftScan_nStrips.root";
+//         outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan.root";
+//         outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/firstNlast/slope44/gaus/m3_driftScan.root";
+//         outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/firstNlast/slope44/velocity/m3_driftScan.root";
+        if( addPhrase != "" ){
+            outname = outname.ReplaceAll( ".root" , addPhrase );
+            outname += ".root";
+        }
+    }
+    cout << " writing to : " << outname << endl;
     TFile * outfile = new TFile( outname , "RECREATE" );
+    
+//     addPhrase += "_maxStrip";
+    addPhrase += "_first";
+//     addPhrase += "_last";
     
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/resolution/woCCCtt/uTPCt0/m8_eta3_" , "_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/ctc/timed/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C" , "_fitNclust_inCRF.root" };
-    vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C" , ".root" };
+//     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C" , ".root" };
+//     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/woFirstNlast/sm2_m3_560V_C" , ".root" };
+//     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C" , ".root" };
 
 //     map< string , vector< pair< unsigned int , string > > > measurements;
 //     map< string , map< unsigned int , string > > measurements;
@@ -3446,35 +3480,35 @@ void comparer(
         { 400 , { "400V_CCC30up" , 1. } } 
     };
     
-//     measurements["93:07"] = {
-//         { 520 , { "520V_20190531_2009" , 969. } } ,
-//         { 530 , { "530V_20190531_0832" , 971. } } ,
-//         { 540 , { "540V_20190530_2006" , 972. } } ,
-//         { 550 , { "550V_20190530_0948" , 971. } } ,
-//         { 560 , { "560V_20190529_0815" , 966. } } ,
-//         { 570 , { "570V_20190528_1223" , 958. } } 
-//     };
-//     
-//     measurements["85:15"] = {
-//         { 580 , { "8515_580V_CJet8s_20190520_1827" , 953. } } ,
-//         { 610 , { "8515_610V_CJet8s_20190520_0842" , 948. } } ,
-//         { 615 , { "8515_615V_CJet8s_20190519_0811" , 949. } } ,
-//         { 620 , { "8515_620V_CJet8s_20190516_1150" , 956. } } ,
-//         { 625 , { "8515_625V_CJet8s_20190517_0901" , 952. } } ,
-//         { 630 , { "8515_630V_CJet8s_20190517_2033" , 951. } } ,
-//         { 635 , { "8515_635V_CJet8s_20190518_1213" , 949. } }
-//     };
-//     
-//     measurements["80:20"] = {
-//         { 600 , { "8020_600V_C475V_20190526_2145" , 958. } } ,
-//         { 610 , { "8020_610V_C475V_20190527_0825" , 955. } } ,
-//         { 640 , { "8020_640V_C475V_20190523_1918" , 962. } } ,
-//         { 645 , { "8020_645V_C475V_20190524_0843" , 960. } } ,
-//         { 650 , { "8020_650V_C475V_20190524_2023" , 960. } } ,
-//         { 655 , { "8020_655V_C475V_20190525_1204" , 960. } } , 
-//         { 660 , { "8020_660V_C475V_20190525_1938" , 962. } } ,
-//         { 665 , { "8020_665V_C475V_20190526_1054" , 960. } }
-//     }; 
+    measurements["93:07"] = {
+        { 520 , { "520V_20190531_2009" , 969. } } ,
+        { 530 , { "530V_20190531_0832" , 971. } } ,
+        { 540 , { "540V_20190530_2006" , 972. } } ,
+        { 550 , { "550V_20190530_0948" , 971. } } ,
+        { 560 , { "560V_20190529_0815" , 966. } } ,
+        { 570 , { "570V_20190528_1223" , 958. } } 
+    };
+    
+    measurements["85:15"] = {
+        { 580 , { "8515_580V_CJet8s_20190520_1827" , 953. } } ,
+        { 610 , { "8515_610V_CJet8s_20190520_0842" , 948. } } ,
+        { 615 , { "8515_615V_CJet8s_20190519_0811" , 949. } } ,
+        { 620 , { "8515_620V_CJet8s_20190516_1150" , 956. } } ,
+        { 625 , { "8515_625V_CJet8s_20190517_0901" , 952. } } ,
+        { 630 , { "8515_630V_CJet8s_20190517_2033" , 951. } } ,
+        { 635 , { "8515_635V_CJet8s_20190518_1213" , 949. } }
+    };
+    
+    measurements["80:20"] = {
+        { 600 , { "8020_600V_C475V_20190526_2145" , 958. } } ,
+        { 610 , { "8020_610V_C475V_20190527_0825" , 955. } } ,
+        { 640 , { "8020_640V_C475V_20190523_1918" , 962. } } ,
+        { 645 , { "8020_645V_C475V_20190524_0843" , 960. } } ,
+        { 650 , { "8020_650V_C475V_20190524_2023" , 960. } } ,
+        { 655 , { "8020_655V_C475V_20190525_1204" , 960. } } , 
+        { 660 , { "8020_660V_C475V_20190525_1938" , 962. } } ,
+        { 665 , { "8020_665V_C475V_20190526_1054" , 960. } }
+    }; 
     
     map< string , pair< double , double > > pillarHeights = { // m8 and eta3
         { "eta_out_board6"    , { 120.3 , 1.9 } } ,
@@ -3514,6 +3548,8 @@ void comparer(
     
     double driftGap = 5.; 
     double gapError = 0.1;
+    
+//     driftGap += ( (double)( plotTOuse - 5 ) / 10. );
     
     TString name;
     TString title;
@@ -3610,10 +3646,7 @@ void comparer(
                         name = v.second; 
                         if( b != "" ) name += "_" + b;
                         name += "_" + d;
-//                         name += "_baseline";
-//                         name += "_inflection";
-                        name += "_maximum";
-//                         name += "_maxStrip";
+                        name += addPhrase;
                         readhist = (TH2I*)infile->Get( name );
                         if( readhist == NULL ){
                             cerr << " ERROR: could not read histogram \"" << name << "\"" << endl;
@@ -3634,7 +3667,7 @@ void comparer(
                         step.at(1) = (highEdge.at(1)-lowEdge.at(1))/(double)(nbins.at(1));
                         projection = readhist->ProjectionY();
                         if( v.second == "clusterQvsSlope" ){
-                            projection->GetXaxis()->SetRangeUser( 300. , 5000. );
+//                             projection->GetXaxis()->SetRangeUser( 300. , 5000. );
                         }
                         else 
                         if( v.second == "nStripsVSslope" ){
@@ -3888,11 +3921,13 @@ void comparer(
                                                                                         ) 
                                                 );
                         }
-                        else if( v.second == "stripTimeVSslope" ){
+//                         else if( v.second == "stripTimeVSslope" ){
+                        else if( false ){
                             name = name.ReplaceAll( "VSslope" , "inclinedTracks" );
-                            projection = readhist->ProjectionY( name , 1 , 10 );
-                            name += "_up";
-                            projection->Add( readhist->ProjectionY( name , nbins.at(1)-9 , nbins.at(1) ) );
+                            projection = readhist->ProjectionY( name , 1 , 4 );
+//                             projection = readhist->ProjectionY( name , 1 , 10 );
+//                             name += "_up";
+//                             projection->Add( readhist->ProjectionY( name , nbins.at(1)-9 , nbins.at(1) ) );
                             maximum = projection->GetMaximum();
                             mean = projection->GetMean();
                             meanError = projection->GetMeanError();
@@ -3928,41 +3963,113 @@ void comparer(
                             meanError = function->GetParError( 1 );
                             double rightSlope = function->GetParameter( 2 );
                             double rightError = function->GetParError( 2 );
-                            ampScan[2]->SetPoint( 
-                                                    ampScan[2]->GetN() , 
-                                                    a.first / ( driftGap * centiINmilli ) , 
-//                                                     ( driftGap * microINmilli ) / ( ( mean - MPV + extrapolationfactor * ( leftSlope + rightSlope ) ) * timeBinWidth ) 
-//                                                     ( driftGap * microINmilli ) / ( ( mean - MPV + extrapolationfactor * rightSlope ) * timeBinWidth ) 
-                                                    ( driftGap * microINmilli ) / ( ( mean - MPV ) * timeBinWidth ) 
-                                                );
-                            ampScan[2]->SetPointError( 
-                                                        ampScan[2]->GetN()-1 , 
-                                                        sqrt( 
-                                                                pow( voltageError / ( driftGap * centiINmilli ) , 2 ) + 
-                                                                pow( a.first / pow( driftGap * centiINmilli , 2 ) * gapError * centiINmilli , 2 ) 
-                                                            ) , 
-                                                        sqrt( 
-/////////
-//                                                                 pow( ( gapError * microINmilli ) / ( ( mean - MPV + extrapolationfactor * ( leftSlope + rightSlope ) ) * timeBinWidth ) , 2 ) + 
-//                                                                 pow( ( driftGap * microINmilli ) / pow( ( mean - MPV + extrapolationfactor * ( leftSlope + rightSlope ) ) * timeBinWidth  , 2 ) , 2 ) * 
-//                                                                 pow( timeBinWidth , 2 ) * (
-//                                                                     pow( meanError , 2 ) + pow( MPVerror , 2 ) + 
-//                                                                     pow( extrapolationfactor , 2 ) * ( pow( leftError , 2 ) + pow( rightError , 2 ) )
-//                                                                 )
-//////////
-//                                                                 pow( ( gapError * microINmilli ) / ( ( mean - MPV + extrapolationfactor * rightSlope ) * timeBinWidth ) , 2 ) + 
-//                                                                 pow( ( driftGap * microINmilli ) / pow( ( mean - MPV + extrapolationfactor * rightSlope ) * timeBinWidth  , 2 ) , 2 ) * 
-//                                                                 pow( timeBinWidth , 2 ) * (
-//                                                                     pow( meanError , 2 ) + pow( MPVerror , 2 ) + 
-//                                                                     pow( extrapolationfactor * rightError , 2 ) 
-//                                                                 )
-                                                                pow( ( gapError * microINmilli ) / ( ( mean - MPV ) * timeBinWidth ) , 2 ) + 
-                                                                pow( ( driftGap * microINmilli ) / pow( ( mean - MPV ) * timeBinWidth  , 2 ) , 2 ) * 
-                                                                pow( timeBinWidth , 2 ) * ( pow( meanError , 2 ) + pow( MPVerror , 2 ) )
-                                                            ) 
-                                                     );
-                            ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , rightSlope );
-                            ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , voltageError , rightError );
+//                             ampScan[2]->SetPoint( 
+//                                                     ampScan[2]->GetN() , 
+//                                                     a.first / ( driftGap * centiINmilli ) , 
+// //                                                     ( driftGap * microINmilli ) / ( ( mean - MPV + extrapolationfactor * ( leftSlope + rightSlope ) ) * timeBinWidth ) 
+// //                                                     ( driftGap * microINmilli ) / ( ( mean - MPV + extrapolationfactor * rightSlope ) * timeBinWidth ) 
+// //                                                     ( driftGap * microINmilli ) / ( ( mean - MPV + extrapolationfactor * leftSlope ) * timeBinWidth ) 
+//                                                     ( driftGap * microINmilli ) / ( ( mean - MPV ) * timeBinWidth ) 
+//                                                 );
+//                             ampScan[2]->SetPointError( 
+//                                                         ampScan[2]->GetN()-1 , 
+//                                                         sqrt( 
+//                                                                 pow( voltageError / ( driftGap * centiINmilli ) , 2 ) + 
+//                                                                 pow( a.first / pow( driftGap * centiINmilli , 2 ) * gapError * centiINmilli , 2 ) 
+//                                                             ) , 
+//                                                         sqrt( 
+// /////////
+// //                                                                 pow( ( gapError * microINmilli ) / ( ( mean - MPV + extrapolationfactor * ( leftSlope + rightSlope ) ) * timeBinWidth ) , 2 ) + 
+// //                                                                 pow( ( driftGap * microINmilli ) / pow( ( mean - MPV + extrapolationfactor * ( leftSlope + rightSlope ) ) * timeBinWidth  , 2 ) , 2 ) * 
+// //                                                                 pow( timeBinWidth , 2 ) * (
+// //                                                                     pow( meanError , 2 ) + pow( MPVerror , 2 ) + 
+// //                                                                     pow( extrapolationfactor , 2 ) * ( pow( leftError , 2 ) + pow( rightError , 2 ) )
+// //                                                                 )
+// //////////
+// //                                                                 pow( ( gapError * microINmilli ) / ( ( mean - MPV + extrapolationfactor * rightSlope ) * timeBinWidth ) , 2 ) + 
+// //                                                                 pow( ( driftGap * microINmilli ) / pow( ( mean - MPV + extrapolationfactor * rightSlope ) * timeBinWidth  , 2 ) , 2 ) * 
+// //                                                                 pow( timeBinWidth , 2 ) * (
+// //                                                                     pow( meanError , 2 ) + pow( MPVerror , 2 ) + 
+// //                                                                     pow( extrapolationfactor * rightError , 2 ) 
+// //                                                                 )
+// //////////
+// //                                                                 pow( ( gapError * microINmilli ) / ( ( mean - MPV + extrapolationfactor * leftSlope ) * timeBinWidth ) , 2 ) + 
+// //                                                                 pow( ( driftGap * microINmilli ) / pow( ( mean - MPV + extrapolationfactor * leftSlope ) * timeBinWidth  , 2 ) , 2 ) * 
+// //                                                                 pow( timeBinWidth , 2 ) * (
+// //                                                                     pow( meanError , 2 ) + pow( MPVerror , 2 ) + 
+// //                                                                     pow( extrapolationfactor * leftError , 2 ) 
+// //                                                                 )
+// //////////
+//                                                                 pow( ( gapError * microINmilli ) / ( ( mean - MPV ) * timeBinWidth ) , 2 ) + 
+//                                                                 pow( ( driftGap * microINmilli ) / pow( ( mean - MPV ) * timeBinWidth  , 2 ) , 2 ) * 
+//                                                                 pow( timeBinWidth , 2 ) * ( pow( meanError , 2 ) + pow( MPVerror , 2 ) )
+// //////////
+//                                                             ) 
+//                                                      );
+//                             ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , rightSlope );
+//                             ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , voltageError , rightError );
+// /////////////
+                            ampScan[0]->SetPoint( ampScan[0]->GetN()-1 , a.first , mean );
+                            ampScan[0]->SetPointError( ampScan[0]->GetN()-1 , voltageError , meanError );
+                            ampScan[1]->SetPoint( ampScan[1]->GetN()-1 , a.first , mean + extrapolationfactor * rightSlope );
+                            ampScan[1]->SetPointError( ampScan[1]->GetN()-1 , voltageError , sqrt( pow( meanError , 2 ) + pow( extrapolationfactor * rightError , 2 ) ) );
+                            ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , MPV );
+                            ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , voltageError , MPVerror );
+                            ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , MPV - extrapolationfactor * leftSlope );
+                            ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , voltageError , sqrt( pow( MPVerror , 2 ) + pow( extrapolationfactor * leftError , 2 ) ) );           
+// /////////////
+                        }
+                        else if( v.second == "stripTimeVSslope" ){
+//                         else if( false ){
+                            double gausRange = 3.;
+                            title = name;
+                            title = title.ReplaceAll( "VSslope" , "inclinedTracks" );
+                            projection = readhist->ProjectionY( title , 1 , 4 );
+                            maximum = projection->GetMaximum();
+                            mean = projection->GetMean();
+                            meanError = projection->GetMeanError();
+                            stdv = projection->GetStdDev();
+                            stdvError = projection->GetStdDevError();
+                            function = new TF1( "function" , "gaus" , mean - gausRange * stdv , mean + gausRange * stdv );
+                            function->SetParameters( maximum , mean , stdv );
+                            projection->Fit( function , "RQB" );
+//                             projection->Draw();
+//                             gPad->Modified();
+//                             gPad->Update();
+//                             gPad->WaitPrimitive();
+                            MPV = function->GetParameter(1);
+                            MPVerror = function->GetParError(1);
+                            sigma = function->GetParameter(2);
+                            sigmaError = function->GetParError(2);
+                            ampScan[0]->SetPoint( ampScan[0]->GetN()-1 , a.first , MPV );
+                            ampScan[0]->SetPointError( ampScan[0]->GetN()-1 , voltageError , MPVerror );
+                            ampScan[1]->SetPoint( ampScan[1]->GetN()-1 , a.first , sigma );
+                            ampScan[1]->SetPointError( ampScan[1]->GetN()-1 , voltageError , sigmaError );
+                            name = name.ReplaceAll("first","last");
+                            readhist = (TH2I*)infile->Get( name );
+                            title = name;
+                            title = title.ReplaceAll( "VSslope" , "inclinedTracks" );
+                            projection = readhist->ProjectionY( title , 1 , 4 );
+                            maximum = projection->GetMaximum();
+                            mean = projection->GetMean();
+                            meanError = projection->GetMeanError();
+                            stdv = projection->GetStdDev();
+                            stdvError = projection->GetStdDevError();
+                            function = new TF1( "function" , "gaus" , mean - gausRange * stdv , mean + gausRange * stdv );
+                            function->SetParameters( maximum , mean , stdv );
+                            projection->Fit( function , "RQB" );
+//                             projection->Draw();
+//                             gPad->Modified();
+//                             gPad->Update();
+//                             gPad->WaitPrimitive();
+                            mean = function->GetParameter(1);
+                            meanError = function->GetParError(1);
+                            stdv = function->GetParameter(2);
+                            stdvError = function->GetParError(2);
+                            ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , mean );
+                            ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , voltageError , meanError );
+                            ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , stdv );
+                            ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , voltageError , stdvError );
                         }
                         else{
                             function = new TF1( "function" , "gaus" , mean - 5. * stdv , mean + 5. * stdv );
@@ -4135,6 +4242,46 @@ void gasStudyParameterVariation(){
     
 }
 
+void driftStudyParameterVariation(){
+    
+    TString front = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/firstNlast/slope44/gaus/m3_driftScan_";
+    TString back = ".root";
+    TString name;
+    
+    vector<TString> mode = {
+        "baseline" , "inflection" , "maximum"
+    };
+    
+//     for( auto m : mode ){
+    for(unsigned int m=0; m<mode.size(); m++){
+//             name = front;
+//             name += "_";
+//             name += m;
+//             name += back;
+//             cout << " " << name << endl;
+        cout << " " << mode.at(m) << endl;
+            name = "";
+            comparer( name , m );
+    }
+    
+    
+    
+//     for(unsigned int v=0; v<3; v++){
+//         for(int d=0; d<1; d++){
+//             name = front;
+//             name += "_v";
+//             name += v;
+//             name += "_d";
+//             name += d;
+//             name += back;
+//             cout << " " << name << endl;
+//             name = "";
+//             comparer( name , v , d );
+//         }
+//     }
+    
+}
+
 void stacker(){
     
     TCanvas * can = new TCanvas("can","can");
@@ -4284,6 +4431,26 @@ void overwriter(){
     
 }
 
+void driftScanIterator(){
+    
+    TString start = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C";
+    TString end = ".root";
+    TString filename;
+    
+    for(unsigned int v=100; v<401; v+=50 ){
+        for(unsigned c=0; c<2; c++){
+            filename = start;
+            filename += v;
+            filename += "V_";
+            if( c == 0 ) filename += "woCCC";
+            else filename += "CCC30up";
+            filename += end;
+            clusterProperties( filename );
+        }
+    }
+    
+}
+
 void tester( TString filename="test.dat" , bool bugger=false ){
 //     getNoisy(filename);
 //     effiPerPart();
@@ -4304,14 +4471,16 @@ void tester( TString filename="test.dat" , bool bugger=false ){
 //     getRotation();
 //     tracking();
 //     driftPlots();
-//     extensiveAlignment();
+//     extensiveAlignment(filename);
 //     chargeNstripsPerBoard(filename);
 //     deadNnoisy( filename );
 //     clusterProperties( filename );
 //     overlayer();
     comparer();
 //     gasStudyParameterVariation();
+//     driftStudyParameterVariation();
 //     stacker();
 //     overwriter();
+//     driftScanIterator();
 }
 
