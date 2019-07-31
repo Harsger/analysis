@@ -23,6 +23,9 @@ unsigned int stripsPerAdapter = 512;
 unsigned int stripsPerBoard = 1024;
 
 bool constantMDTresolution = false;
+bool stereoEvaluation = false;
+
+TString addPhrase = "";
 
 void evaluateStripChargeDistribution( TH2I * chargeVSstrip , vector< vector<double> > &maxima );
 
@@ -59,6 +62,8 @@ int main(int argc, char* argv[]){
         " -p\tparameterfile          \t(default:  \"" << parametername << "\")\n"
         " -r\trequired hits          \t(default:  \"" << requiredHits << "\")\n"
         " -f\tfit range              \t(default:  \"" << fitRange << "\")\n"
+        " -a\tadd phrase             \t(default:  \"" << addPhrase << "\")\n"
+        " -S\tstereo evaluation      \t(default:  \"" << stereoEvaluation << "\")\n"
         " -L\tlarge partitions       \t(default:  \"" << largePartitions << "\")\n"
         " -C\tconstant MDT resolution\t(default:  \"" << constantMDTresolution << "\")\n"
         " -D\tenables debugging mode \t(default:  \"" << debug << "\")\n"
@@ -69,7 +74,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "m:i:d:o:p:r:f:LCD")) != -1) {
+    while ((c = getopt (argc, argv, "m:i:d:o:p:r:f:a:SLCD")) != -1) {
         switch (c)
         {
         case 'm':
@@ -92,6 +97,12 @@ int main(int argc, char* argv[]){
             break;
         case 'f':
             fitRange = atof(optarg);
+            break;
+        case 'a':
+            addPhrase = optarg;
+            break;
+        case 'S':
+            stereoEvaluation = true;
             break;
         case 'L':
             largePartitions = true;
@@ -119,6 +130,7 @@ int main(int argc, char* argv[]){
     cout << " parameterfile   : " << parametername << "\n";
     cout << " required hits   : " << requiredHits << "\n";
     cout << " fit range       : " << fitRange << "\n";
+    cout << " add phrase      : " << addPhrase << "\n";
     if(constantMDTresolution) cout << " using constant MDT resolution " << endl;
     if(largePartitions) cout << " using 5 x 7 partitions " << endl;
     if(debug) cout << " debugging mode enabled " << endl;
@@ -166,6 +178,7 @@ int main(int argc, char* argv[]){
         outname += "/";
     }
     outname += inname.Insert(inname.Last('.'),"_"+mode);
+    outname = outname.Insert(outname.Last('.'),addPhrase);
     
     if( !mode.Contains("coarse") && !mode.Contains("fine") ) cout << " results are writen to \"" << outname << "\"" << endl;
     cout << endl;
@@ -877,8 +890,9 @@ void analysis::align(){
         corrections.push_back(vecdodummy);
         vecdodummy.clear();  
         
-        parameterCorrectionFile << fixed << setprecision(4) << fullSampleFit.at(d).at(0) << "\t" << fullSampleFit.at(d).at(2) 
-                        << "\t" << fixed << setprecision(6) << slopex << "\t" << slopey << "\t" << slopez << endl;
+        if( specifier != "difVSslope" )
+            parameterCorrectionFile << fixed << setprecision(4) << fullSampleFit.at(d).at(0) << "\t" << fullSampleFit.at(d).at(2) 
+                            << "\t" << fixed << setprecision(6) << slopex << "\t" << slopey << "\t" << slopez << endl;
         
         for(unsigned int cy=0; cy<divisions.at(d).at(1); cy++){ 
             
@@ -915,8 +929,6 @@ void analysis::align(){
             deltaYvsY->SetPoint( deltaYvsY->GetN(), (cy+0.5)*length.at(d).at(1)/(double)divisions.at(d).at(1), linfit->GetParameter(0));
             deltaYvsY->SetPointError( deltaYvsY->GetN()-1, length.at(d).at(1)/(double)divisions.at(d).at(1)/2., linfit->GetParError(0));
         }   
-        
-        cout << endl;
         
         if( specifier == "resVSslope" && detectornames.at(d) != "MDTs" ){
         
@@ -1107,22 +1119,27 @@ void analysis::align(){
     parameterCorrectionFile.close();
     pitchDeviationFile.close();
     
-    cout << " " << readname << endl;
-    cout << " detector ";
-    if( specifier.Contains("uTPCresVSuTPCslope_pp") )  cout << " \t uTPC -> t0" << endl;
-    else cout << " \t -Y \t \t +Z " << endl;
-    for(unsigned int d=0; d<ndetectors; d++){
-        cout << " " << detectornames.at(d);
-        if( specifier.Contains("uTPCresVSuTPCslope_pp") ) 
-            cout << " \t " << -fullSampleFit.at(d).at(2)/pitch.at(d) << " +/- " << fullSampleFit.at(d).at(3)/pitch.at(d);
-        else{ 
-            for(unsigned int p=0; p<fullSampleFit.at(d).size(); p+=2){
-                cout << " \t " << fullSampleFit.at(d).at(p) << " +/- " << fullSampleFit.at(d).at(p+1);
+    if( specifier != "difVSslope" ){
+    
+        cout << " " << readname << endl;
+        cout << " detector ";
+        if( specifier.Contains("uTPCresVSuTPCslope_pp") )  cout << " \t uTPC -> t0" << endl;
+        else cout << " \t -Y \t \t +Z " << endl;
+        
+        for(unsigned int d=0; d<ndetectors; d++){
+            cout << " " << detectornames.at(d);
+            if( specifier.Contains("uTPCresVSuTPCslope_pp") ) 
+                cout << " \t " << -fullSampleFit.at(d).at(2)/pitch.at(d) << " +/- " << fullSampleFit.at(d).at(3)/pitch.at(d);
+            else{ 
+                for(unsigned int p=0; p<fullSampleFit.at(d).size(); p+=2){
+                    cout << " \t " << fullSampleFit.at(d).at(p) << " +/- " << fullSampleFit.at(d).at(p+1);
+                }
             }
+            cout << endl;
         }
         cout << endl;
+        
     }
-    cout << endl;
     
     if( specifier.Contains("uTPCresVSuTPCslope_pp") ){
         ofstream textfile;
@@ -2241,6 +2258,8 @@ void analysis::properties(){
     
     TH1I * clusterQ;
     TH2D * clusterChargeMPV;
+    map< TString , TH2D* > gainMaps;
+    vector<TString> gainTypes = { "mean" , "stdv" , "sigma" };
     
     TH1I * effi;
     TH2D * hitEffi;
@@ -2251,6 +2270,13 @@ void analysis::properties(){
     TH2D * mulitplicity;
     TH2D * coincidenceEffi;
     TH2D * uTPCefficiency;
+    map< TString ,  TH2D* > trackEfficiencies;
+    
+    map< TString , pair< unsigned int , unsigned int > > effiType;
+    effiType["nearStraight"] = { 13 , 14 };
+    effiType["nearInclined"] = { 11 , 15 };
+    effiType["coincidenceStraight"] = { 17 , 19 };
+    effiType["coincidenceInclined"] = { 16 , 18 };
     
     TGraphErrors * clusterQvsStripQmax;
     TGraphErrors * clusterQvsStripQsaturation;
@@ -2456,6 +2482,38 @@ void analysis::properties(){
         title = "MPV leading cluster charge [ADC channel]";
         clusterChargeMPV->SetZTitle(title);
         
+        gainMaps.clear();
+        
+        for( auto t : gainTypes ){
+            if(ndetectors>1){
+                title = detectornames.at(d);
+                title += "_clusterCharge";
+                title += t;
+            }
+            else{
+                title += "clusterCharge";
+                title += t;
+            }
+            gainMaps[t] = new TH2D(title,title,divisions.at(d).at(0),0.,divisions.at(d).at(0),divisions.at(d).at(1),0.,divisions.at(d).at(1));
+            title = "x [";
+            dodummy = length.at(d).at(0)/(double)(divisions.at(d).at(0));
+            sdummy << fixed << setprecision(1) << dodummy;
+            title += sdummy.str();
+            sdummy.str("");
+            title += " mm]";
+            gainMaps[t]->SetXTitle(title);
+            title = "y [";
+            dodummy = length.at(d).at(1)/(double)(divisions.at(d).at(1));
+            sdummy << fixed << setprecision(1) << dodummy;
+            title += sdummy.str();
+            sdummy.str("");
+            title += " mm]";
+            gainMaps[t]->SetYTitle(title);
+            title = t;
+            title += " cluster charge [ADC channel]";
+            gainMaps[t]->SetZTitle(title);
+        }
+        
         if(ndetectors>1){
             title = detectornames.at(d);
             title += "_hitEffi";
@@ -2642,6 +2700,36 @@ void analysis::properties(){
         title = "uTPC efficiency";
         uTPCefficiency->SetZTitle(title);
         
+        trackEfficiencies.clear();
+        
+        for( auto t : effiType ){
+        
+            if(ndetectors>1){
+                title = detectornames.at(d);
+                title += "_";
+                title += t.first;
+            }
+            else title = t.first;
+            trackEfficiencies[t.first] = new TH2D(title,title,divisions.at(d).at(0),0.,divisions.at(d).at(0),divisions.at(d).at(1),0.,divisions.at(d).at(1));
+            title = "x [";
+            dodummy = length.at(d).at(0)/(double)(divisions.at(d).at(0));
+            sdummy << fixed << setprecision(1) << dodummy;
+            title += sdummy.str();
+            sdummy.str("");
+            title += " mm]";
+            trackEfficiencies[t.first]->SetXTitle(title);
+            title = "y [";
+            dodummy = length.at(d).at(1)/(double)(divisions.at(d).at(1));
+            sdummy << fixed << setprecision(1) << dodummy;
+            title += sdummy.str();
+            sdummy.str("");
+            title += " mm]";
+            trackEfficiencies[t.first]->SetYTitle(title);
+            title = t.first;
+            trackEfficiencies[t.first]->SetZTitle(title);
+            
+        }
+        
 //         efficiencyVScharge = new TGraphErrors*[nboards.at(d)];
         efficiencyVScharge = new TGraphErrors*[divisions.at(d).at(1)];
         
@@ -2710,6 +2798,7 @@ void analysis::properties(){
         unsigned int entriesSum = 0;
         
         bool effiFORuTPC = false;
+        bool effiFORtracks = false;
         
         for(unsigned int cy=0; cy<divisions.at(d).at(1); cy++){
             
@@ -2755,6 +2844,10 @@ void analysis::properties(){
                     slowTimings->SetBinError( cx+1, cy+1, 1e7);
                     clusterChargeMPV->SetBinContent( cx+1, cy+1, -1e6);
                     clusterChargeMPV->SetBinError( cx+1, cy+1, 1e7);
+                    for( auto t : gainTypes ){ 
+                        gainMaps[t]->SetBinContent( cx+1, cy+1, -1e6);
+                        gainMaps[t]->SetBinError( cx+1, cy+1, 1e7);
+                    }
                     hitEffi->SetBinContent( cx+1, cy+1, -1e6);
                     hitEffi->SetBinError( cx+1, cy+1, 1e7);
                     efficiency->SetBinContent( cx+1, cy+1, -1e6);
@@ -2771,6 +2864,10 @@ void analysis::properties(){
                     coincidenceEffi->SetBinError( cx+1, cy+1, 1e7);
                     uTPCefficiency->SetBinContent( cx+1, cy+1, -1e6);
                     uTPCefficiency->SetBinError( cx+1, cy+1, 1e7);
+                    for( auto t : effiType ){ 
+                        trackEfficiencies[t.first]->SetBinContent( cx+1, cy+1, -1e6);
+                        trackEfficiencies[t.first]->SetBinError( cx+1, cy+1, 1e7);
+                    }
                     continue;
                 }
                 
@@ -2867,6 +2964,12 @@ void analysis::properties(){
                     gPad->Update();
                     gPad->WaitPrimitive();
                 }
+                gainMaps["sigma"]->SetBinContent( cx+1, cy+1, landau->GetParameter(2));
+                gainMaps["sigma"]->SetBinError( cx+1, cy+1, landau->GetParError(2));
+                gainMaps["mean"]->SetBinContent( cx+1, cy+1, clusterQ->GetMean() );
+                gainMaps["mean"]->SetBinError( cx+1, cy+1, clusterQ->GetMeanError() );
+                gainMaps["stdv"]->SetBinContent( cx+1, cy+1, clusterQ->GetStdDev() );
+                gainMaps["stdv"]->SetBinError( cx+1, cy+1, clusterQ->GetStdDevError() );
 //                 }
                 
                 title = "effi";
@@ -2916,7 +3019,22 @@ void analysis::properties(){
                 if( effi->GetXaxis()->GetNbins() >= 12 && (double)effi->GetBinContent(11) > 0. ){
                     effiFORuTPC = true;
                     uTPCefficiency->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(12) / (double)effi->GetBinContent(11) );
-                    uTPCefficiency->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(12) ) / (double)effi->GetBinContent(11) * sqrt( 1. + (double)effi->GetBinContent(12) / (double)effi->GetBinContent(12) ) );
+                    uTPCefficiency->SetBinError( cx+1, cy+1, sqrt( (double)effi->GetBinContent(12) ) / (double)effi->GetBinContent(11) * sqrt( 1. + (double)effi->GetBinContent(12) / (double)effi->GetBinContent(11) ) );
+                }
+                if( effi->GetXaxis()->GetNbins() >= 19 ){
+                    effiFORtracks = true;
+                    for( auto t : effiType ){ 
+                        if( effi->GetBinContent(t.second.first) < 1 ){ 
+                            trackEfficiencies[t.first]->SetBinContent( cx+1, cy+1, -1e6);
+                            trackEfficiencies[t.first]->SetBinError( cx+1, cy+1, 1e7);
+                            continue;
+                        }
+                        trackEfficiencies[t.first]->SetBinContent( cx+1, cy+1, (double)effi->GetBinContent(t.second.second) / (double)effi->GetBinContent(t.second.first) );
+                        trackEfficiencies[t.first]->SetBinError( cx+1, cy+1, 
+                                                                            sqrt( (double)effi->GetBinContent(t.second.second) ) / (double)effi->GetBinContent(t.second.first) 
+                                                                            * sqrt( 1. + (double)effi->GetBinContent(t.second.second) / (double)effi->GetBinContent(t.second.first) ) 
+                                                            );
+                    }
                 }
 //                 efficiency->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(3) -  (double)effi->GetBinContent(9) ) / (double)effi->GetBinContent(1) );
 //                 nearEfficiency->SetBinContent( cx+1, cy+1, ( (double)effi->GetBinContent(4) -  (double)effi->GetBinContent(9) ) / (double)effi->GetBinContent(1) );
@@ -3024,6 +3142,7 @@ void analysis::properties(){
         latestTime->Write();
         
         clusterChargeMPV->Write();
+        for( auto t : gainTypes ) gainMaps[t]->Write();
         
         hitEffi->Write();
         efficiency->Write();
@@ -3035,6 +3154,12 @@ void analysis::properties(){
         
         if( effiFORuTPC ) uTPCefficiency->Write();
         else uTPCefficiency->Delete();
+        
+        
+        for( auto t : effiType )
+            if( effiFORtracks ) trackEfficiencies[t.first]->Write();
+            else trackEfficiencies[t.first]->Delete();
+            
         
         if( divisions.at(d).at(1) == 24 ){
             clusterQvsStripQmax->Write();
@@ -3077,7 +3202,8 @@ void analysis::study(){
 //     gSystem->Unlink("resVSclustertimeVSangle.gif");
 //     gSystem->Exec("rm resVSclustertimeVSangle.gif");
     
-    vector<double> dependencies;
+    vector< vector<double> > dependencies;
+    vector<double> vecdodummy;
     
     for(unsigned int d=0; d<ndetectors; d++){
         
@@ -3113,6 +3239,7 @@ void analysis::study(){
             
             if(m==0) title = "uTPCresVScluTimeVSslope";
             else title = "centroidResVScluTimeVSslope";
+            title += addPhrase;
             if(ndetectors>1){ 
                 title += "_";
                 title += detectornames.at(d);
@@ -3138,6 +3265,7 @@ void analysis::study(){
                 
                 if(m==0) title = "uTPCresVScluTimeVSslope";
                 else title = "centroidResVScluTimeVSslope";
+                title += addPhrase;
                 if(ndetectors>1){ 
                     title += "_";
                     title += detectornames.at(d);
@@ -3235,7 +3363,10 @@ void analysis::study(){
                 cluTimeSlopeVSslope->GetXaxis()->SetRangeUser( lowerXlimit , upperXlimit );
                 TF1 * linearfit = new TF1( "linearfit", "[0]+[1]*x", lowerXlimit, upperXlimit);
                 cluTimeSlopeVSslope->Fit( linearfit, "RQB");
-                dependencies.push_back( linearfit->GetParameter(1) );
+                vecdodummy.push_back( abs(linearfit->GetParameter(1)/25.) );
+                vecdodummy.push_back( abs(linearfit->GetParError(1)/25.) );
+                dependencies.push_back( vecdodummy );
+                vecdodummy.clear();
                 cout << " " << detectornames.at(d) << " cluTimeSlopeVSslope fit slope " << linearfit->GetParameter(1) << " +/- " << linearfit->GetParError(1) << " => v_drift " << linearfit->GetParameter(1)/25. << " mm / ns" << endl;
 //                 cluTimeSlopeVSslope->Draw("AP");
 //                 gPad->Modified();
@@ -3252,9 +3383,20 @@ void analysis::study(){
     
     ofstream textfile;
     textfile.open( "ctcDependence.txt" , std::ios_base::app );
-    textfile << readname << endl;
-    for(unsigned int d=0; d<ndetectors; d++)
-        textfile << fixed << setprecision(3) << setw(5) << dependencies.at(d) << endl;
+    textfile << "//" << readname << endl;
+    unsigned int voltage = 300;
+    if( readname.Contains("V_C") ){
+        TString voltName = readname( readname.First("C")+1 , readname.Sizeof() );
+        if( ( (TString)voltName(0) ).IsDigit() ){
+            voltName = voltName( 0 , voltName.First("_") );
+            voltage = atoi( voltName.Data() );
+        }
+    }
+    textfile << "{" << voltage;
+    for(unsigned int d=0; d<ndetectors; d++){
+        textfile << "," << fixed << setprecision(4) << setw(6) << dependencies.at(d).at(0) << "," << dependencies.at(d).at(1);
+    }
+    textfile << "},"<< endl;
     textfile.close();
     
 }
@@ -3520,7 +3662,7 @@ void analysis::coarse(){
     TH2I * readhist;
     TH1D * projection;
     TProfile * profile;
-    TF1 * linear;
+    TF1 * fitfunction;
     
     double defaultResidualWidth = 200.;
     double slopeRange = 0.4;
@@ -3555,25 +3697,25 @@ void analysis::coarse(){
         
         cout << " " << meanPosition << " \t ";
         
-        readhist->Draw("colz");
-        gPad->Modified();
-        gPad->Update();
-        gPad->WaitPrimitive();
+//         readhist->Draw("colz");
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
         
         profile = readhist->ProfileX();
         
-        linear = new TF1( "linear" , "pol1" , -slopeRange , slopeRange );
+        fitfunction = new TF1( "fitfunction" , "pol1" , -slopeRange , slopeRange );
         
-        profile->Fit( linear , "RQB" );
+        profile->Fit( fitfunction , "RQB" );
         
-        double meanHeight = linear->GetParameter(1);
+        double meanHeight = fitfunction->GetParameter(1);
         
         cout << " " << meanHeight << " \t ";
         
-        profile->Draw();
-        gPad->Modified();
-        gPad->Update();
-        gPad->WaitPrimitive();
+//         profile->Draw();
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
         
         title = "resVSscinX_";
         title += specifier;
@@ -3585,10 +3727,10 @@ void analysis::coarse(){
         
         readhist->GetYaxis()->SetRangeUser( maximumPosition-defaultResidualWidth , maximumPosition+defaultResidualWidth );
         
-        readhist->Draw("colz");
-        gPad->Modified();
-        gPad->Update();
-        gPad->WaitPrimitive();
+//         readhist->Draw("colz");
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
         
         projection = readhist->ProjectionX();
         
@@ -3600,65 +3742,188 @@ void analysis::coarse(){
         
         profile = readhist->ProfileX();
         
-        linear = new TF1( "linear" , "pol1" , meanPosition-moduleHalfLength , meanPosition+moduleHalfLength );
+        fitfunction = new TF1( "fitfunction" , "pol1" , meanPosition-moduleHalfLength , meanPosition+moduleHalfLength );
         
-        profile->Fit( linear , "RQB" );
+        profile->Fit( fitfunction , "RQB" );
         
-        double averageRotation = linear->GetParameter(1);
+        double averageRotation = fitfunction->GetParameter(1);
         
         cout << " " << averageRotation << endl;
         
-        profile->Draw();
-        gPad->Modified();
-        gPad->Update();
-        gPad->WaitPrimitive();
+//         profile->Draw();
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
         
     }
     
     unsigned int nstereo = stereoLayer.size()/2;
     double stereoRange = 60.;
     
-    if( nstereo > 0 && specifier.Contains("full") ){
+    cout << " spec " << specifier << endl;
+    
+    if( nstereo > 0 ){
         
         cout << " ***************  +X" << endl;
         
-        for(unsigned int s=0; s<nstereo; s++){
-            
-            cout << " STEREO \t ";
+        if( specifier.Contains("full") ){
         
-            title = "posDifVSscinX";
-            title += s;
-            readhist = (TH2I*)infile->Get(title);
+            for(unsigned int s=0; s<nstereo; s++){
+                
+                cout << " STEREO \t ";
             
-            readhist->GetYaxis()->SetRangeUser( -stereoRange , stereoRange );
+                title = "posDifVSscinX";
+                title += s;
+                readhist = (TH2I*)infile->Get(title);
+                
+                readhist->GetYaxis()->SetRangeUser( -stereoRange , stereoRange );
+            
+                readhist->Draw("colz");
+                gPad->Modified();
+                gPad->Update();
+                gPad->WaitPrimitive();
+            
+                projection = readhist->ProjectionX();
+                
+                double maximumPosition = projection->GetBinCenter( projection->GetMaximumBin() );
+                
+                projection->GetXaxis()->SetRangeUser( maximumPosition-moduleHalfLength , maximumPosition+moduleHalfLength );
+                
+                double meanPosition = projection->GetMean();
+            
+                profile = readhist->ProfileX();
+                
+                fitfunction = new TF1( "fitfunction" , "[1]*(x-[0])" , meanPosition-moduleHalfLength , meanPosition+moduleHalfLength );
+                
+                profile->Fit( fitfunction  , "RQB" );
+                
+                double stereoCenter = fitfunction->GetParameter(0);
+                
+                cout << " " << stereoCenter << endl;
+            
+                profile->Draw();
+                gPad->Modified();
+                gPad->Update();
+                gPad->WaitPrimitive();
+                
+            }
         
-            readhist->Draw("colz");
-            gPad->Modified();
-            gPad->Update();
-            gPad->WaitPrimitive();
-        
-            projection = readhist->ProjectionX();
+        }
+        else if(stereoEvaluation){
             
-            double maximumPosition = projection->GetBinCenter( projection->GetMaximumBin() );
+            ofstream stereoCorrelation( "fine" , std::ios_base::app );
             
-            projection->GetXaxis()->SetRangeUser( maximumPosition-moduleHalfLength , maximumPosition+moduleHalfLength );
+            stereoCorrelation << "//" << readname << endl;
             
-            double meanPosition = projection->GetMean();
-        
-            profile = readhist->ProfileX();
+            for(unsigned int b=0; b<3; b++){
+                
+                title = "posDifVSscinX_stereo0_board";
+                title += b+6;
+//                 title = "resXvsSlopeX_stereo0";
+                readhist = (TH2I*)infile->Get(title);
+                
+                readhist->GetYaxis()->SetRangeUser( -stereoRange , stereoRange );
+//                 readhist->GetYaxis()->SetRangeUser( -100. , 100. );
+                readhist->FitSlicesY();
+                title += "_1";
+                projection = (TH1D*)gDirectory->Get(title);
+                
+                fitfunction = new TF1( "fitfunction" , "[1]*(x-[0])" , position.at(0).at(0)-moduleHalfLength , position.at(0).at(0)+moduleHalfLength );
+//                 fitfunction = new TF1( "fitfunction" , "pol1" , -0.5 , 0.5 );
+                
+                profile = readhist->ProfileX();
+                profile->Fit( fitfunction  , "RQB" );
+                
+//                 projection->Fit( fitfunction  , "RQB" );
+                
+//                 stereoCorrelation << "{" << angle.at(0).at(2) << ",";
+//                 stereoCorrelation << fitfunction->GetParameter(0) << " " << fitfunction->GetParError(0) << "\t";
+//                 stereoCorrelation << fitfunction->GetParameter(1) << "," << fitfunction->GetParError(1) << "}," << endl;
+                
+//                 profile->Draw();
+//                 projection->GetXaxis()->SetRangeUser( position.at(0).at(0)-moduleHalfLength , position.at(0).at(0)+moduleHalfLength );
+//                 projection->GetYaxis()->SetRangeUser( -stereoRange , stereoRange );
+//                 projection->Draw();
+//                 gPad->Modified();
+//                 gPad->Update();
+//                 gPad->WaitPrimitive();
+                
+//                 stereoCorrelation << 
+//                                         fitfunction->GetParameter(0) << "\t" << fitfunction->GetParError(0) << "\t" << 
+//                                         fitfunction->GetParameter(1) << "\t" << fitfunction->GetParError(1) << "\t" <<
+//                                         angleCor.at(2).at(b).at(2) << "\t" << angleCor.at(3).at(b).at(2) << "\t" << 
+//                                         position.at(0).at(0) << endl;
+                
+            }
+                
+//             stereoCorrelation << "{" <<
+//                                     0.5 * ( position.at(2).at(2) + position.at(3).at(2) ) << "," << 
+//                                     angle.at(0).at(2) << "," << 
+//                                     angleCor.at(3).at(1).at(2) - angleCor.at(2).at(1).at(2) << ",";
+//                                     
+//             
+//             title = "resXvsStereoPos_stereo0";
+//             readhist = (TH2I*)infile->Get(title);
+//             readhist->RebinX(2);
+//             readhist->RebinY(5);
+//             readhist->GetYaxis()->SetRangeUser(-100.,100.);
+//             readhist->FitSlicesY();
+//             title += "_1";
+//             projection = (TH1D*)gDirectory->Get(title);
+//             fitfunction = new TF1( "fitfunction" , "pol1" , -500. , 500. );
+//             projection->Fit( fitfunction , "RQB" );
+//             projection->GetYaxis()->SetRangeUser(-100.,100.);
+//             projection->GetXaxis()->SetRangeUser(-500.,500.);
+//             
+//             stereoCorrelation << fitfunction->GetParameter(1) << "," << fitfunction->GetParError(1) << "}," << endl;
             
-            linear = new TF1( "linear" , "[1]*(x-[0])" , meanPosition-moduleHalfLength , meanPosition+moduleHalfLength );
+//             title = "resXvsTheta_stereo0";
+//             readhist = (TH2I*)infile->Get(title);
+//             double meanTheta = readhist->GetMean(1);
+//             double meanErrorTheta = readhist->GetMeanError(1);
+//             double stdvTheta = readhist->GetStdDev(1);
+//             double stdvErrorTheta = readhist->GetStdDevError(1);
+                
+//             stereoCorrelation << 
+//                                     meanTheta << "," << meanErrorTheta << "," <<
+//                                     stdvTheta << "," << stdvErrorTheta << ",";
             
-            profile->Fit( linear  , "RQB" );
+//             title = "resXvsPhi_stereo0";
+//             readhist = (TH2I*)infile->Get(title);
+//             
+//             readhist->RebinX(5);
+//             readhist->RebinY(5);
+//             readhist->GetYaxis()->SetRangeUser(-300.,300.);
+//             
+//             readhist->FitSlicesY();
+//             title += "_1";
+//             projection = (TH1D*)gDirectory->Get(title);
+//             
+//             fitfunction = new TF1( "fitfunction" , " [0] * sin( [1] + [2] * x ) + [3] " , -TMath::Pi() , TMath::Pi() );
+//             fitfunction->SetParameters( -107.5 , 0.1 , 1. , 1. );
+//             projection->Fit( fitfunction , "RQB" );
+//             projection->Draw();
+//             gPad->Modified();
+//             gPad->Update();
+//             gPad->WaitPrimitive();
+                
+//             for(unsigned int p=0; p<fitfunction->GetNpar(); p++) stereoCorrelation << fitfunction->GetParameter(p) << "," << fitfunction->GetParError(p) << ",";
+/*            
+            title = title.ReplaceAll( "_1" , "_2" );
+            projection = (TH1D*)gDirectory->Get(title);
             
-            double stereoCenter = linear->GetParameter(0);
+            fitfunction->SetParameters( 16. , 0.1 , 2. , 40. );
+            projection->Fit( fitfunction , "RQB" );*/
+//             projection->Draw();
+//             gPad->Modified();
+//             gPad->Update();
+//             gPad->WaitPrimitive();
+                
+//             for(unsigned int p=0; p<fitfunction->GetNpar(); p++) stereoCorrelation << fitfunction->GetParameter(p) << "," << fitfunction->GetParError(p) << ",";
             
-            cout << " " << stereoCenter << endl;
-        
-            profile->Draw();
-            gPad->Modified();
-            gPad->Update();
-            gPad->WaitPrimitive();
+//             stereoCorrelation << "}," << endl;
+            
+            stereoCorrelation.close();
             
         }
         
