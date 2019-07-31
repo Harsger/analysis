@@ -20,6 +20,11 @@
 using namespace std;
 
 bool sample = false;
+bool noJitterCorrection = false;
+bool overwriteCorrection = false;
+double correctionFactor = 0.;
+bool overwriteExtrapolation = false;
+double extrapolator = 0.;
 
 int main(int argc, char* argv[]){
     
@@ -43,6 +48,9 @@ int main(int argc, char* argv[]){
         " -p\tname of paramterfile  \t(default:  \"" << params << "\")\n"
         " -s\tstart event number    \t(default:  \"" << start << "\")\n"
         " -e\tend event number      \t(default:  \"" << end << "\"->whole file)\n"
+        " -c\tCCC-factor overwrite  \t(default:  \"" << overwriteCorrection << "\" -> " << correctionFactor << ")\n"
+        " -t\ttiming extrapolation  \t(default:  \"" << overwriteExtrapolation << "\" -> " << extrapolator << ")\n"
+        " -J\tnot use jitter-cor.   \t(default:  \"" << noJitterCorrection << "->jitter will be corrected\n"
         " -O\tonly cluster mode off \t(default:  \"" << only << "\")\n"
         " -F\tfit noise signals     \t(default:  \"" << fitNoise << "\")\n"
         " -S\tsave signal samples   \t(default:  \"" << sample << "\")\n"
@@ -54,7 +62,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "i:d:o:p:s:e:OFSD")) != -1) {
+    while ((c = getopt (argc, argv, "i:d:o:p:s:e:c:t:JOFSD")) != -1) {
         switch (c)
         {
         case 'i':
@@ -74,6 +82,17 @@ int main(int argc, char* argv[]){
             break;
         case 'e':
             end = atoi(optarg);
+            break;
+        case 'c':
+            correctionFactor = atof(optarg);
+            overwriteCorrection = true;
+            break;
+        case 't':
+            extrapolator = atof(optarg);
+            overwriteExtrapolation = true;
+            break;
+        case 'J':
+            noJitterCorrection = true;
             break;
         case 'O':
             only = true;
@@ -157,6 +176,15 @@ int main(int argc, char* argv[]){
     analysis * fNc = new analysis(intree,analysisType);
     
     fNc->setAnaParams( start, end, writename, params, only, bugger);
+    
+    if( overwriteCorrection ){
+        for(unsigned int d=0; d<fNc->ndetectors; d++){
+            if( fNc->CCCfactor.at(d) < 0. ) fNc->CCCfactor.at(d) = -correctionFactor;
+            else fNc->CCCfactor.at(d) = correctionFactor;
+        }
+    }
+    
+    if( overwriteExtrapolation ) fNc->extrapolateTO = extrapolator;
     
     fNc->fitNclust();
     
@@ -573,9 +601,11 @@ void analysis::fitNclust(){
    
     if(debug) cout << " start : " << startevent << " \t end : " << endevent << endl;
     
-//     withTDC = false;
-//     withJitter = false;
-//     withTrigCor = false;
+    if(noJitterCorrection){
+        withTDC = false;
+        withJitter = false;
+        withTrigCor = false;
+    }
     
     bool firstTDCoutput = true;
 
