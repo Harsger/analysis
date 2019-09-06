@@ -554,6 +554,10 @@ void amplificationScan(){
             TString histname = det.first;
             if(useCoincidence) histname += "_coincidenceEffi";
             else histname += "_nearEfficiency";
+//             else histname += "_nearStraight";
+//             else histname += "_nearInclined";
+//             else histname += "_coincidenceStraight";
+//             else histname += "_coincidenceInclined";
             
             TH2D * readhist = (TH2D*)infile->Get(histname);
         
@@ -969,7 +973,7 @@ void effiNchargeMaps(){
                     
                     double content = readhist->GetBinContent( x , y );
                     
-                    if( content < -1e2 ) continue;
+                    if( content < 0. ) continue;
                     
                     if( toExclude( l.first , x , y ) ) continue;
                     
