@@ -76,7 +76,8 @@ def main(argv):
     print " specifier       : "+str(specifier)
     print " notuse          : "+str(notuse)
             
-    if inputfile == '' or commandStart == '':
+    if commandStart == '':     
+    #if inputfile == '' or commandStart == '':
         print usage
         sys.exit(2)
 
@@ -92,12 +93,13 @@ def main(argv):
         
         #readname = str(datapath)+"/"+str(filename)
         readname = filename
-        #fullcommand = str(commandStart) + str(readname) + str(endCommand)
+        fullcommand = str(commandStart) + str(readname) + str(endCommand)
         
-        measurementTag = readname
-        measurementTag = measurementTag.replace( specifier , "" )
+        #measurementTag = readname
+        #measurementTag = measurementTag.replace( inputfile , "" )
+        #measurementTag = measurementTag.replace( specifier , "" )
         
-        fullcommand = str(commandStart) + str(measurementTag) + ".txt -i " + str(readname)
+        #fullcommand = str(commandStart) + str(measurementTag) + ".txt -i " + str(readname)
         
         count += 1
         print " job "+str(count)+" / "+str(numberOfFiles)+" : "+str(fullcommand)
