@@ -7,9 +7,13 @@ FEC 5 triggerOffset 213.2
 
 unix start 1546297200 end 1609455600
 
-fullCoincidence
-
 eta_out    minClusterSize 2 effiRange 5
 eta_in     minClusterSize 2 effiRange 5
 stereo_in  minClusterSize 2 effiRange 5
 stereo_out minClusterSize 2 effiRange 5
+
+
+eta_out FECnAPV 3 12 shift -108.8 
+eta_out FECnAPV 3 13 shift -108.8
+eta_out FECnAPV 3 14 shift  108.8
+eta_out FECnAPV 3 15 shift  108.8
