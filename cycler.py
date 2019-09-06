@@ -140,9 +140,12 @@ def main(argv):
         #command += str(startPhrase)
         
         #command = "/project/etp3/mherrmann/analysis/investigateCRF -o /project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/stereo/correction "
-        command = "/project/etp3/mherrmann/analysis/postprocessor -m fine -S -d /project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/stereo "
+        command = "/project/etp3/mherrmann/analysis/postprocessor -m compare -d /project/etp4/mherrmann/analysis/results/CRF/alignmentComparison "
         #command = "/project/etp3/mherrmann/analysis/investigateCRF -L -o /project/etp4/mherrmann/analysis/results/CRF/m12/multipleEfficiencies  "
         #command = "/project/etp3/mherrmann/analysis/postprocessor -L -m properties -o /project/etp4/mherrmann/analysis/results/CRF/m12/multipleEfficiencies/props  "
+        
+        command += " -o "
+        command += "/project/etp4/mherrmann/analysis/results/CRF/alignmentComparison/compare"
         
         #command += " -d "
         #command += str( dataPath[i][1] )
