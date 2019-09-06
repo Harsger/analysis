@@ -18,6 +18,8 @@
 
 #include "analysis.h"
 
+unsigned int bugCounter = 0;
+
 unsigned int stripsPerAPV = 128;
 unsigned int stripsPerAdapter = 512;
 unsigned int stripsPerBoard = 1024;
@@ -520,7 +522,7 @@ void analysis::align(){
         double sumZweights = 0.;
         unsigned int sumEntries = 0.;
         
-        if(debug) cout << " getting resVSslope per partition " << endl;
+        if(debug) cout << " " << detectornames.at(d) << " => getting " << specifier << " per partition " << endl;
         
         for(unsigned int cx=0; cx<divisions.at(d).at(0); cx++){
             for(unsigned int cy=0; cy<divisions.at(d).at(1); cy++){
@@ -547,6 +549,8 @@ void analysis::align(){
                 unsigned int partitionEntries = resVSslope->GetEntries();
                 
                 if( partitionEntries < requiredHits ){ 
+                    
+                    if(debug) cout << " x" << cx << "-y" << cy << " \t " << partitionEntries << endl;
                     tooFew++;
                 
                     deltaY->SetBinContent(cx+1,cy+1,-1e6);   
@@ -568,13 +572,13 @@ void analysis::align(){
                 
 //                 resVSslope->GetYaxis()->SetRangeUser(-fitrange, fitrange);
                 
-                resVSslope->GetYaxis()->SetRangeUser(-2.,2.);
+                if( !( specifier.Contains("difVSslope") ) ) resVSslope->GetYaxis()->SetRangeUser(-2.,2.);
                 prof = resVSslope->ProfileX();
                 if( specifier.Contains("uTPCresVSuTPCslope_pp") ) linfit = new TF1("linfit","pol1",-3.,3.);
 //                 else linfit = new TF1("linfit","pol1",-0.5,0.5);
 //                 else linfit = new TF1("linfit","pol1",-0.176,0.176);
                 else linfit = new TF1("linfit","pol1",-0.3,0.3);
-                if(debug){ 
+                if( debug &&  !( specifier.Contains("difVSslope") ) ){ 
                     prof->Fit(linfit,"R");
                     prof->Draw();
                     gPad->Modified();
@@ -582,6 +586,26 @@ void analysis::align(){
                     gPad->WaitPrimitive();
                 }
                 else prof->Fit(linfit,"RQ0");
+                
+                if( specifier.Contains("difVSslope") ){
+//                     double differenceRange = 10.;
+                    double differenceRange = 2.;
+                    resVSslope->GetYaxis()->SetRangeUser(-differenceRange,differenceRange);
+                    resVSslope->FitSlicesY();
+                    TString strDummy = title;
+                    strDummy += "_1";
+                    projector = (TH1D*)gDirectory->Get(strDummy);
+                    projector->GetYaxis()->SetRangeUser(-differenceRange,differenceRange);
+                    linfit = new TF1("linfit","pol1",-0.3,0.3);
+                    projector->Fit(linfit,"RQB");
+                    if( debug ){ 
+                        projector->Fit(linfit,"R");
+                        projector->Draw();
+                        gPad->Modified();
+                        gPad->Update();
+                        gPad->WaitPrimitive();
+                    }
+                }
                 
                 if(  
                     linfit->GetParameter(0) < -1e4 || linfit->GetParameter(0) > 1e4 || linfit->GetParameter(0) == 0. ||
@@ -3794,6 +3818,7 @@ void analysis::coarse(){
                 profile = readhist->ProfileX();
                 
                 fitfunction = new TF1( "fitfunction" , "[1]*(x-[0])" , meanPosition-moduleHalfLength , meanPosition+moduleHalfLength );
+                fitfunction->SetParameters( -600. , 0.05 );
                 
                 profile->Fit( fitfunction  , "RQB" );
                 
