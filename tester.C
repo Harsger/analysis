@@ -21,6 +21,7 @@
 #include <sstream>
 #include <string>
 #include <cmath>
+#include <ctime>
 
 // #include "opencv2/highgui/highgui.hpp"
 // #include "opencv2/imgproc/imgproc.hpp"
@@ -158,6 +159,171 @@ bool statsSpecen( vector<double> input , double &mean , double &stdv , unsigned 
     mean /= (double)inputSize;
     
     return true;
+    
+}
+
+vector<double> twoGaus( TH1I * hist, bool bugger , double fitrange , double fitcenter ){
+  
+    vector<double> result;
+
+    double lower = fitcenter - fitrange;
+    double upper = fitcenter + fitrange;
+    
+    hist->GetXaxis()->SetRangeUser( lower , upper );
+    
+    double mean = hist->GetMean();
+    double maximum = hist->GetBinContent(hist->GetMaximumBin());
+    double deviation = hist->GetStdDev();
+
+    double weight[2];
+    double center[2];
+    double sigma[2];
+    double weightErr[2];
+    double centerErr[2];
+    double sigmaErr[2];
+    double chisquare;
+    double ndf;
+    
+    TF1 * doubleGaussian = new TF1( "doubleGaussian" , "[0] * ( exp( -0.5 * ( ( x - [1] ) / [2] )**2 ) + [3] * exp( -0.5 * ( ( x - [1] ) / ( [2] + [4] ) )**2 ) )" , lower , upper );
+    
+    doubleGaussian->SetParameter( 0 , maximum );
+//     doubleGaussian->SetParLimits( 0 , maximum*0.1 , maximum*10. );
+    
+    doubleGaussian->SetParameter( 1 , mean );
+    doubleGaussian->SetParLimits( 1 , lower , upper );
+    
+    doubleGaussian->SetParameter( 2 , deviation );
+    doubleGaussian->SetParLimits( 2 , deviation*0.01 , deviation*2. );
+    
+    doubleGaussian->FixParameter( 3 , 0.1 );
+//     doubleGaussian->SetParameter( 3 , 0.2 );
+//     doubleGaussian->SetParLimits( 3 , 0. , 2. );
+    
+    doubleGaussian->SetParameter( 4 , 0.1*deviation );
+    doubleGaussian->SetParLimits( 4 , 0. , deviation*10. );
+        
+    hist->Fit(doubleGaussian,"RQB");
+    hist->Fit(doubleGaussian,"RQB");
+    hist->Fit(doubleGaussian,"RQ");
+    
+    if(bugger){
+        hist->Draw();
+        gPad->Modified();
+        gPad->Update();
+        gPad->WaitPrimitive();
+    }
+
+    TF1 * singleGaus = new TF1("singleGaus","gaus",lower,upper);
+    
+    singleGaus->SetParameters( 
+                                doubleGaussian->GetParameter(0), 
+                                doubleGaussian->GetParameter(1), 
+                                doubleGaussian->GetParameter(2)
+                             );
+    double integral0 = singleGaus->Integral(lower,upper);
+    
+    singleGaus->SetParameters( 
+                                doubleGaussian->GetParameter(0) * doubleGaussian->GetParameter(3), 
+                                doubleGaussian->GetParameter(1), 
+                                doubleGaussian->GetParameter(2) + doubleGaussian->GetParameter(4)
+                             );
+    double integral1 = singleGaus->Integral(lower,upper);
+
+    result.push_back( integral0                                                         );
+    result.push_back( doubleGaussian->GetParameter(1)                                   );
+    result.push_back( doubleGaussian->GetParameter(2)                                   );
+    result.push_back( integral1                                                         );
+    result.push_back( doubleGaussian->GetParameter(1)                                   );
+    result.push_back( doubleGaussian->GetParameter(2) + doubleGaussian->GetParameter(4) );
+    
+    double gausNormalization = 1. /sqrt( 2 * TMath::Pi() );
+                                        
+    result.push_back( 
+                        sqrt(
+                                pow( doubleGaussian->GetParError(0) * doubleGaussian->GetParameter(2) , 2 ) + 
+                                pow( doubleGaussian->GetParameter(0) * doubleGaussian->GetParError(2) , 2 )
+                            ) * gausNormalization                 
+                    );
+    result.push_back( doubleGaussian->GetParError(1) );
+    result.push_back( doubleGaussian->GetParError(2) );
+    result.push_back( 
+                        sqrt(
+                                pow( ( doubleGaussian->GetParameter(2) + doubleGaussian->GetParameter(4) ) , 2  ) 
+                                * (
+                                    pow( doubleGaussian->GetParError(0) * doubleGaussian->GetParameter(3) , 2 ) + 
+                                    pow( doubleGaussian->GetParameter(0) * doubleGaussian->GetParError(3) , 2 )  
+                                ) +  
+                                pow( ( doubleGaussian->GetParameter(0) * doubleGaussian->GetParameter(3) ) , 2  )
+                                * ( pow( doubleGaussian->GetParError(2) , 2 ) + pow( doubleGaussian->GetParError(4) , 2 ) )
+                            ) * gausNormalization                 
+                    );
+    result.push_back( doubleGaussian->GetParError(1) );
+    result.push_back( sqrt( pow( doubleGaussian->GetParError(2) , 2 ) + pow( doubleGaussian->GetParError(4) , 2 ) ) );
+
+    result.push_back(doubleGaussian->GetChisquare());
+    result.push_back(doubleGaussian->GetNDF());
+
+    doubleGaussian->Delete();
+
+    return result;
+    
+}
+
+void getWidthNratio( 
+    TH2I * distributionVSdependence , 
+    TGraphErrors *& narrow , 
+    TGraphErrors *& broad , 
+    TGraphErrors *& ratio ,
+    double fitrange , 
+    double fitcenter
+){
+    
+    narrow = new TGraphErrors();
+    broad = new TGraphErrors();
+    ratio = new TGraphErrors();
+      
+    unsigned int nbins = distributionVSdependence->GetXaxis()->GetNbins();
+    double lowEdge = distributionVSdependence->GetXaxis()->GetXmin();
+    double highEdge = distributionVSdependence->GetXaxis()->GetXmax();
+    double step = (highEdge-lowEdge)/(double)(nbins);
+    
+    TH1D * projection;
+    TString name;
+    
+    for(unsigned int b=1; b<=nbins; b++){
+        
+        name = distributionVSdependence->GetName();
+        name += "_";
+        name += b;
+        
+        projection = distributionVSdependence->ProjectionY( name , b , b );
+        
+        vector<double> fitresults = twoGaus( (TH1I*)projection , false , fitcenter , fitrange );
+        
+        projection->GetXaxis()->SetRangeUser( fitcenter-fitrange , fitcenter+fitrange );
+        
+//         projection->Draw();
+//         gPad->Modified();
+//         gPad->Update();
+//         gPad->WaitPrimitive();
+        
+        narrow->SetPoint( narrow->GetN() , lowEdge+step*(b-0.5) , fitresults.at(2) );
+        narrow->SetPointError( narrow->GetN()-1 , step*0.5 , fitresults.at(8) );
+        
+        broad->SetPoint( broad->GetN() , lowEdge+step*(b-0.5) , fitresults.at(5) );
+        broad->SetPointError( broad->GetN()-1 , step*0.5 , fitresults.at(11) );
+        
+        ratio->SetPoint( ratio->GetN() , lowEdge+step*(b-0.5) , fitresults.at(3) / fitresults.at(0) );
+        ratio->SetPointError( 
+                                ratio->GetN()-1 , 
+                                step*0.5 , 
+                                sqrt( 
+                                        pow( fitresults.at(9) / fitresults.at(0) , 2 ) + 
+                                        pow( fitresults.at(3) / pow( fitresults.at(0) , 2 ) * fitresults.at(6) , 2 )
+                                )
+                            );
+        
+    }
     
 }
 
@@ -1503,7 +1669,7 @@ void startNendTimes(){
 // 
 // }
 
-void getResMean(TString filename = "/project/etp3/mherrmann/analysis/results/h8m0/run_126_ccc30_tt_fitNclust_track.root", bool bugger=false){
+void getResMean(TString filename = "/project/etp4/mherrmann/analysis/results/H8aug17/run_171_parsedZS_fitNclust_track.root", bool bugger=false){
 
     bool debug = bugger;
 
@@ -1594,7 +1760,7 @@ void getResMean(TString filename = "/project/etp3/mherrmann/analysis/results/h8m
 
 }
 
-void getRotation(TString filename = "/project/etp3/mherrmann/analysis/results/h8m0/run_126_ccc30_tt_fitNclust_track.root", bool bugger=false){
+void getRotation(TString filename = "/project/etp4/mherrmann/analysis/results/H8aug17/run_171_parsedZS_fitNclust_track.root", bool bugger=false){
 
     bool debug = bugger;
 
@@ -2625,10 +2791,12 @@ void extensiveAlignment(
     TFile * infile = new TFile( filename , "READ" );
     
     TString outname = filename;
-    outname = outname.ReplaceAll( "align.root" , "extra.root" );
+    if( filename.Contains("align.root") ) outname = outname.ReplaceAll( "align.root" , "extra.root" );
+    else outname = outname.ReplaceAll( ".root" , "extra.root" );
     TFile * outfile = new TFile( outname , "RECREATE" );
     
     vector<string> detectornames = { "eta_out", "eta_in", "stereo_in", "stereo_out"};
+//     vector<string> detectornames = { "eta_out", "eta_in", "stereo_in", "stereo_out" , "etaBot" , "etaTop" };
     unsigned int ndetectors = detectornames.size();
 //     ndetectors = 1;
     
@@ -2653,8 +2821,8 @@ void extensiveAlignment(
     for(unsigned int d=0; d<ndetectors; d++){
         
         title = detectornames.at(d);
-        title += "_deltaY";
-//         title += "_deltaY_mean";
+//         title += "_deltaY";
+        title += "_deltaY_mean";
         readhist = (TH2I*)infile->Get(title);
                 
         nbins.at(0) = readhist->GetXaxis()->GetNbins();
@@ -2747,7 +2915,7 @@ void extensiveAlignment(
             
         for(unsigned int y=1; y<=nbins.at(1); y++){
             
-            double yPos = lowEdge.at(1) + step.at(1) * ( 0.5 + y );
+            double yPos = lowEdge.at(1) + step.at(1) * ( y - 0.5 );
             
             fitGraph = new TGraphErrors();
             
@@ -2812,7 +2980,8 @@ void extensiveAlignment(
             cout << " #iterrations " << count;
             cout << " \t slope " << quadratic->GetParameter(0) << " \t center " << quadratic->GetParameter(1);
             cout << " \t chi^2 / NDF = " << quadratic->GetChisquare() << " / " << quadratic->GetNDF();
-            cout << " = " << quadratic->GetChisquare() / quadratic->GetNDF() << endl;
+            cout << " = " << quadratic->GetChisquare() / quadratic->GetNDF();
+//             cout << endl;
             
 //             fitGraph->GetYaxis()->SetRangeUser( -0.3 , 0.3 );
             fitGraph->Draw("AP");
@@ -2823,6 +2992,7 @@ void extensiveAlignment(
             double interpolation = rasmaskRange[0] + ( y - 1. ) / (double)( nbins.at(1) - 1 ) * ( rasmaskRange[1] - rasmaskRange[0] );
             
             double evaluateAT = centerPosition - interpolation;
+            cout << " \t left " << evaluateAT;
             double extrapolation = quadratic->Eval( evaluateAT );
             resultGraph->SetPoint( resultGraph->GetN() , yPos , extrapolation );
             double extraError = sqrt( 
@@ -2836,6 +3006,8 @@ void extensiveAlignment(
             resultGraph->SetPointError( resultGraph->GetN()-1 , step.at(1)*0.5 , extraError );
             
             evaluateAT = centerPosition + interpolation;
+            cout << " right " << evaluateAT;
+            
             extrapolation = quadratic->Eval( evaluateAT );
             otherSide->SetPoint( otherSide->GetN() , yPos , extrapolation );
             extraError = sqrt( 
@@ -2847,6 +3019,8 @@ void extensiveAlignment(
                                         pow( quadratic->GetParError(2) , 2 )
                             );
             otherSide->SetPointError( otherSide->GetN()-1 , step.at(1)*0.5 , extraError );
+            
+            cout << endl;
             
         }
         
@@ -3351,10 +3525,10 @@ void estimateFitParameter( TGraphErrors * toBeFitted , unsigned int function , d
 // void comparer(){
 void comparer(
     TString outname = "",
-    unsigned int functionTOuse = 2,
+    unsigned int functionTOuse = 0,
     int plotTOuse = -1,
-    unsigned int valueTOuse = 0,
-    unsigned int numberOfGainFitParameter = 1
+    unsigned int valueTOuse = 2,
+    unsigned int numberOfGainFitParameter = 2
 ){
 
 //     vector< vector<unsigned int> > plotStyle = {
@@ -3412,8 +3586,9 @@ void comparer(
 //         { 2 , "maxStripQvsSlope" } ,
 //         { 3 , "fastestVSslope" } ,
 //         { 4 , "slowestVSslope" } ,
-//         { 5 , "timeDifVSslope" } 
-        { 0 , "stripTimeVSslope" } 
+//         { 5 , "timeDifVSslope" } ,
+        { 5 , "firstTimeDifVSslope" } ,
+//         { 0 , "stripTimeVSslope" } 
     };
     
     map< unsigned int , string> parameter = {
@@ -3424,15 +3599,15 @@ void comparer(
     };
     
     TString addPhrase = "";
-    if( functionTOuse == 0 ) addPhrase += "_baseline";
-    else if( functionTOuse == 1 ) addPhrase += "_inflection";
-    else if( functionTOuse == 2 ) addPhrase += "_maximum";
+//     if( functionTOuse == 0 ) addPhrase += "_baseline";
+//     else if( functionTOuse == 1 ) addPhrase += "_inflection";
+//     else if( functionTOuse == 2 ) addPhrase += "_maximum";
     
 //     TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root" , "RECREATE" );
     if( outname == "" ){
-        outname = "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root";
+//         outname = "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root";
 //         outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/woCCC/summary/m3_driftScan_nStrips.root";
-//         outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan.root";
+        outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan.root";
 //         outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/firstNlast/slope44/gaus/m3_driftScan.root";
 //         outname = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/firstNlast/slope44/velocity/m3_driftScan.root";
         if( addPhrase != "" ){
@@ -3444,7 +3619,7 @@ void comparer(
     TFile * outfile = new TFile( outname , "RECREATE" );
     
 //     addPhrase += "_maxStrip";
-    addPhrase += "_first";
+//     addPhrase += "_first";
 //     addPhrase += "_last";
     
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
@@ -3452,7 +3627,7 @@ void comparer(
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/ctc/timed/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/CCC30up/m8_eta3_" , "_CCC30up_fitNclust_inCRF.root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C" , "_fitNclust_inCRF.root" };
-//     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C" , ".root" };
+    vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C" , ".root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/woFirstNlast/sm2_m3_560V_C" , ".root" };
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/sm2_m3_560V_C" , ".root" };
 
@@ -3480,35 +3655,35 @@ void comparer(
         { 400 , { "400V_CCC30up" , 1. } } 
     };
     
-    measurements["93:07"] = {
-        { 520 , { "520V_20190531_2009" , 969. } } ,
-        { 530 , { "530V_20190531_0832" , 971. } } ,
-        { 540 , { "540V_20190530_2006" , 972. } } ,
-        { 550 , { "550V_20190530_0948" , 971. } } ,
-        { 560 , { "560V_20190529_0815" , 966. } } ,
-        { 570 , { "570V_20190528_1223" , 958. } } 
-    };
-    
-    measurements["85:15"] = {
-        { 580 , { "8515_580V_CJet8s_20190520_1827" , 953. } } ,
-        { 610 , { "8515_610V_CJet8s_20190520_0842" , 948. } } ,
-        { 615 , { "8515_615V_CJet8s_20190519_0811" , 949. } } ,
-        { 620 , { "8515_620V_CJet8s_20190516_1150" , 956. } } ,
-        { 625 , { "8515_625V_CJet8s_20190517_0901" , 952. } } ,
-        { 630 , { "8515_630V_CJet8s_20190517_2033" , 951. } } ,
-        { 635 , { "8515_635V_CJet8s_20190518_1213" , 949. } }
-    };
-    
-    measurements["80:20"] = {
-        { 600 , { "8020_600V_C475V_20190526_2145" , 958. } } ,
-        { 610 , { "8020_610V_C475V_20190527_0825" , 955. } } ,
-        { 640 , { "8020_640V_C475V_20190523_1918" , 962. } } ,
-        { 645 , { "8020_645V_C475V_20190524_0843" , 960. } } ,
-        { 650 , { "8020_650V_C475V_20190524_2023" , 960. } } ,
-        { 655 , { "8020_655V_C475V_20190525_1204" , 960. } } , 
-        { 660 , { "8020_660V_C475V_20190525_1938" , 962. } } ,
-        { 665 , { "8020_665V_C475V_20190526_1054" , 960. } }
-    }; 
+//     measurements["93:07"] = {
+// //         { 520 , { "520V_20190531_2009" , 969. } } ,
+//         { 530 , { "530V_20190531_0832" , 971. } } ,
+//         { 540 , { "540V_20190530_2006" , 972. } } ,
+//         { 550 , { "550V_20190530_0948" , 971. } } ,
+//         { 560 , { "560V_20190529_0815" , 966. } } ,
+//         { 570 , { "570V_20190528_1223" , 958. } } 
+//     };
+//     
+//     measurements["85:15"] = {
+// //         { 580 , { "8515_580V_CJet8s_20190520_1827" , 953. } } ,
+//         { 610 , { "8515_610V_CJet8s_20190520_0842" , 948. } } ,
+//         { 615 , { "8515_615V_CJet8s_20190519_0811" , 949. } } ,
+//         { 620 , { "8515_620V_CJet8s_20190516_1150" , 956. } } ,
+//         { 625 , { "8515_625V_CJet8s_20190517_0901" , 952. } } ,
+//         { 630 , { "8515_630V_CJet8s_20190517_2033" , 951. } } ,
+//         { 635 , { "8515_635V_CJet8s_20190518_1213" , 949. } }
+//     };
+//     
+//     measurements["80:20"] = {
+// //         { 600 , { "8020_600V_C475V_20190526_2145" , 958. } } ,
+// //         { 610 , { "8020_610V_C475V_20190527_0825" , 955. } } ,
+//         { 640 , { "8020_640V_C475V_20190523_1918" , 962. } } ,
+//         { 645 , { "8020_645V_C475V_20190524_0843" , 960. } } ,
+//         { 650 , { "8020_650V_C475V_20190524_2023" , 960. } } ,
+//         { 655 , { "8020_655V_C475V_20190525_1204" , 960. } } , 
+//         { 660 , { "8020_660V_C475V_20190525_1938" , 962. } } ,
+//         { 665 , { "8020_665V_C475V_20190526_1054" , 960. } }
+//     }; 
     
     map< string , pair< double , double > > pillarHeights = { // m8 and eta3
         { "eta_out_board6"    , { 120.3 , 1.9 } } ,
@@ -3539,6 +3714,9 @@ void comparer(
     
     double extrapolationfactor = (log(81)/1.6);
     
+    double averageTemperature = 273. + 21.;
+    double temperatureVariation = 2.;
+    
     double pressureError = 2.;
     double voltageError = 1.;
     
@@ -3549,13 +3727,14 @@ void comparer(
     double driftGap = 5.; 
     double gapError = 0.1;
     
+    double nominalPillarHeight = 120.;
+    
 //     driftGap += ( (double)( plotTOuse - 5 ) / 10. );
     
-    TString name;
-    TString title;
+    TString name , title , strDummy;
     
     map< string , TGraphErrors** > gainVSpillarHeight;
-    map< string , TGraphErrors** > clusterQvsPillarHeight;
+    map< string , map< unsigned int , TGraphErrors** > > clusterQvsPillarHeight;
     map< string , TGraphErrors** > chargeIncreasePerStripVSpillarHeight;
     for( auto m : measurements ){
         gainVSpillarHeight[m.first] = new TGraphErrors*[numberOfGainFitParameter];
@@ -3573,18 +3752,24 @@ void comparer(
             gainVSpillarHeight[m.first][g]->SetTitle(title);
             gainVSpillarHeight[m.first][g]->SetName(title);
         }
-        clusterQvsPillarHeight[m.first] = new TGraphErrors*[parameter.size()];
+//         clusterQvsPillarHeight[m.first] = new TGraphErrors*[m.size()];
         name = "clusterQvsPillarHeight_";
         title = m.first;
         title = title.ReplaceAll( ":" , "" );
         name += title;
-        for( auto p : parameter ){
-            title = name;
-            title += "_";
-            title += p.second;
-            clusterQvsPillarHeight[m.first][p.first] = new TGraphErrors();
-            clusterQvsPillarHeight[m.first][p.first]->SetTitle(title);
-            clusterQvsPillarHeight[m.first][p.first]->SetName(title);
+        for( auto v : m.second ){
+            clusterQvsPillarHeight[m.first][v.first] = new TGraphErrors*[parameter.size()];
+            strDummy = name;
+            strDummy += "_";
+            strDummy += v.first;
+            for( auto p : parameter ){
+                title = strDummy;
+                title += "_";
+                title += p.second;
+                clusterQvsPillarHeight[m.first][v.first][p.first] = new TGraphErrors();
+                clusterQvsPillarHeight[m.first][v.first][p.first]->SetTitle(title);
+                clusterQvsPillarHeight[m.first][v.first][p.first]->SetName(title);
+            }
         }
         chargeIncreasePerStripVSpillarHeight[m.first] = new TGraphErrors*[parameter.size()];
         name = "chargeIncreasePerStripVSpillarHeight_";
@@ -3646,7 +3831,7 @@ void comparer(
                         name = v.second; 
                         if( b != "" ) name += "_" + b;
                         name += "_" + d;
-                        name += addPhrase;
+//                         name += addPhrase;
                         readhist = (TH2I*)infile->Get( name );
                         if( readhist == NULL ){
                             cerr << " ERROR: could not read histogram \"" << name << "\"" << endl;
@@ -3732,14 +3917,17 @@ void comparer(
                             function = new TF1( "function" , "landau" , 300. , 5000. );
                             function->SetParameters( maximum , mean , stdv );
                             projection->Fit( function , "RQB" );
-                            projection->Draw();
-                            gPad->Modified();
-                            gPad->Update();
-                            gPad->WaitPrimitive();
-                            if( function->GetParameter(1) <= 0. ){ 
+                            if( 
+                                function->GetParameter(0) <= 0. ||
+                                function->GetParameter(1) <= 0.
+                            ){ 
                                 infile->Close();
                                 continue;
                             }
+//                             projection->Draw();
+//                             gPad->Modified();
+//                             gPad->Update();
+//                             gPad->WaitPrimitive();
                             MPV = function->GetParameter(1);
                             MPVerror = function->GetParError(1);
                             sigma = function->GetParameter(2);
@@ -3789,20 +3977,20 @@ void comparer(
                                                                                     MPVerror
                                                         );
                             }
-                            if(
-                                ( m.first == "93:07" && a.first == 570 ) ||
-                                ( m.first == "85:15" && a.first == 615 ) ||
-                                ( m.first == "80:20" && a.first == 645 )
-                            ){
-                                clusterQvsPillarHeight[m.first][0]->SetPoint( clusterQvsPillarHeight[m.first][0]->GetN() , pillarHeights[d+"_"+b].first , mean );
-                                clusterQvsPillarHeight[m.first][0]->SetPointError( clusterQvsPillarHeight[m.first][0]->GetN()-1 , pillarHeights[d+"_"+b].second*0.5 , meanError );
-                                clusterQvsPillarHeight[m.first][1]->SetPoint( clusterQvsPillarHeight[m.first][1]->GetN() , pillarHeights[d+"_"+b].second / pillarHeights[d+"_"+b].first , stdv / mean );
-                                clusterQvsPillarHeight[m.first][1]->SetPointError( clusterQvsPillarHeight[m.first][1]->GetN()-1 , 0. , sqrt( pow( stdvError / mean , 2 ) + pow( stdv / mean / mean * meanError , 2 ) ) );
-                                clusterQvsPillarHeight[m.first][2]->SetPoint( clusterQvsPillarHeight[m.first][2]->GetN() , pillarHeights[d+"_"+b].first , MPV );
-                                clusterQvsPillarHeight[m.first][2]->SetPointError( clusterQvsPillarHeight[m.first][2]->GetN()-1 , pillarHeights[d+"_"+b].second*0.5 , MPVerror );
-                                clusterQvsPillarHeight[m.first][3]->SetPoint( clusterQvsPillarHeight[m.first][3]->GetN() , pillarHeights[d+"_"+b].second / pillarHeights[d+"_"+b].first , sigma / MPV );
-                                clusterQvsPillarHeight[m.first][3]->SetPointError( clusterQvsPillarHeight[m.first][3]->GetN()-1 , 0. , sqrt( pow( sigmaError / MPV , 2 ) + pow( sigma / MPV / MPV * MPVerror , 2 ) ) );
-                            }
+//                             if(
+//                                 ( m.first == "93:07" && a.first == 570 ) ||
+//                                 ( m.first == "85:15" && a.first == 615 ) ||
+//                                 ( m.first == "80:20" && a.first == 645 )
+//                             ){
+                                clusterQvsPillarHeight[m.first][a.first][0]->SetPoint( clusterQvsPillarHeight[m.first][a.first][0]->GetN() , pillarHeights[d+"_"+b].first , mean );
+                                clusterQvsPillarHeight[m.first][a.first][0]->SetPointError( clusterQvsPillarHeight[m.first][a.first][0]->GetN()-1 , pillarHeights[d+"_"+b].second*0.5 , meanError );
+                                clusterQvsPillarHeight[m.first][a.first][1]->SetPoint( clusterQvsPillarHeight[m.first][a.first][1]->GetN() , pillarHeights[d+"_"+b].second / pillarHeights[d+"_"+b].first , stdv / mean );
+                                clusterQvsPillarHeight[m.first][a.first][1]->SetPointError( clusterQvsPillarHeight[m.first][a.first][1]->GetN()-1 , 0. , sqrt( pow( stdvError / mean , 2 ) + pow( stdv / mean / mean * meanError , 2 ) ) );
+                                clusterQvsPillarHeight[m.first][a.first][2]->SetPoint( clusterQvsPillarHeight[m.first][a.first][2]->GetN() , pillarHeights[d+"_"+b].first , MPV );
+                                clusterQvsPillarHeight[m.first][a.first][2]->SetPointError( clusterQvsPillarHeight[m.first][a.first][2]->GetN()-1 , pillarHeights[d+"_"+b].second*0.5 , MPVerror );
+                                clusterQvsPillarHeight[m.first][a.first][3]->SetPoint( clusterQvsPillarHeight[m.first][a.first][3]->GetN() , pillarHeights[d+"_"+b].second / pillarHeights[d+"_"+b].first , sigma / MPV );
+                                clusterQvsPillarHeight[m.first][a.first][3]->SetPointError( clusterQvsPillarHeight[m.first][a.first][3]->GetN()-1 , 0. , sqrt( pow( sigmaError / MPV , 2 ) + pow( sigma / MPV / MPV * MPVerror , 2 ) ) );
+//                             }
                         }
                         else if( v.second == "nStripsVSslope" ){
                             name = v.second + "_" + b + "_" + d;
@@ -4071,6 +4259,45 @@ void comparer(
                             ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , stdv );
                             ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , voltageError , stdvError );
                         }
+//                         else if( v.second == "fastestVSslope" ){
+                        else if( v.second == "firstTimeDifVSslope" ){
+                            double gausRange = 1.5;
+                            name = v.second + "_" + b + "_" + d;
+                            name = name.ReplaceAll( "VSslope" , "inclinedTracks" );
+                            projection = readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( -0.55 ) , readhist->GetXaxis()->FindBin( -0.35 ) );
+                            maximum = projection->GetMaximum();
+                            double inclinedMean = projection->GetMean();
+                            double inclinedMeanError = projection->GetMeanError();
+                            double inclinedStdv = projection->GetStdDev();
+                            double inclinedStdvError = projection->GetStdDevError();
+                            function = new TF1( "function" , "gaus" , inclinedMean - gausRange * inclinedStdv , inclinedMean + gausRange * inclinedStdv );
+                            function->SetParameters( maximum , inclinedMean , inclinedStdv );
+                            projection->Fit( function , "RQB" );
+                            ampScan[1]->SetPoint( ampScan[1]->GetN()-1 , a.first , abs(function->GetParameter(2)) );
+                            ampScan[1]->SetPointError( ampScan[1]->GetN()-1 , voltageError , function->GetParError(2) );
+                            projection->Draw();
+                            gPad->Modified();
+                            gPad->Update();
+                            gPad->WaitPrimitive();
+                            name = v.second + "_" + b + "_" + d;
+                            name = name.ReplaceAll( "VSslope" , "straightTracks" );
+                            projection = readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( -0.1 ) , readhist->GetXaxis()->FindBin( 0.1 ) );
+                            double straightMean = projection->GetMean();
+                            double straightMeanError = projection->GetMeanError();
+                            double straightStdv = projection->GetStdDev();
+                            double straightStdvError = projection->GetStdDevError();
+                            function = new TF1( "function" , "gaus" , straightMean - gausRange * straightStdv , straightMean + gausRange * straightStdv );
+                            function->SetParameters( maximum , straightMean , straightStdv );
+                            projection->Fit( function , "RQB" );
+                            projection->Draw();
+                            gPad->Modified();
+                            gPad->Update();
+                            gPad->WaitPrimitive();
+                            ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , straightMean-inclinedMean );
+                            ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , voltageError , sqrt( pow( inclinedMeanError , 2 ) + pow( straightMeanError , 2 ) ) );
+                            ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , abs(function->GetParameter(2)) );
+                            ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , voltageError , function->GetParError(2) );
+                        }
                         else{
                             function = new TF1( "function" , "gaus" , mean - 5. * stdv , mean + 5. * stdv );
                             function->SetParameters( maximum , mean , stdv );
@@ -4135,10 +4362,10 @@ void comparer(
 //                         cout << m.first << " " << function->GetParameter(0) << " \t " << function->GetParameter(1) << endl;
 //                         function->SetNpx(40000);
 //                         function->Draw("P");
-//                         ampScan[valueTOuse]->Draw("AP");
-//                         gPad->Modified();
-//                         gPad->Update();
-//                         gPad->WaitPrimitive();
+                        ampScan[valueTOuse]->Draw("AP");
+                        gPad->Modified();
+                        gPad->Update();
+                        gPad->WaitPrimitive();
                         name = d+"_"+b;
                         if( numberOfGainFitParameter == 1 ){
                             gainVSpillarHeight[m.first][0]->SetPoint( gainVSpillarHeight[m.first][0]->GetN() , pillarHeights[name.Data()].first , function->GetParameter(0) / function->GetParameter(1) );
@@ -4189,8 +4416,117 @@ void comparer(
             else gainVSpillarHeight[m.first][g]->Write();
         }
         for( auto p : parameter ){ 
-            if( clusterQvsPillarHeight[m.first][p.first]->GetN() < 1 ) clusterQvsPillarHeight[m.first][p.first]->Delete();
-            else clusterQvsPillarHeight[m.first][p.first]->Write();
+            TGraphErrors ** gasParameter = new TGraphErrors*[2];
+            title = "gasParameter_";
+            title += m.first;
+            title = title.ReplaceAll( ":" , "" );
+            title += "_";
+            title += p.second;
+            for(unsigned int g=0; g<2; g++){
+                name = title;
+                name += "_";
+                if(g==0) name += "A";
+                if(g==1) name += "B";
+                gasParameter[g] = new TGraphErrors();
+                gasParameter[g]->SetTitle(name);
+                gasParameter[g]->SetName(name);
+            }
+            for( auto v : m.second ){
+                if( clusterQvsPillarHeight[m.first][v.first][p.first]->GetN() < 1 ) clusterQvsPillarHeight[m.first][v.first][p.first]->Delete();
+                else{ 
+                    if( p.first == 1 || p.first == 3  ){ 
+                        clusterQvsPillarHeight[m.first][v.first][p.first]->Delete();
+                        continue;
+                    }
+                    clusterQvsPillarHeight[m.first][v.first][p.first]->Write();
+                    TF1 * fitfunction = new TF1( "fitfunction" , " [0] + [1] * (x - 120 ) " , 110. , 130. );
+                    fitfunction->SetParameters( 800. , -100. );
+                    clusterQvsPillarHeight[m.first][v.first][p.first]->Fit( fitfunction , "RQB" );
+                    clusterQvsPillarHeight[m.first][v.first][p.first]->Draw("AP");
+                    gPad->Modified();
+                    gPad->Update();
+                    gPad->WaitPrimitive();
+                    double intercept = fitfunction->GetParameter(0);
+                    double interceptError = fitfunction->GetParError(0);
+                    double slope = fitfunction->GetParameter(1);
+                    double slopeError = fitfunction->GetParError(1);
+                    double fitA = log(intercept) / 120. * exp( 1. - 120. * slope / intercept / log( intercept ) );
+                    double fitAerror = exp( 1. - 120. * slope / intercept / log( intercept ) ) / intercept *
+                                        sqrt( 
+                                                pow( slopeError , 2 ) +
+                                                pow( 
+                                                        ( 1./120. + slope * ( log( intercept ) + 1. ) / intercept / log( intercept ) ) * interceptError
+                                                , 2 )
+                                            );
+                    double fitB = 1./120. - slope / intercept / log( intercept );
+                    double fitBerror = sqrt(
+                        pow( slopeError / intercept / log( intercept ) , 2 ) +
+                        pow( slope * ( log(intercept) + 1. ) / pow( intercept * log( intercept ) , 2 ) , 2 )
+                    );
+                    double pressure = v.second.second;
+                    double gasA = fitA * averageTemperature / pressure;
+                    double voltage = v.first;
+                    double gasAerror = sqrt( 
+                                                pow( fitAerror * averageTemperature / pressure , 2 ) + 
+                                                pow( fitA * temperatureVariation / pressure , 2 ) + 
+                                                pow( fitA * averageTemperature / pressure / pressure * pressureError , 2 )
+                                           );
+                    double gasB = fitB * averageTemperature * voltage / pressure;
+                    double gasBerror = sqrt( 
+                                                pow( fitBerror * averageTemperature * voltage / pressure , 2 ) + 
+                                                pow( fitB * temperatureVariation * voltage / pressure , 2 ) + 
+                                                pow( fitB * averageTemperature * voltageError / pressure , 2 ) + 
+                                                pow( fitB * averageTemperature * voltage / pressure / pressure * pressureError , 2 )
+                                           );
+//                     double fitA = log(intercept) / nominalPillarHeight * exp( nominalPillarHeight * slope / intercept / log( intercept ) - 1. );
+//                     double fitAerror = exp( nominalPillarHeight * slope / intercept / log( intercept ) - 1. ) / intercept *
+//                                         sqrt( 
+//                                                 pow( slopeError , 2 ) +
+//                                                 pow( 
+//                                                         interceptError / nominalPillarHeight * ( 1. + slope / log(intercept) / intercept * ( 1. + log(intercept) ) )
+//                                                 , 2 )
+//                                             );
+//                     double fitB = slope * pow( nominalPillarHeight , 2 ) / intercept / log( intercept ) - nominalPillarHeight;
+//                     double fitBerror = sqrt(
+//                         pow( slopeError * pow( nominalPillarHeight , 2 ) / intercept / log( intercept ) , 2 ) +
+//                         pow( interceptError * slope * pow( nominalPillarHeight , 2 ) * ( log(intercept) + 1. ) / pow( intercept * log( intercept ) , 2 ) , 2 )
+//                     );
+//                     double pressure = v.second.second;
+//                     double gasA = fitA * averageTemperature / pressure;
+//                     double gasAerror = sqrt( 
+//                                                 pow( fitAerror * averageTemperature / pressure , 2 ) + 
+//                                                 pow( fitA * temperatureVariation / pressure , 2 ) + 
+//                                                 pow( fitA * averageTemperature / pressure / pressure * pressureError , 2 )
+//                                            );
+//                     double voltage = v.first;
+//                     double gasB = fitB * averageTemperature * voltage / pressure;
+//                     double gasBerror = sqrt( 
+//                                                 pow( fitBerror * averageTemperature * voltage / pressure , 2 ) + 
+//                                                 pow( fitB * temperatureVariation * voltage / pressure , 2 ) + 
+//                                                 pow( fitB * averageTemperature * voltageError / pressure , 2 ) + 
+//                                                 pow( fitB * averageTemperature * voltage / pressure / pressure * pressureError , 2 )
+//                                            );
+//                     gasParameter[0]->SetPoint( gasParameter[0]->GetN() , voltage , gasA );
+//                     gasParameter[0]->SetPointError( gasParameter[0]->GetN()-1 , voltageError , gasAerror );
+//                     gasParameter[1]->SetPoint( gasParameter[1]->GetN() , voltage , gasB );
+//                     gasParameter[1]->SetPointError( gasParameter[1]->GetN()-1 , voltageError , gasBerror );
+                    if(
+                        gasA != gasA || gasAerror != gasAerror ||
+                        gasB != gasB || gasBerror != gasBerror 
+                    ){
+                        cout << " NaN found for " << voltage << endl;
+                        continue;
+                    }
+                    gasParameter[0]->SetPoint( gasParameter[0]->GetN() , voltage , gasA );
+                    gasParameter[0]->SetPointError( gasParameter[0]->GetN()-1 , voltageError , gasAerror );
+                    gasParameter[1]->SetPoint( gasParameter[1]->GetN() , voltage , gasB );
+                    gasParameter[1]->SetPointError( gasParameter[1]->GetN()-1 , voltageError , gasBerror );
+                }
+            }
+            for(unsigned int g=0; g<2; g++){
+                if( p.first == 1 || p.first == 3 ) gasParameter[g]->Delete();
+                else gasParameter[g]->Write();
+            }
         }
         for(unsigned int p=0; p<2; p++){ 
             if( chargeIncreasePerStripVSpillarHeight[m.first][p]->GetN() < 1 ) chargeIncreasePerStripVSpillarHeight[m.first][p]->Delete();
@@ -4451,7 +4787,360 @@ void driftScanIterator(){
     
 }
 
-void tester( TString filename="test.dat" , bool bugger=false ){
+void graphDifference(){
+    
+    TFile ** file = new TFile*[2];
+//     file[0] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/forAlignment/m3_560V_0920to30_f04_extra.root" , "READ" );
+//     file[1] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/forAlignment/m3_560V_0920to30_f04_extra.root" , "READ" );
+//     file[0] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/forAlignment/m6_eta3_201901_f00_extra.root" , "READ" );
+//     file[1] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/moduleSix/forAlignment/m6_eta3_201901_f00_extra.root" , "READ" );
+//     file[0] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/forAlignment/m3_e5_201810sum_extra.root" , "READ" );
+//     file[1] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/forAlignment/m3_e5_201810sum_extra.root" , "READ" );
+//     file[0] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m9/forAlignment/M9_all_extra.root" , "READ" );
+//     file[1] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m9/forAlignment/M9_all_extra.root" , "READ" );
+//     file[0] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/forAlignment/m8_eta3_8020_sum_extra.root" , "READ" );
+//     file[1] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/forAlignment/m8_eta3_8020_sum_extra.root" , "READ" );
+//     file[0] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m9/forAlignment/rotEI/M9_extra.root" , "READ" );
+//     file[1] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m9/forAlignment/rotEI/M9_extra.root" , "READ" );
+    file[0] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/forAlignment/new8020/m8_8020_extra.root" , "READ" );
+    file[1] = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/forAlignment/new8020/m8_8020_extra.root" , "READ" );
+    
+    TGraphErrors ** data = new TGraphErrors*[2];
+    data[0] = (TGraphErrors*)file[0]->Get( "extrapolationTOrasmaskVSpositionPerpendicualTOstrips_eta_out_left" );
+    data[1] = (TGraphErrors*)file[1]->Get( "extrapolationTOrasmaskVSpositionPerpendicualTOstrips_eta_in_left" );
+//     data[0] = (TGraphErrors*)file[0]->Get( "extrapolationTOrasmaskVSpositionPerpendicualTOstrips_eta_out_right" );
+//     data[1] = (TGraphErrors*)file[1]->Get( "extrapolationTOrasmaskVSpositionPerpendicualTOstrips_eta_in_right" );
+    
+    unsigned int nPoints[2];
+    nPoints[0] = data[0]->GetN(); 
+    nPoints[1] = data[1]->GetN();
+    
+    unsigned int prime = 0;
+    unsigned int second = 1;
+    bool unequal = false;
+    
+    if( nPoints[0] != nPoints[1] ){
+        unequal = true;
+        cout << " ERROR : unequal-sized graphs " <<endl;
+        if( nPoints[0] < nPoints[1] ){
+            prime = 1;
+            second = 0;
+        }
+        cout << " ERROR : unequal-sized graphs => use # " << nPoints[prime] << " from graph " << prime <<endl;
+//         return;
+    }
+    
+    TFile * output = new TFile( "graphDifference.root" , "UPDATE" );
+    
+//     time_t unixtime = time(nullptr);
+//     TString timeString = "";
+//     timeString += unixtime;
+    
+    output->cd();
+    
+    TGraphErrors * result = new TGraphErrors();
+    TString outname = "m8_new8020_eoMINUSei_extrapolatedResidualLeft";
+    result->SetName( outname );
+    result->SetName( outname );
+    
+    double x[2] , y[2] , a[2] , b[2];
+    
+    for(unsigned int p=0; p<nPoints[prime]; p++){
+        
+        for(unsigned int s=0; s<2; s++){
+            if( p >= nPoints[s] ) continue;
+            data[s]->GetPoint( p , x[s] , y[s] );
+            a[s] =  data[s]->GetErrorX( p );
+            b[s] =  data[s]->GetErrorY( p );
+        }
+        
+        double xTOset = x[prime];
+        
+        if( xTOset != x[second] ){
+            cout << " " << p << " \t " << x[0] << " \t " << x[1];
+//             cout << endl;
+//             continue;
+            bool notFound = true;
+            for(unsigned int s=0; s<nPoints[second]; s++){
+                data[second]->GetPoint( s , x[second] , y[second] );
+                if( x[second] == xTOset ){
+                    a[second] =  data[second]->GetErrorX( p );
+                    b[second] =  data[second]->GetErrorY( p );
+                    notFound = false;
+                    break;
+                }
+            }
+            if( notFound ){
+                cout << " not found => skipped " << endl;
+                continue;
+            }
+            cout << " \t => \t " << x[0] << " \t " << x[1] << endl;
+        }
+        
+        result->SetPoint( result->GetN() , xTOset , y[0] - y[1] );
+        result->SetPointError( 
+                                result->GetN()-1 , 
+                                sqrt( pow( a[0] , 2 ) + pow( a[1] , 2 ) ) , 
+                                sqrt( pow( b[0] , 2 ) + pow( b[1] , 2 ) )
+                              );
+        
+    }
+    
+    file[0]->Close();
+    file[1]->Close();
+    
+    output->cd();
+    
+    result->Write();
+    
+    output->Close();
+    
+}
+
+void widthEvaluation(
+                TString filename , 
+                TString histname
+){
+    
+    TFile * infile = new TFile( filename , "READ" );
+    if( !( infile->IsOpen() ) ){
+        cerr << " ERROR: could not open file \"" << filename << "\" => ABORT " << endl;
+        return;
+    }
+    
+    TH2I * readhist = (TH2I*)infile->Get(histname);
+    if( readhist == NULL ){
+        cerr << " ERROR: could not access histogram \"" << histname << "\" => ABORT " << endl;
+        infile->Close();
+        return;
+    }
+    
+    TString outname = filename;
+    TString add = "_";
+    add += histname;
+    add += "_width.root";
+    outname = outname.ReplaceAll( ".root" , add );
+    
+    TFile * outfile = new TFile( outname , "RECREATE" );
+    
+    TGraphErrors * narrow = new TGraphErrors();
+    TGraphErrors * broad = new TGraphErrors();
+    TGraphErrors * ratio = new TGraphErrors();
+    
+    double mean = readhist->GetMean(2);
+    double stdv = readhist->GetStdDev(2);
+    
+    double range = 3.;
+    
+    int anatype = 1;
+    int vartype = -1;
+    
+    if( anatype < 0 ){
+        readhist->RebinX(10);
+        if( vartype < 0 ){}
+        else
+            readhist->RebinY(3);
+    }
+    else{
+        if( vartype < 0 )
+            readhist->RebinY(5);
+        else
+            readhist->RebinY(2);
+    }
+    
+    if( vartype > -1 ) range = 0.15;
+    
+    getWidthNratio( readhist , narrow , broad , ratio , 0. , range );
+    
+    infile->Close();
+    
+    outfile->cd();
+    
+    outname = histname;
+    outname += "_narrow";
+    narrow->SetTitle( outname );
+    narrow->SetName( outname );
+    narrow->Write();
+    
+    outname = histname;
+    outname += "_broad";
+    broad->SetTitle( outname );
+    broad->SetName( outname );
+    broad->Write();
+    
+    outname = histname;
+    outname += "_ratio";
+    ratio->SetTitle( outname );
+    ratio->SetName( outname );
+    ratio->Write();
+    
+    outfile->Close();
+    
+}
+
+void summary(){
+    
+    TString directory = "/project/etp4/mherrmann/analysis/results/CRF/luminosity";
+    TSystemDirectory mainDir( directory , directory ); 
+    TList * files = mainDir.GetListOfFiles(); 
+    
+    if( !files ){
+        cout << " ERROR : directory \"" << directory << "\" not found => EXIT " << endl;
+        return;
+    }
+    
+    TSystemFile * readfile; 
+    TString filename , pathNname; 
+    TIter next( files );
+    
+    TH2I * readhist;
+        
+    pathNname = directory;
+    pathNname += "/summary.root";
+    TFile * outfile = new TFile( pathNname , "RECREATE" );
+//     TFile * outfile = new TFile( "luminosity.root" , "RECREATE" );
+    
+    vector<TString> histnames = { "slopeVSunixtime" , "hitSlopeVSunixtime" , "coincidenceClusterQvsUnixtime" };
+    unsigned int nHists = histnames.size();
+    
+    TH2I ** histograms = new TH2I*[nHists];
+    vector<bool> toInitialize;
+    for( auto h : histnames ) toInitialize.push_back(true);
+    bool allInitialized = false;
+    
+    while( ( readfile = (TSystemFile*)next() ) ){ 
+        
+        filename = readfile->GetName(); 
+        
+        if( ! filename.EndsWith("_fitNclust_inCRF.root") ) continue;
+        
+        pathNname = directory;
+        pathNname += "/";
+        pathNname += filename;
+        
+        TFile * infile = new TFile( pathNname , "READ" );
+        
+        if( infile->IsZombie() ){
+            cout << " ERROR : can not open file " << pathNname << " => skipped " << endl;
+            continue;
+        }
+        else cout << " " << filename;
+         
+        for(unsigned int h=0; h<nHists; h++){
+            
+            readhist = (TH2I*)infile->Get( histnames.at(h) );
+        
+            if( readhist == NULL ){
+                cout << " ERROR : can not open histogram " << histnames.at(h) << " in file " << filename << " => skipped " << endl;
+                continue;
+            }
+                
+//             readhist->Draw();
+//             gPad->Modified();
+//             gPad->Update();
+//             gPad->WaitPrimitive();
+           
+            if( toInitialize.at(h) ){ 
+                cout << " init" << h;
+                pathNname = histnames.at(h);
+                pathNname += "_sum";
+                histograms[h] = (TH2I*)readhist->Clone(pathNname);
+                toInitialize.at(h) = false;
+            }
+            else{ 
+                cout << " add" << h;
+                histograms[h]->Add( readhist );
+            }
+            
+        }
+        
+        if(allInitialized){ 
+            infile->Close();
+            cout << " closed ";
+        }
+        else{
+            bool areInitialized = true;
+            for( auto b : toInitialize ){
+                if( b ) areInitialized = false;
+            }
+            allInitialized = areInitialized;
+        }
+        
+        cout << endl;
+        
+    }
+         
+    outfile->cd();
+         
+    for(unsigned int h=0; h<nHists; h++) histograms[h]->Write();
+    
+    outfile->Close();
+    
+}
+
+void luminosity(){
+    
+//     TFile * infile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/luminosity/summary.root" , "READ" );
+    TFile * infile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/luminosity/everything.root" , "READ" );
+        
+    if( infile->IsZombie() ){
+        cout << " ERROR : can not open infile " << endl;
+        return;
+    }
+    
+    vector<TString> histnames = { "slopeVSunixtime" , "hitSlopeVSunixtime" , "coincidenceClusterQvsUnixtime" };
+//     vector<double> histnames = { 8. , "hitSlopeVSunixtime" , "coincidenceClusterQvsUnixtime" };
+//     vector<TString> histnames = { "slopeVSunixtime" , "hitSlopeVSunixtime" , "coincidenceClusterQvsUnixtime" };
+    unsigned int nHists = histnames.size();
+//     TH2I * readhist;
+    TH1D * projection;
+    TString name;
+        
+    TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/luminosity/integrated.root" , "RECREATE" );
+    TH1I * writehist;
+         
+    for(unsigned int h=0; h<nHists; h++){
+        
+        name = histnames.at(h);
+//         name += "_sum";
+        TH2I * readhist = (TH2I*)infile->Get( histnames.at(h) );
+        if( readhist == NULL ){
+            cout << " ERROR : can not open histogram " << name << " => skipped " << endl;
+            continue;
+        }
+
+        projection = readhist->ProjectionX();
+      
+        unsigned int nbins = projection->GetXaxis()->GetNbins();
+        double lowEdge = projection->GetXaxis()->GetXmin();
+        double highEdge = projection->GetXaxis()->GetXmax();
+        double step = (highEdge-lowEdge)/(double)(nbins);
+        
+        name = name.ReplaceAll( "_sum" , "" );
+        name += "_integral";
+        writehist = new TH1I( name , name , nbins , lowEdge , highEdge );
+        
+        unsigned long long int integral = 0;
+        
+        for(unsigned int b=1; b<nbins; b++){
+            integral +=  (unsigned int)( projection->GetBinContent(b) );
+            writehist->SetBinContent( b , integral );
+        }
+        
+        outfile->cd();
+        writehist->Write();
+        
+    }
+    
+    infile->Close();
+    outfile->Close();
+    
+}
+
+void tester( 
+                TString filename="test.dat" , 
+                TString histname="correlation" 
+){
 //     getNoisy(filename);
 //     effiPerPart();
 //     chargePerPart();
@@ -4482,5 +5171,9 @@ void tester( TString filename="test.dat" , bool bugger=false ){
 //     stacker();
 //     overwriter();
 //     driftScanIterator();
+//     graphDifference();
+//     widthEvaluation( filename , histname );
+//     summary();
+//     luminosity();
 }
 
