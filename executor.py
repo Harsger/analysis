@@ -38,9 +38,25 @@ def main(argv):
         wholeFile = False
         localAna = False
         defaultAna = False
+
+        slowNodes = [ "05" , "06" , "18" , "22" , "23" , "24" , "26" , "28" , "57" , "58" , "65" , "68" , "73" , "77" , "79" , "86" , "88" , "93" , "94" ]
+    
+        startPhrase = "sbatch "
+        if len(slowNodes) > 0 : 
+            startPhrase += " -x "
+        
+        count = 0
+        for n in slowNodes :
+            count += 1
+            startPhrase += "gar-ws-etp"
+            startPhrase += str(n)
+            if count < len(slowNodes) :
+                startPhrase += ","
+        
+        startPhrase += " /project/etp3/mherrmann/analysis/starter.sh "
         
         filename = ''
-        commandPrefix = "sbatch -x gar-ws-etp05,gar-ws-etp06,gar-ws-etp18,gar-ws-etp22,gar-ws-etp23,gar-ws-etp24,gar-ws-etp26,gar-ws-etp28,gar-ws-etp57,gar-ws-etp65,gar-ws-etp68,gar-ws-etp73,gar-ws-etp79,gar-ws-etp77,gar-ws-etp86,gar-ws-etp88,gar-ws-etp93,gar-ws-etp94 /project/etp3/mherrmann/analysis/starter.sh "
+        commandPrefix = str( startPhrase )
         usage = 'executor.py -c <\'command\'> -i <inputfile> -d <datapath> -t <treename> -s <specifier> -n <notuse> -e <eventsPerJob> -W -L -D'
         
         try:
@@ -123,6 +139,9 @@ def main(argv):
                 countFileJobs = 0
                 if not wholeFile:
                     file = ROOT.TFile.Open(readname)
+                    if file.GetNkeys() < 1 :
+                        print " WARNING : file "+readname+" has no keys => skipped "
+                        continue
                     tree = file.Get(treename)
                     nevents = tree.GetEntries()
                     file.Close
