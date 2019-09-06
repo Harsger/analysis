@@ -693,7 +693,8 @@ void analysis::fitNclust(){
                 " \t detector " << mm_id->at(s) << 
                 " \t coordinate " << mm_readout->at(s) << 
                 " \t FEC " << apv_fecNo->at(s) << 
-                " \t APV " << apv_id->at(s) << endl;
+                " \t APV " << apv_id->at(s) << 
+                " \t timebins " << apv_q->at(s).size() << endl;
             }
         }
         
@@ -854,6 +855,7 @@ void analysis::fitNclust(){
             apv->push_back( capv );
             
             if(withJitter) timeCorrection->push_back( time_correction_ns->at( TDCorder[ cfec ] ) );
+            else timeCorrection->push_back( 0. );
             
             if( 
                 inCluster->at(s) < 0 
@@ -1118,7 +1120,8 @@ void analysis::fitNclust(){
                 last = number->at( clusters.at(c).at(s) );
                 
                 if( dif > stripGap.at(cdet)+1 ){
-                    if(debug && verbose) cout << " split at " << s << " with gap " << dif << endl;
+                    if(debug && verbose) 
+                        cout << " split at " << s << " with gap " << dif << endl;
                     split = true;
                     vector<unsigned int> lowcluster, highcluster;
                     for(unsigned int n=0; n<clusters.at(c).size(); n++){
