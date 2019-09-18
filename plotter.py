@@ -975,17 +975,42 @@ frontNback = [ "" , "" ]
         #[ "" , "4" , "Stereo Out" ] 
     #]
     
-preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/" , "m3_driftScan.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/" , "m3_driftScan_firstTimeGausFit.root" ]
 #frontNback = [ "fastestVSamplificationVoltage" , "" ]
-frontNback = [ "firstTimeDifVSamplificationVoltage" , "" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/" , "m3_driftScan_firstDifference.root" ]
+#frontNback = [ "firstTimeDifVSamplificationVoltage" , "" ]
+    
+#plotTags = [ 
+        #[ "" , "_stdv_eta_in_board8_woCCC"  , "width inclined tracks" ] ,
+        #[ "" , "_sigma_eta_in_board8_woCCC" , "width normal tracks" ] ,
+        #[ "" , "_MPV_eta_in_board8_woCCC"   , "difference mean normal-inclined" ] ,
+        ##[ "" , "_stdv_eta_in_board7_CCC30"  , "width inclined tracks   CCC 30%" ]  ,
+        ##[ "" , "_stdv_eta_in_board7_CCC30"  , "width normal tracks" ] ,
+        ##[ "" , "_MPV_eta_in_board7_CCC30"   , "difference mean normal-inclined" ] 
+    #]
+    
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_first" , ".root" ]
+#frontNback = [ "stripTimeVSamplificationVoltage_stdv_eta_in_board6_" , "" ]
+    
+#plotTags = [ 
+        #[ "Inflection" , "woCCC" , "inflection without CCC" ] ,
+        #[ "Baseline"   , "woCCC" , "baseline"               ] ,
+        #[ "Maximum"    , "woCCC" , "maximum"                ] ,
+        #[ "Inflection" , "CCC30" , "inflection CCC 30%"     ] ,
+        #[ "Baseline"   , "CCC30" , "baseline"               ] ,
+        #[ "Maximum"    , "CCC30" , "maximum"                ] 
+    #]
+    
+preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/ETA3/" , "m3sep/m3sep_precision.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/ETA3/" , "m8may/m8eta3_8020_precision.root" ]
+#preNsuffix = [ "/project/etp4/mherrmann/analysis/results/CRF/ETA3/" , "m6jan/m6eta3jan_precision.root" ]
+frontNback = [ "resMeanVSscinX_board8_" , "" ]
     
 plotTags = [ 
-        [ "" , "_stdv_eta_in_board7_woCCC"  , "width inclined tracks" ] ,
-        [ "" , "_sigma_eta_in_board7_woCCC" , "width straight tracks" ] ,
-        [ "" , "_MPV_eta_in_board7_woCCC"   , "difference mean straight-inclined" ] ,
-        #[ "" , "_stdv_eta_in_board7_CCC30"  , "width inclined tracks   CCC 30%" ]  ,
-        #[ "" , "_stdv_eta_in_board7_CCC30"  , "width straight tracks" ] ,
-        #[ "" , "_MPV_eta_in_board7_CCC30"   , "difference mean straight" ] 
+        [ "" , "eta_out" , "gluing side 2" ] ,
+        [ "" , "eta_in"  , "gluing side 1" ] 
+        #[ "" , "etaBot"  , "gluing side 2" ] ,
+        #[ "" , "etaTop"  , "gluing side 1" ] 
     ]
     
 
@@ -997,11 +1022,11 @@ def main(argv):
     #gStyle.SetOptTitle(1)
     #gStyle.SetPadTopMargin(0.5);
 
-    plotStyle=[
-            [ 20 , 1 ] ,
-            [ 22 , 2 ] ,
-            [ 21 , 4 ]
-        ]
+    #plotStyle=[
+            #[ 20 , 1 ] ,
+            #[ 22 , 2 ] ,
+            #[ 21 , 4 ]
+        #]
 
     #plotStyle=[
             #[ 20 ,  1 ] ,
@@ -1028,6 +1053,11 @@ def main(argv):
             #[ 24 , 28 ] ,
             #[ 22 , 42 ] 
         #]
+
+    plotStyle=[
+            [ 20 ,  1 ] ,
+            [ 24 ,  2 ] 
+        ]
 
     #plotStyle=[
             #[ 20 , 49 ] ,
@@ -1154,8 +1184,8 @@ def main(argv):
         #else:
             #plotter.Add( capture , "P" )
             
-        #plotter.Add( capture , "P" )
-        plotter.Add( capture , "PL" )
+        plotter.Add( capture , "P" )
+        #plotter.Add( capture , "PL" )
         #legend.AddEntry()
     
     #plotter.GetXaxis().SetTitle( "slope reference track" )
@@ -1167,7 +1197,7 @@ def main(argv):
     #plotter.GetXaxis().SetTitle( "amplification voltage [V]" )
     #plotter.GetXaxis().SetRangeUser( 500. , 700. )
     
-    plotter.GetXaxis().SetTitle( "drift voltage [V]" )
+    #plotter.GetXaxis().SetTitle( "drift voltage [V]" )
     #plotter.GetXaxis().SetRangeUser( 0. , 500. )
     
     #plotter.GetXaxis().SetTitle( "drift field [V/cm]" )
@@ -1183,8 +1213,9 @@ def main(argv):
     #plotter.GetXaxis().SetTitle( "cluster charge [ADC channel]" )
     #plotter.GetXaxis().SetRangeUser( 0. , 3000. )
     
-    #plotter.GetXaxis().SetTitle( "position along strips (by scintillators) [mm]" )
-    #plotter.GetXaxis().SetRangeUser( -1000. , 1000. )
+    #plotter.GetXaxis().SetTitle( "position along strips [mm]" )
+    plotter.GetXaxis().SetTitle( "position along strips (by scintillators) [mm]" )
+    plotter.GetXaxis().SetRangeUser( -2000. , 2000. )
     
     #plotter.GetXaxis().SetTitle( "position perpendicular to strips [mm]" )
     #plotter.GetXaxis().SetRangeUser( 0. , 1350. )
@@ -1195,6 +1226,9 @@ def main(argv):
     #plotter.GetYaxis().SetTitle( "drift velocity [#mum/ns]" )
     #plotter.GetYaxis().SetRangeUser( 0. , 60.0 )
     #plotter.GetYaxis().SetRangeUser( 15. , 65.0 )
+    
+    plotter.GetYaxis().SetTitle( "mean residual [mm]" )
+    plotter.GetYaxis().SetRangeUser( -0.3 , 0.3 )
     
     #plotter.GetYaxis().SetTitle( "residual width [mm]" )
     #plotter.GetYaxis().SetRangeUser( 0. , 0.7 )
@@ -1239,8 +1273,9 @@ def main(argv):
     #plotter.GetYaxis().SetTitle( "width strip time spectra [25 ns]" )
     #plotter.GetYaxis().SetRangeUser( 0. , 5. )
     
-    plotter.GetYaxis().SetTitle( "first strip time [25 ns]" )
-    plotter.GetYaxis().SetRangeUser( 0. , 5. )
+    #plotter.GetYaxis().SetTitle( "first strip time [25 ns]" )
+    #plotter.GetYaxis().SetTitle( "time difference first strips eta-layers [25 ns]" )
+    #plotter.GetYaxis().SetRangeUser( 0. , 3. )
     
     #plotter.GetYaxis().SetTitle( "slope residual VS clustertime [mm/25ns]" )
     #plotter.GetYaxis().SetRangeUser( -0.5 , 0.5 )
