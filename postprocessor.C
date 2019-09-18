@@ -2916,7 +2916,8 @@ void analysis::properties(){
 //                 fastTimings->SetBinError( cx+1, cy+1, fitTimeFast.at(7));
                 singleGaus->SetParameters( fastestTime->GetBinContent(fastestTime->GetMaximumBin()), fastestTime->GetMean(), fastestTime->GetRMS());
                 fastestTime->Fit( singleGaus, "RQB");
-                fastTimings->SetBinContent( cx+1, cy+1, singleGaus->GetParameter(1)-singleGaus->GetParameter(2));
+//                 fastTimings->SetBinContent( cx+1, cy+1, singleGaus->GetParameter(1)-singleGaus->GetParameter(2));
+                fastTimings->SetBinContent( cx+1, cy+1, singleGaus->GetParameter(1));
                 fastTimings->SetBinError( cx+1, cy+1, singleGaus->GetParError(1));
                 if(debug){ 
                     fastestTime->Draw();
