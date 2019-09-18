@@ -70,7 +70,8 @@ void changeParameter(
     TString detectorname,
     TString parametername,
     TString value,
-    bool overwrite = false
+    bool overwrite = false,
+    TString combine = "0"
 ){
     
     vector< vector<string> > text = getInput( filename.Data() );
@@ -103,8 +104,15 @@ void changeParameter(
             }
             for(unsigned int c=1; c<text.at(l).size(); c++){
                 if( text.at(headline).at(c) == parametername.Data() ){
-                    cout << " for " << detectorname << " changed " << parametername << " from " << text.at(l).at(c) << " to " << value << endl;
-                    text.at(l).at(c) = value;
+                    double number = atof( value.Data() );
+                    double oldNumber = atof( text.at(l).at(c).c_str() );
+                    double toCombine = atof( combine );
+                    if( toCombine > 0. ) number = oldNumber + number;
+                    else if( toCombine < 0. ) number = oldNumber - number;
+                    TString strDummy = "";
+                    strDummy += number;
+                    text.at(l).at(c) = strDummy.Data();
+                    cout << " for " << detectorname << " changed " << parametername << " from " << oldNumber << " to " << number << endl;
                     changed = true;
                     break;
                 }
