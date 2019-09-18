@@ -3587,8 +3587,8 @@ void comparer(
 //         { 3 , "fastestVSslope" } ,
 //         { 4 , "slowestVSslope" } ,
 //         { 5 , "timeDifVSslope" } ,
-        { 5 , "firstTimeDifVSslope" } ,
-//         { 0 , "stripTimeVSslope" } 
+//         { 5 , "firstTimeDifVSslope" } ,
+        { 0 , "stripTimeVSslope" } 
     };
     
     map< unsigned int , string> parameter = {
@@ -3599,9 +3599,9 @@ void comparer(
     };
     
     TString addPhrase = "";
-//     if( functionTOuse == 0 ) addPhrase += "_baseline";
-//     else if( functionTOuse == 1 ) addPhrase += "_inflection";
-//     else if( functionTOuse == 2 ) addPhrase += "_maximum";
+    if( functionTOuse == 0 ) addPhrase += "_baseline";
+    else if( functionTOuse == 1 ) addPhrase += "_inflection";
+    else if( functionTOuse == 2 ) addPhrase += "_maximum";
     
 //     TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/m8/pulseHeightGasStudy/m8_gasStudy.root" , "RECREATE" );
     if( outname == "" ){
@@ -3619,7 +3619,7 @@ void comparer(
     TFile * outfile = new TFile( outname , "RECREATE" );
     
 //     addPhrase += "_maxStrip";
-//     addPhrase += "_first";
+    addPhrase += "_first";
 //     addPhrase += "_last";
     
 //     vector<string> preNsuffix = { "/project/etp4/mherrmann/analysis/results/CRF/m8/m8_eta3_" , "_fitNclust_inCRF.root" };
@@ -3810,6 +3810,7 @@ void comparer(
         for( auto d : detectornames ){
             for( auto b : boardnames ){
                 for( auto m : measurements ){
+//                     cout << " type " << m.first << endl;
                     ampScan = new TGraphErrors*[parameter.size()];
                     for( auto p : parameter ) ampScan[p.first] = new TGraphErrors();
                     for( auto a : m.second ){
@@ -3831,7 +3832,7 @@ void comparer(
                         name = v.second; 
                         if( b != "" ) name += "_" + b;
                         name += "_" + d;
-//                         name += addPhrase;
+                        name += addPhrase;
                         readhist = (TH2I*)infile->Get( name );
                         if( readhist == NULL ){
                             cerr << " ERROR: could not read histogram \"" << name << "\"" << endl;
@@ -4207,8 +4208,8 @@ void comparer(
                             ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , voltageError , sqrt( pow( MPVerror , 2 ) + pow( extrapolationfactor * leftError , 2 ) ) );           
 // /////////////
                         }
-                        else if( v.second == "stripTimeVSslope" ){
-//                         else if( false ){
+//                         else if( v.second == "stripTimeVSslope" ){
+                        else if( false ){
                             double gausRange = 3.;
                             title = name;
                             title = title.ReplaceAll( "VSslope" , "inclinedTracks" );
@@ -4260,39 +4261,44 @@ void comparer(
                             ampScan[3]->SetPointError( ampScan[3]->GetN()-1 , voltageError , stdvError );
                         }
 //                         else if( v.second == "fastestVSslope" ){
-                        else if( v.second == "firstTimeDifVSslope" ){
-                            double gausRange = 1.5;
+//                         else if( v.second == "firstTimeDifVSslope" ){
+                        else if( v.second == "stripTimeVSslope" ){
+                            double gausRange = 3.;
                             name = v.second + "_" + b + "_" + d;
                             name = name.ReplaceAll( "VSslope" , "inclinedTracks" );
                             projection = readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( -0.55 ) , readhist->GetXaxis()->FindBin( -0.35 ) );
                             maximum = projection->GetMaximum();
+                            double maxPos = projection->GetBinCenter( projection->GetMaximumBin() );
                             double inclinedMean = projection->GetMean();
                             double inclinedMeanError = projection->GetMeanError();
                             double inclinedStdv = projection->GetStdDev();
                             double inclinedStdvError = projection->GetStdDevError();
-                            function = new TF1( "function" , "gaus" , inclinedMean - gausRange * inclinedStdv , inclinedMean + gausRange * inclinedStdv );
+//                             function = new TF1( "function" , "gaus" , inclinedMean - gausRange * inclinedStdv , inclinedMean + gausRange * inclinedStdv );
+                            function = new TF1( "function" , "gaus" , maxPos - gausRange  , maxPos + gausRange );
                             function->SetParameters( maximum , inclinedMean , inclinedStdv );
                             projection->Fit( function , "RQB" );
                             ampScan[1]->SetPoint( ampScan[1]->GetN()-1 , a.first , abs(function->GetParameter(2)) );
                             ampScan[1]->SetPointError( ampScan[1]->GetN()-1 , voltageError , function->GetParError(2) );
-                            projection->Draw();
-                            gPad->Modified();
-                            gPad->Update();
-                            gPad->WaitPrimitive();
+//                             projection->Draw();
+//                             gPad->Modified();
+//                             gPad->Update();
+//                             gPad->WaitPrimitive();
                             name = v.second + "_" + b + "_" + d;
                             name = name.ReplaceAll( "VSslope" , "straightTracks" );
                             projection = readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( -0.1 ) , readhist->GetXaxis()->FindBin( 0.1 ) );
+                            maxPos = projection->GetBinCenter( projection->GetMaximumBin() );
                             double straightMean = projection->GetMean();
                             double straightMeanError = projection->GetMeanError();
                             double straightStdv = projection->GetStdDev();
                             double straightStdvError = projection->GetStdDevError();
-                            function = new TF1( "function" , "gaus" , straightMean - gausRange * straightStdv , straightMean + gausRange * straightStdv );
+//                             function = new TF1( "function" , "gaus" , straightMean - gausRange * straightStdv , straightMean + gausRange * straightStdv );
+                            function = new TF1( "function" , "gaus" , maxPos - gausRange  , maxPos + gausRange );
                             function->SetParameters( maximum , straightMean , straightStdv );
                             projection->Fit( function , "RQB" );
-                            projection->Draw();
-                            gPad->Modified();
-                            gPad->Update();
-                            gPad->WaitPrimitive();
+//                             projection->Draw();
+//                             gPad->Modified();
+//                             gPad->Update();
+//                             gPad->WaitPrimitive();
                             ampScan[2]->SetPoint( ampScan[2]->GetN() , a.first , straightMean-inclinedMean );
                             ampScan[2]->SetPointError( ampScan[2]->GetN()-1 , voltageError , sqrt( pow( inclinedMeanError , 2 ) + pow( straightMeanError , 2 ) ) );
                             ampScan[3]->SetPoint( ampScan[3]->GetN() , a.first , abs(function->GetParameter(2)) );
@@ -4580,7 +4586,8 @@ void gasStudyParameterVariation(){
 
 void driftStudyParameterVariation(){
     
-    TString front = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/firstNlast/slope44/gaus/m3_driftScan_";
+//     TString front = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/firstNlast/slope44/gaus/m3_driftScan_";
+    TString front = "/project/etp4/mherrmann/analysis/results/CRF/moduleThree/voltageScan/reanalyzed/m3_driftScan_";
     TString back = ".root";
     TString name;
     
@@ -5165,9 +5172,9 @@ void tester(
 //     deadNnoisy( filename );
 //     clusterProperties( filename );
 //     overlayer();
-    comparer();
+//     comparer();
 //     gasStudyParameterVariation();
-//     driftStudyParameterVariation();
+    driftStudyParameterVariation();
 //     stacker();
 //     overwriter();
 //     driftScanIterator();
