@@ -3198,6 +3198,7 @@ void analysis::investigateCRF(){
             double nearPosition = -1e6;
             int nearest = -1;
             int nearboard = -1;
+            int nearFEC = -1;
             
             if(debug && verbose) cout << " secondary cluster " << endl;
             
@@ -3254,6 +3255,7 @@ void analysis::investigateCRF(){
                     nearPosition = cposition.at(1);
                     nearest = c;
                     nearboard = cboard;
+                    nearFEC = cfec;
                 }
                 
             }
@@ -3314,7 +3316,8 @@ void analysis::investigateCRF(){
                             }
                             for(unsigned int t=0; t<3; t++){
                                 timing = ( turntime->at(stripindex) + ( (double)t - 1. ) * extrapolationfactor * risetime->at(stripindex) );
-                                stripTimeVSslope_board[d][nearboard][t][0]->Fill( precisionTrackSlope , timing );
+//                                 stripTimeVSslope_board[d][nearboard][t][0]->Fill( precisionTrackSlope , timing );
+                                if( nearFEC < nboards.at(d) ) stripTimeVSslope_board[d][nearFEC][t][0]->Fill( precisionTrackSlope , timing );
                                 if( timing < earlyNlate[t][0] ){
                                     earlyNlate[t][0] = timing;
                                     firstNlast[t][0] = stripindex;
@@ -3338,6 +3341,12 @@ void analysis::investigateCRF(){
                                 stripTimeVSslope_board[d][nearboard][t][2]->Fill( precisionTrackSlope , earlyNlate[t][0] );
                                 stripTimeVSslope_board[d][nearboard][t][3]->Fill( precisionTrackSlope , earlyNlate[t][1] );
                             }
+//                             if( nearFEC < nboards.at(d) )
+//                                 for(unsigned int t=0; t<3; t++){
+//                                     stripTimeVSslope_board[d][nearFEC][t][1]->Fill( precisionTrackSlope , turntime->at(maxStrip) + ( (double)t - 1. ) * extrapolationfactor * risetime->at(maxStrip) );
+//                                     stripTimeVSslope_board[d][nearFEC][t][2]->Fill( precisionTrackSlope , earlyNlate[t][0] );
+//                                     stripTimeVSslope_board[d][nearFEC][t][3]->Fill( precisionTrackSlope , earlyNlate[t][1] );
+//                                 }
                         }
                     }
                 }
