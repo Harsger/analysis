@@ -927,7 +927,7 @@ void effiNchargeMaps(){
     mode["clusterChargeMPV"] = "gain";
     
     TString histname;
-    TH1I * readhist;
+    TH2D * readhist;
     
     TCanvas * drawer = new TCanvas();
     TVirtualPad * padle = gPad;
@@ -938,7 +938,7 @@ void effiNchargeMaps(){
         
             histname = l.first + "_" + m.first;
             if( m.second == "efficiency" && useCoincidence ) histname = histname.ReplaceAll( m.first , "coincidenceEffi" );
-            readhist = (TH1I*)infile->Get( histname );
+            readhist = (TH2D*)infile->Get( histname );
             
             if( readhist == NULL ){
                 cout << " ERROR : can not find histogram " << histname << " => skipped " << endl;
@@ -972,8 +972,13 @@ void effiNchargeMaps(){
                 for(unsigned int y=first[1]; y<=last[1]; y++){
                     
                     double content = readhist->GetBinContent( x , y );
+                    double binError = readhist->GetBinError( x , y );
                     
-                    if( content < 0. ) continue;
+                    if( 
+                        content < 0. || 
+                        !( isnormal( content ) ) ||
+                        binError > 1000.
+                    ) continue;
                     
                     if( toExclude( l.first , x , y ) ) continue;
                     
