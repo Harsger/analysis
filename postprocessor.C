@@ -311,6 +311,10 @@ void analysis::align(){
     parameterCorrectionFile.open( "align" , std::ios_base::app );
     parameterCorrectionFile << readname << "\t" << specifier << endl;
     
+    TString textName = paramname( 0 , paramname.Last('/')+1 );
+    textName += "align";
+    ofstream outText( textName.Data() );
+    
     ofstream pitchDeviationFile;
     pitchDeviationFile.open( "pitchDeviation.txt" , std::ios_base::app );
     pitchDeviationFile << readname << "\t" << specifier << endl;
@@ -699,6 +703,9 @@ void analysis::align(){
         zcor /= sumZweights;
         zerr = sqrt( zerr / (double)sumEntries );
         
+        if(d==0) outText << "positionY " << ycor << endl;
+        if(d==0) outText << "positionZ " << zcor << endl;
+        
         double stdvYvalues = 0;
         double weightYvalues = 0;
         for(unsigned int v=0; v<yValues.size(); v++){
@@ -801,10 +808,15 @@ void analysis::align(){
 //         deltaZvsY->Fit(linfit0,"RQ");
 //         double anglex = linfit0->GetParameter(1);
 //         double anglex_err = linfit0->GetParError(1);
+
+        deltaZvsY->RemovePoint( deltaZvsY->GetN()-1 );
+        deltaZvsY->RemovePoint( 0 );
         
         fitresults = fitPol1( deltaZvsY, debug);
         double slopex = fitresults.at(1);
         double slopex_err = fitresults.at(3);
+        
+        if(d==0) outText << "angleX " << slopex << endl;
         
         cout << fixed << setprecision(6) << " slopex \t = \t " << slopex << " \t +- " << slopex_err << " \t => anglex = " << atan(slopex) << endl; 
         vecdodummy.push_back(slopex);
@@ -852,10 +864,15 @@ void analysis::align(){
 //         deltaZvsX->Fit(linfit1,"RQ");
 //         double angley = linfit1->GetParameter(1);
 //         double angley_err = linfit1->GetParError(1);
+
+        deltaZvsX->RemovePoint( deltaZvsX->GetN()-1 );
+        deltaZvsX->RemovePoint( 0 );
         
         fitresults = fitPol1( deltaZvsX, debug);
         double slopey = fitresults.at(1);
         double slopey_err = fitresults.at(3);
+        
+        if(d==0) outText << "angleY " << slopey << endl;
         
         cout << fixed << setprecision(6) << " slopey \t = \t " << slopey << " \t +- " << slopey_err << " \t => angley = " << atan(slopey) << endl; 
         vecdodummy.push_back(slopey);
@@ -903,10 +920,15 @@ void analysis::align(){
 //         deltaYvsX->Fit(linfit2,"RQ");
 //         double anglez = linfit2->GetParameter(1);
 //         double anglez_err = linfit2->GetParError(1);
+
+        deltaYvsX->RemovePoint( deltaYvsX->GetN()-1 );
+        deltaYvsX->RemovePoint( 0 );
         
         fitresults = fitPol1( deltaYvsX, debug);
         double slopez = fitresults.at(1);
         double slopez_err = fitresults.at(3);
+        
+        if(d==0) outText << "angleZ " << slopez << endl;
         
         cout << fixed << setprecision(6) << " slopez \t = \t " << slopez << " \t +- " << slopez_err << " \t => anglez = " << atan(slopez) << endl;
         vecdodummy.push_back(slopez);
@@ -1171,7 +1193,10 @@ void analysis::align(){
         textfile << readname << endl;
         for(unsigned int d=0; d<ndetectors; d++)
             textfile << fixed << setprecision(3) << setw(5) << -fullSampleFit.at(d).at(2)/pitch.at(d) << endl;
+        textfile.close();
     }
+    
+    outText.close();
     
 }
 
@@ -3698,6 +3723,12 @@ void analysis::coarse(){
         slopeRange = 0.45;
     }
     
+    TString textName = paramname( 0 , paramname.Last('/')+1 );
+    if( specifier.Contains("area") ) textName += "fine";
+    else textName += "coarse";
+            
+    ofstream outText( textName.Data() );
+    
     cout << " \t \t  -Y \t \t  +Z \t \t  -angleZ " << endl;
     
     for(unsigned int d=0; d<ndetectors; d++){
@@ -3720,6 +3751,8 @@ void analysis::coarse(){
         
         double meanPosition = readhist->GetMean(2);
         
+        if(d==0) outText << "positionY " << meanPosition << endl;
+        
         cout << " " << meanPosition << " \t ";
         
 //         readhist->Draw("colz");
@@ -3734,6 +3767,8 @@ void analysis::coarse(){
         profile->Fit( fitfunction , "RQB" );
         
         double meanHeight = fitfunction->GetParameter(1);
+        
+        if(d==0) outText << "positionZ " << meanHeight << endl;
         
         cout << " " << meanHeight << " \t ";
         
@@ -3773,6 +3808,8 @@ void analysis::coarse(){
         
         double averageRotation = fitfunction->GetParameter(1);
         
+        if( d==0 && specifier.Contains("area") ) outText << "angleZ " << averageRotation << endl;
+        
         cout << " " << averageRotation << endl;
         
 //         profile->Draw();
@@ -3803,10 +3840,10 @@ void analysis::coarse(){
                 
                 readhist->GetYaxis()->SetRangeUser( -stereoRange , stereoRange );
             
-                readhist->Draw("colz");
-                gPad->Modified();
-                gPad->Update();
-                gPad->WaitPrimitive();
+//                 readhist->Draw("colz");
+//                 gPad->Modified();
+//                 gPad->Update();
+//                 gPad->WaitPrimitive();
             
                 projection = readhist->ProjectionX();
                 
@@ -3826,16 +3863,19 @@ void analysis::coarse(){
                 double stereoCenter = fitfunction->GetParameter(0);
                 
                 cout << " " << stereoCenter << endl;
+        
+                if(s==0) outText << "positionX " << stereoCenter << endl;
             
-                profile->Draw();
-                gPad->Modified();
-                gPad->Update();
-                gPad->WaitPrimitive();
+//                 profile->Draw();
+//                 gPad->Modified();
+//                 gPad->Update();
+//                 gPad->WaitPrimitive();
                 
             }
         
         }
-        else if(stereoEvaluation){
+//         else if(stereoEvaluation){
+        else if(false){
             
             ofstream stereoCorrelation( "fine" , std::ios_base::app );
             
@@ -3954,6 +3994,8 @@ void analysis::coarse(){
         }
         
     }
+    
+    outText.close();
     
 }
 
