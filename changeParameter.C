@@ -71,7 +71,8 @@ void changeParameter(
     TString parametername,
     TString value,
     bool overwrite = false,
-    TString combine = "0"
+    TString combine = "0",
+    TString digits = "3"
 ){
     
     vector< vector<string> > text = getInput( filename.Data() );
@@ -109,9 +110,9 @@ void changeParameter(
                     double toCombine = atof( combine );
                     if( toCombine > 0. ) number = oldNumber + number;
                     else if( toCombine < 0. ) number = oldNumber - number;
-                    TString strDummy = "";
-                    strDummy += number;
-                    text.at(l).at(c) = strDummy.Data();
+                    stringstream value;
+                    value << fixed << setprecision( atoi( digits.Data() ) ) << number;
+                    text.at(l).at(c) = value.str();
                     cout << " for " << detectorname << " changed " << parametername << " from " << oldNumber << " to " << number << endl;
                     changed = true;
                     break;
