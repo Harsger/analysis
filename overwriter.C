@@ -73,26 +73,32 @@ map< string , vector<double> > moduleDesign = {
     { "stereo_out" , { 50.15 ,  0.026186 } } 
 };
 
-map< string , double > convention = {
-    { "positionX" ,  1. } ,
-    { "positionY" , -1. } ,
-    { "positionZ" ,  1. } ,
-    { "angleX"    ,  1. } ,
-    { "angleY"    , -1. } ,
-    { "angleZ"    , -1. } 
+map< string , vector<double> > convention = {
+    { "positionX" , {  0. , 0 } } ,
+    { "positionY" , { -1. , 2 } } ,
+    { "positionZ" , {  1. , 2 } } ,
+    { "angleX"    , {  1. , 4 } } ,
+    { "angleY"    , { -1. , 4 } } ,
+    { "angleZ"    , { -1. , 6 } } 
 };
 
 void overwriter(
     TString parameterFile,
-    TString correctionFile
+    TString correctionFile,
+    TString analysisDirectory,
+    bool firstIteration = false
 ){
     
-    vector< vector<string> > corrections = getInput( parameterFile.Data() );
+    vector< vector<string> > corrections = getInput( correctionFile.Data() );
     
-    TString frontCommand = "root -n -x -q \'changeParameter(\"";
+    TString frontCommand = "root -l -n -x -q \'";
+    frontCommand += analysisDirectory;
+    frontCommand += "changeParameter.C(\"";
     frontCommand += parameterFile;
-    frontCommand += "\",\""
+    frontCommand += "\",\"";
     TString endCommand = "\")\'";
+    
+    cout << " corrections " << corrections.size() << endl;
     
     for( auto c : corrections ){
         
@@ -104,10 +110,28 @@ void overwriter(
         for( auto d : moduleDesign ){
             
             double toAdd = 0.;
-            if( con.first == "positionZ" ) toAdd = d.second.at(0);
-            if( con.first ==    "angleZ" ) toAdd = d.second.at(1);
+            if( firstIteration && con->first == "positionZ" ) toAdd = d.second.at(0);
+//             if( firstIteration && con->first == "angleZ" ) toAdd = d.second.at(1);
             
+            double number = atof( c.at(1).c_str() ) + toAdd;
+            stringstream value;
+            value << fixed << setprecision( con->second.at(1) ) << number;
             
+            TString command = frontCommand;
+            command += d.first;
+            command += "\",\"";
+            command += con->first;
+            command += "\",\"";
+            command += value.str();
+            command += "\",true,\"";
+            command += con->second.at(0);
+            command += "\",\"";
+            command += con->second.at(1);
+            command += endCommand;
+            
+//             cout << " => " << command << endl;
+            
+            int error = system( command.Data() );
             
         }
         
