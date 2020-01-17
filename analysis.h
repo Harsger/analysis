@@ -1302,7 +1302,7 @@ void analysis::initMetaBranches(){
     coordinate = 0;
     fec = 0;
     apv = 0;
-    if( withJitter || withTrigCor ) timeCorrection = 0;
+    timeCorrection = 0;
     inCluster = 0;
     
     if(!onlyCluster){
@@ -1318,7 +1318,7 @@ void analysis::initMetaBranches(){
         strip->Branch("coordinate",&coordinate);
         strip->Branch("fec",&fec);
         strip->Branch("apv",&apv);
-        if( withJitter || withTrigCor ) strip->Branch("timeCorrection",&timeCorrection);
+        strip->Branch("timeCorrection",&timeCorrection);
         strip->Branch("inCluster",&inCluster);
     
     }
@@ -1377,7 +1377,7 @@ void analysis::initMetaLeafs(){
     coordinate = new vector<short>;
     fec = new vector<short>;
     apv = new vector<short>;
-    if( withJitter || withTrigCor ) timeCorrection = new vector<double>;
+    timeCorrection = new vector<double>;
     inCluster = new vector<short>;
     
     strips = new vector< vector<unsigned int> >;
@@ -1414,7 +1414,7 @@ void analysis::clearMetaLeafs(){
     coordinate->clear();
     fec->clear();
     apv->clear();
-    if( withJitter || withTrigCor ) timeCorrection->clear();
+    timeCorrection->clear();
     inCluster->clear();
     
     strips->clear();
