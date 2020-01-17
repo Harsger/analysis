@@ -139,8 +139,8 @@ int main(int argc, char* argv[]){
 
 void analysis::sampleEvents(){
     
-//     unsigned int recordEvents = 500;
-    unsigned int recordEvents = 1;
+    unsigned int recordEvents = 500;
+//     unsigned int recordEvents = 1;
     
     if(debug) cout << " sampling " << recordEvents << " events " << endl;
     
@@ -350,8 +350,6 @@ void analysis::sampleEvents(){
                 
         }
         
-        continue;
-        
         if( inCRF && (
                      0.5 * ( _my[0] + _my[1] ) < 0.3 ||
                      _bx[0] < -1000 || 
@@ -490,7 +488,7 @@ void analysis::sampleEvents(){
                     leadingCharge[d][r] < 1000 
                 ) continue;
                 
-                cout << " d" << d << " r" << r << " q" << leadingCharge[d][r] << " X " << _bx[0] << " " << _mx[0] << " Y " << 0.5*(_by[0]+_by[1]) << " " << 0.5*(_my[0]+_my[1]) << endl;
+//                 cout << " d" << d << " r" << r << " q" << leadingCharge[d][r] << " X " << _bx[0] << " " << _mx[0] << " Y " << 0.5*(_by[0]+_by[1]) << " " << 0.5*(_my[0]+_my[1]) << endl;
                 
                 for(unsigned int s=0; s<nstrips; s++){
                     
