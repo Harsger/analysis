@@ -185,6 +185,150 @@ void analysis::tracking(){
    
     outfile = new TFile(outname,"RECREATE");
     
+    double stereoPrecision = 0.5 / cos( angle.at(3).at(2) );
+    double stereoCenter = 0.5 * ( position.at(2).at(2) + position.at(3).at(2) );
+    double centerDifference = stereoCenter - position.at(0).at(2);
+    
+    TH2I * residualVStrackSlope = new TH2I( "residualVStrackSlope" , "residualVStrackSlope" , 2000 , -100. , 100. , 2000 , -3000. , 3000. );
+    TH2I * minResVStrackSlope = new TH2I( "minResVStrackSlope" , "minResVStrackSlope" , 2000 , -100. , 100. , 2000 , -100. , 100. );
+    
+//     map< string , vector<int> > clusterProperties = { 
+//         { "multiplicity" , {  30 ,  0. ,  30. } } , 
+//         { "charge"       , { 500 ,  0. , 1e5  } } ,
+//         { "time"         , {  24 ,  0. ,  24. } } ,
+//         { "uTPCslope"    , { 600 , -3. ,   3. } } 
+//     };
+    
+//     TH2I **** clusterPropertiesVSresidual = new TH2I***[ndetectors];
+//             
+//     TString histname;
+//     
+//     for(unsigned int d=0; d<ndetectors; d++){
+//         
+//         clusterPropertiesVSresidual[d] = new TH2I**[clusterProperties.size()];
+//         
+//         for(unsigned int p=0; p<clusterProperties.size(); p++){
+//             
+//             clusterPropertiesVSresidual[d][p] = new TH2I*[2];
+//             
+//             histname = clusterProperties.at(p);
+//             histname += "VSposition_";
+//             histname += detectornames.at(d);
+//             
+//             clusterPropertiesVSresidual[d][p][0] = new TH2I( histname , histname , 3072/128 , 0.5 , 3072.5 ,  );
+//             
+//         }
+//         
+//     }
+   
+    unsigned int toStart;
+    unsigned int toEnd;
+    
+    if( startevent>entries || startevent<0 ) toStart = 0;
+    else toStart = startevent;
+    if( endevent>entries || endevent<0 ) toEnd = entries;
+    else toEnd = endevent;
+    
+    unsigned int moduloFactor = ( toEnd - toStart ) / 100;
+    if( toEnd - toStart < 100 ) moduloFactor = 1;
+
+    if(debug){ 
+//         toEnd = toStart + 2;
+        cout << " ... debugging ... " << endl;
+    }
+        
+    initMetaLeafs();
+   
+    if(debug) cout << " start : " << startevent << " \t end : " << endevent << endl;
+
+    for (Long64_t entry=toStart; entry<toEnd; entry++) {
+    
+        if( entry % moduloFactor == 0 || debug ) cout << "--------------event_" << entry << "_" << endl;
+        
+        if(debug /*&& entry%10==0*/) verbose = true;
+        else verbose = false;
+
+        cluster->GetEntry(entry);
+        if(!onlyCluster) strip->GetEntry(entry);
+        
+        double smallest = 1e9;
+        int combination[4] = {-1,-1,-1,-1};
+        double best[2] = { 0. , 0. };
+        
+        unsigned int nCluster = size->size();
+            
+        for(unsigned int v=0; v<nCluster; v++){
+            
+            if( DETECTOR->at(v) != 3 ) continue;
+        
+            for(unsigned int u=0; u<nCluster; u++){
+                
+                if( DETECTOR->at(u) != 2 ) continue;
+                
+                double stereosCombined = ( centroid->at(v) + centroid->at(u) ) * stereoPrecision; 
+                
+                for(unsigned int a=0; a<nCluster; a++){
+                    
+                    if( DETECTOR->at(a) != 0 ) continue;
+                    
+                    double interpolation = 
+                                              stereosCombined * ( position.at(1).at(2) - position.at(0).at(2) ) / centerDifference 
+                                            + centroid->at(a) * ( stereoCenter - position.at(1).at(2) ) / centerDifference ;
+                    
+                    for(unsigned int b=0; b<nCluster; b++){
+                        
+                        if( DETECTOR->at(b) != 1 ) continue;
+                        
+                        double residual = centroid->at(b) - interpolation;
+                        double slope = ( stereosCombined - centroid->at(a) ) / centerDifference;
+                        
+                        residualVStrackSlope->Fill( slope , residual );
+                        
+                        if( smallest > abs(residual) ){
+                            smallest = abs(residual);
+                            best[0] = residual;
+                            best[1] = slope;
+                            combination[0] = a;
+                            combination[1] = b;
+                            combination[2] = u;
+                            combination[3] = v;
+                        }
+                        
+                    }
+                    
+                }
+                
+            }
+            
+        }
+        
+        if( smallest < 1e8 ) minResVStrackSlope->Fill( best[1] , best[0] );
+        
+    }   
+    
+    outfile->cd();
+    
+    outfile->Write();
+    
+    outfile->Close();
+        
+}
+
+void analysis::sampleEvents(){
+    
+    if(debug) cout << " tracking " << endl;
+    
+    if( cluster == 0 ){
+        cout << " ERROR : tree empty " << endl;
+        return;
+    }
+    
+    setMetaBranches();
+    
+    Long64_t entries = cluster->GetEntriesFast();
+   
+    outfile = new TFile(outname,"RECREATE");
+    
     TString histname, axetitle;
     stringstream sdummy;
     double dodummy = 0.;

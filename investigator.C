@@ -249,6 +249,9 @@ void analysis::investigateCRF(){
     unsigned int mdtSlopeDivision = 30;
     double mdtSlopeRange = 0.6;
     
+    double scinRange[2] =  { -2000. , 2000. };
+    unsigned int scinBins = 80;
+    
 //     bool useAngle = false;
     
     if(useAngle){
@@ -615,7 +618,8 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        nearHits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+//         nearHits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+        nearHits[d] = new TH2D(histname, histname, scinBins, scinRange[0], scinRange[1], 220, -1100., 1100.);
         nearHits[d]->SetXTitle("x [mm]");
         nearHits[d]->SetYTitle("y [mm]");
     
@@ -624,7 +628,8 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        inefficiencies[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+//         inefficiencies[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+        inefficiencies[d] = new TH2D(histname, histname, scinBins, scinRange[0], scinRange[1], 220, -1100., 1100.);
         inefficiencies[d]->SetXTitle("x [mm]");
         inefficiencies[d]->SetYTitle("y [mm]");
     
@@ -633,7 +638,8 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        CRFhits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+//         CRFhits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+        CRFhits[d] = new TH2D(histname, histname, scinBins, scinRange[0], scinRange[1], 220, -1100., 1100.);
         CRFhits[d]->SetXTitle("x [mm]");
         CRFhits[d]->SetYTitle("y [mm]");
     
@@ -642,7 +648,8 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        clusterChargeSum[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+//         clusterChargeSum[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+        clusterChargeSum[d] = new TH2D(histname, histname, scinBins, scinRange[0], scinRange[1], 220, -1100., 1100.);
         clusterChargeSum[d]->SetXTitle("x [mm]");
         clusterChargeSum[d]->SetYTitle("y [mm]");
         clusterChargeSum[d]->SetZTitle("cluster charge sum [ADC channel]");
@@ -652,7 +659,8 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        residualHits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+//         residualHits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+        residualHits[d] = new TH2D(histname, histname, scinBins, scinRange[0], scinRange[1], 220, -1100., 1100.);
         residualHits[d]->SetXTitle("x [mm]");
         residualHits[d]->SetYTitle("y [mm]");
         residualHits[d]->SetZTitle("mean residual [mm]");
@@ -662,7 +670,8 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        resNearHits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+//         resNearHits[d] = new TH2D(histname, histname, 40, -2000., 2000., 220, -1100., 1100.);
+        resNearHits[d] = new TH2D(histname, histname, scinBins, scinRange[0], scinRange[1], 220, -1100., 1100.);
         resNearHits[d]->SetXTitle("x [mm]");
         resNearHits[d]->SetYTitle("y [mm]");
         resNearHits[d]->SetZTitle("mean residual [mm]");
@@ -736,7 +745,8 @@ void analysis::investigateCRF(){
                 histname += "_";
                 histname += detectornames.at(d);
             }
-            firstTimeDifVSscinXperYpart[d][y] = new TH2I(histname, histname, 40, -2000., 2000., 540, -27., 27);
+//             firstTimeDifVSscinXperYpart[d][y] = new TH2I(histname, histname, 40, -2000., 2000., 540, -27., 27);
+            firstTimeDifVSscinXperYpart[d][y] = new TH2I(histname, histname, scinBins, scinRange[0], scinRange[1], 540, -27., 27);
             firstTimeDifVSscinXperYpart[d][y]->SetXTitle("position along strips (by scintillators) [mm]");
             firstTimeDifVSscinXperYpart[d][y]->SetYTitle("time difference earliest signals [25 ns]"); 
         }
@@ -942,7 +952,8 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        resVSscinX_full[d] = new TH2I(histname, histname, 40, -2000., 2000., 2000, -1000., 1000.);
+//         resVSscinX_full[d] = new TH2I(histname, histname, 40, -2000., 2000., 2000, -1000., 1000.);
+        resVSscinX_full[d] = new TH2I(histname, histname, scinBins, scinRange[0], scinRange[1], 2000, -1000., 1000.);
         resVSscinX_full[d]->SetXTitle("intersection x (scintillators)");
         resVSscinX_full[d]->SetYTitle("residual y [mm]");  
                 
@@ -951,7 +962,8 @@ void analysis::investigateCRF(){
             histname += "_";
             histname += detectornames.at(d);
         }
-        resVSscinX_area[d] = new TH2I(histname, histname, 40, -2000., 2000., 2000, -100., 100.);
+//         resVSscinX_area[d] = new TH2I(histname, histname, 40, -2000., 2000., 2000, -100., 100.);
+        resVSscinX_area[d] = new TH2I(histname, histname, scinBins, scinRange[0], scinRange[1], 2000, -100., 100.);
         resVSscinX_area[d]->SetXTitle("intersection x (scintillators)");
         resVSscinX_area[d]->SetYTitle("residual y [mm]");  
                 
@@ -1063,7 +1075,8 @@ void analysis::investigateCRF(){
                 histname += "_";
                 histname += detectornames.at(d);
             }
-            interceptDifVSscinX_at[d][b] = new TH2I(histname, histname, 40, -2000., 2000., 2000, -20., 20.);
+//             interceptDifVSscinX_at[d][b] = new TH2I(histname, histname, 40, -2000., 2000., 2000, -20., 20.);
+            interceptDifVSscinX_at[d][b] = new TH2I(histname, histname, scinBins, scinRange[0], scinRange[1], 2000, -20., 20.);
             interceptDifVSscinX_at[d][b]->SetXTitle("x (scintillators) [mm]");
             interceptDifVSscinX_at[d][b]->SetYTitle("MDT intercept difference [mm]"); 
                 
@@ -1077,7 +1090,8 @@ void analysis::investigateCRF(){
                 histname += "_";
                 histname += detectornames.at(d);
             }
-            resVSscinX_board[d][b] = new TH2I(histname, histname, 40, -2000., 2000., 2000, -20., 20.);
+//             resVSscinX_board[d][b] = new TH2I(histname, histname, 40, -2000., 2000., 2000, -20., 20.);
+            resVSscinX_board[d][b] = new TH2I(histname, histname, scinBins, scinRange[0], scinRange[1], 2000, -20., 20.);
             resVSscinX_board[d][b]->SetXTitle("x (scintillators) [mm]");
             resVSscinX_board[d][b]->SetYTitle("residual y [mm]"); 
                 
@@ -1107,7 +1121,8 @@ void analysis::investigateCRF(){
                     histname += "_";
                     histname += detectornames.at(d);
                 }
-                difVSscinX_board[d][b] = new TH2I(histname, histname, 40, -2000., 2000., 1000, -10., 10.);
+//                 difVSscinX_board[d][b] = new TH2I(histname, histname, 40, -2000., 2000., 1000, -10., 10.);
+                difVSscinX_board[d][b] = new TH2I(histname, histname, scinBins, scinRange[0], scinRange[1], 1000, -10., 10.);
                 difVSscinX_board[d][b]->SetXTitle("x (scintillators) [mm]");
                 difVSscinX_board[d][b]->SetYTitle("difference y [mm]"); 
                 
@@ -1776,7 +1791,8 @@ void analysis::investigateCRF(){
     if( nXtracker > 0 ){
                 
         histname = "newInterceptVSscinIntercept";
-        newInterceptVSscinIntercept = new TH2I(histname, histname, 40, -2000., 2000., 2000, -2000., 2000.);
+//         newInterceptVSscinIntercept = new TH2I(histname, histname, 40, -2000., 2000., 2000, -2000., 2000.);
+        newInterceptVSscinIntercept = new TH2I(histname, histname, scinBins, scinRange[0], scinRange[1], 2000, -2000., 2000.);
         newInterceptVSscinIntercept->SetXTitle("intercept x (scintillators) [mm]");
         newInterceptVSscinIntercept->SetYTitle("recalculated x intercept [mm]"); 
                     
@@ -1873,7 +1889,8 @@ void analysis::investigateCRF(){
         
             histname = "resVSscinX_stereo";
             histname += l;
-            resVSscinX_stereo[l] = new TH2I( histname, histname, 40, -2000., 2000., 2000, -100., 100.);
+//             resVSscinX_stereo[l] = new TH2I( histname, histname, 40, -2000., 2000., 2000, -100., 100.);
+            resVSscinX_stereo[l] = new TH2I( histname, histname, scinBins, scinRange[0], scinRange[1], 2000, -100., 100.);
             resVSscinX_stereo[l]->SetXTitle("y (scintillators) [mm]");
             resVSscinX_stereo[l]->SetYTitle("residual y [mm]");
         
@@ -1903,7 +1920,8 @@ void analysis::investigateCRF(){
         
             histname = "posDifVSscinX";
             histname += l;
-            posDifVSscinX[l] = new TH2I( histname, histname, 40, -2000., 2000., 1200, -300., 300.);
+//             posDifVSscinX[l] = new TH2I( histname, histname, 40, -2000., 2000., 1200, -300., 300.);
+            posDifVSscinX[l] = new TH2I( histname, histname, scinBins, scinRange[0], scinRange[1], 1200, -300., 300.);
             posDifVSscinX[l]->SetXTitle("x (scintillators) [mm]");
             posDifVSscinX[l]->SetYTitle("cluster position difference");
             
@@ -1921,7 +1939,8 @@ void analysis::investigateCRF(){
                     if( nboards.at(l) == 3 ) histname += b+6;
                     else histname += b;
                 }
-                posDifVSscinX_board[l][b] = new TH2I( histname, histname, 40, -2000., 2000., 1200, -300., 300.);
+//                 posDifVSscinX_board[l][b] = new TH2I( histname, histname, 40, -2000., 2000., 1200, -300., 300.);
+                posDifVSscinX_board[l][b] = new TH2I( histname, histname, scinBins, scinRange[0], scinRange[1], 1200, -300., 300.);
                 posDifVSscinX_board[l][b]->SetXTitle("x (scintillators) [mm]");
                 posDifVSscinX_board[l][b]->SetYTitle("cluster position difference");
         
@@ -1932,7 +1951,8 @@ void analysis::investigateCRF(){
                     if( nboards.at(l) == 3 ) histname += b+6;
                     else histname += b;
                 }
-                resVSscinX_stereo_board[l][b] = new TH2I( histname, histname, 40, -2000., 2000., 2000, -100., 100.);
+//                 resVSscinX_stereo_board[l][b] = new TH2I( histname, histname, 40, -2000., 2000., 2000, -100., 100.);
+                resVSscinX_stereo_board[l][b] = new TH2I( histname, histname, scinBins, scinRange[0], scinRange[1], 2000, -100., 100.);
                 resVSscinX_stereo_board[l][b]->SetXTitle("x (scintillators) [mm]");
                 resVSscinX_stereo_board[l][b]->SetYTitle("residual y [mm]");
                 
@@ -1968,30 +1988,36 @@ void analysis::investigateCRF(){
             resXvsPhi_stereo[l]->SetXTitle("phi");
             resXvsPhi_stereo[l]->SetYTitle("resdiual between stereo and scintillator predicition [mm]");
             
-            stereoHitmap[l] = new TH2I*[etaLayer.size()];
-            stereoClusterCharge[l] = new TH2I*[etaLayer.size()];
+            stereoHitmap[l] = new TH2I*[etaLayer.size()+1];
+            stereoClusterCharge[l] = new TH2I*[etaLayer.size()+1];
             
             unsigned int stereostrips = detstrips.at( stereoLayer.at(l*2) ).at(1);
+            double nonPrecisionLength = length.at(stereoLayer.at(l*2)).at(0);
+            double precisionLength = length.at(stereoLayer.at(l*2)).at(1);
     
-            for(unsigned int e=0; e<etaLayer.size(); e++){
+            for(unsigned int e=0; e<etaLayer.size()+1; e++){
         
                 histname = "stereoHitmap";
                 histname += "_stereo";
                 histname += l;
-                histname += "_eta";
-                histname += e;
-                stereoHitmap[l][e] = new TH2I( histname, histname, 1200, -300., 300., stereostrips, 0., stereostrips);
-                stereoHitmap[l][e]->SetXTitle("cluster position difference");
-                stereoHitmap[l][e]->SetYTitle("cluster position mean");
+                if( e<etaLayer.size() ){
+                    histname += "_eta";
+                    histname += e;
+                }
+                stereoHitmap[l][e] = new TH2I( histname, histname, (unsigned int)nonPrecisionLength/20, -nonPrecisionLength*0.5 , nonPrecisionLength*0.5 , (unsigned int)precisionLength/10 , 0., precisionLength );
+                stereoHitmap[l][e]->SetXTitle("non-precision position (stereos) [mm]");
+                stereoHitmap[l][e]->SetYTitle("precision position (stereos) [mm]");
         
                 histname = "stereoClusterCharge";
                 histname += "_stereo";
                 histname += l;
-                histname += "_eta";
-                histname += e;
-                stereoClusterCharge[l][e] = new TH2I( histname, histname, 1200, -300., 300., stereostrips, 0., stereostrips);
-                stereoClusterCharge[l][e]->SetXTitle("cluster position difference");
-                stereoClusterCharge[l][e]->SetYTitle("cluster position mean");
+                if( e<etaLayer.size() ){
+                    histname += "_eta";
+                    histname += e;
+                }
+                stereoClusterCharge[l][e] = new TH2I( histname, histname, (unsigned int)nonPrecisionLength/20, -nonPrecisionLength*0.5 , nonPrecisionLength*0.5 , (unsigned int)precisionLength/10 , 0., precisionLength );
+                stereoClusterCharge[l][e]->SetXTitle("non-precision position (stereos) [mm]");
+                stereoClusterCharge[l][e]->SetYTitle("precision position (stereos) [mm]");
                 stereoClusterCharge[l][e]->SetZTitle("cluster charge sum [ADC channel]");
                 
             }
@@ -2613,15 +2639,22 @@ void analysis::investigateCRF(){
                 
                 for(unsigned int e=0; e<etaLayer.size(); e++){
                     
+                    if( abs( stereoRes ) > effiRange.at(d) ) break;
+                    
                     unsigned int edet = etaLayer.at(e);
                 
                     if(debug && verbose) cout << " eta layer " << detectornames.at( edet ) << endl;
                     
                     if( leading[edet][1] < 0 || detlayer.at(edet) < 0 ) continue;
                     
-                    stereoHitmap[sl][e]->Fill( stripDif, stripMean);
-                    stereoClusterCharge[sl][e]->Fill( stripDif, stripMean, chargesum->at( leading[edet][1] ) );
+                    stereoHitmap[sl][e]->Fill( stereoPosition, etaPosition );
+                    stereoClusterCharge[sl][e]->Fill( stereoPosition, etaPosition , chargesum->at( leading[edet][1] ) );
                     
+                }
+                
+                if( abs( stereoRes ) < effiRange.at(d) ){
+                    stereoHitmap[sl][etaLayer.size()]->Fill( stereoPosition, etaPosition );
+                    stereoClusterCharge[sl][etaLayer.size()]->Fill( stereoPosition, etaPosition , chargesum->at( leading[d][1] ) );
                 }
         
                 theta = acos( zOnSphere );
@@ -3847,7 +3880,7 @@ void analysis::investigateCRF(){
                 
             }
     
-            for(unsigned int e=0; e<etaLayer.size(); e++){
+            for(unsigned int e=0; e<etaLayer.size()+1; e++){
                 
                 stereoHitmap[l][e]->Write();
                 stereoClusterCharge[l][e]->Write();
