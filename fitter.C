@@ -598,6 +598,8 @@ void analysis::fitNclust(){
     }
         
     initMetaLeafs();
+    
+    cout << " total events " << entries << endl;
    
     if(debug) cout << " start : " << startevent << " \t end : " << endevent << endl;
     
@@ -611,7 +613,9 @@ void analysis::fitNclust(){
 
     for (Long64_t entry=toStart; entry<toEnd; entry++) {
     
-        if( entry % moduloFactor == 0 || debug ) cout << "--------------event_" << entry << "_" << endl;
+        if( entry % moduloFactor == 0 ) cout << "*";
+        
+        if( debug ) cout << "--------------event_" << entry << "_" << endl;
 
         if(debug /*&& entry%10==0*/) verbose = true;
         
@@ -855,7 +859,11 @@ void analysis::fitNclust(){
             apv->push_back( capv );
             
             if(withJitter) timeCorrection->push_back( time_correction_ns->at( TDCorder[ cfec ] ) );
-            else timeCorrection->push_back( 0. );
+            else{ 
+                if( timeCorrection != NULL ){ 
+                    timeCorrection->push_back( 0. );
+                }
+            }
             
             if( 
                 inCluster->at(s) < 0 
@@ -1423,8 +1431,8 @@ void analysis::fitNclust(){
             if( !(
                 sample &&
                 filledSamples < sampleSize &&
-                uTPCndf->at(c) > 0 &&
-                abs( uTPCchi2->at(c) / uTPCndf->at(c) - 1. ) < 0.2
+                uTPCndf->at(c) > 0 /*&&*/
+//                 abs( uTPCchi2->at(c) / uTPCndf->at(c) - 1. ) < 0.2
             ) ) continue;
             
             unsigned int firstStrip = 0;
@@ -1584,7 +1592,7 @@ void analysis::fitNclust(){
         
     }
    
-    cout << " writing trees ... ";
+    cout << endl << " writing trees ... ";
    
     outfile->cd();
     
