@@ -488,8 +488,8 @@ void analysis::investigateCRF(){
     TH2I** resXvsSlopeY_stereo;
     TH2I** resXvsTheta_stereo;
     TH2I** resXvsPhi_stereo;
-    TH2I*** stereoHitmap;
-    TH2I*** stereoClusterCharge;
+    TH2D*** stereoHitmap;
+    TH2D*** stereoClusterCharge;
     TH2I*** stereoCenter;
     
     TH2I* newInterceptVSscinIntercept; 
@@ -1874,8 +1874,8 @@ void analysis::investigateCRF(){
         resXvsTheta_stereo = new TH2I*[nstereo];
         resXvsPhi_stereo = new TH2I*[nstereo];
         
-        stereoHitmap = new TH2I**[nstereo];
-        stereoClusterCharge = new TH2I**[nstereo];
+        stereoHitmap = new TH2D**[nstereo];
+        stereoClusterCharge = new TH2D**[nstereo];
         
         stereoCenter = new TH2I**[nstereo];
         
@@ -1988,8 +1988,8 @@ void analysis::investigateCRF(){
             resXvsPhi_stereo[l]->SetXTitle("phi");
             resXvsPhi_stereo[l]->SetYTitle("resdiual between stereo and scintillator predicition [mm]");
             
-            stereoHitmap[l] = new TH2I*[etaLayer.size()+1];
-            stereoClusterCharge[l] = new TH2I*[etaLayer.size()+1];
+            stereoHitmap[l] = new TH2D*[etaLayer.size()+1];
+            stereoClusterCharge[l] = new TH2D*[etaLayer.size()+1];
             
             unsigned int stereostrips = detstrips.at( stereoLayer.at(l*2) ).at(1);
             double nonPrecisionLength = length.at(stereoLayer.at(l*2)).at(0);
@@ -2004,7 +2004,7 @@ void analysis::investigateCRF(){
                     histname += "_eta";
                     histname += e;
                 }
-                stereoHitmap[l][e] = new TH2I( histname, histname, (unsigned int)nonPrecisionLength/20, -nonPrecisionLength*0.5 , nonPrecisionLength*0.5 , (unsigned int)precisionLength/10 , 0., precisionLength );
+                stereoHitmap[l][e] = new TH2D( histname, histname, (unsigned int)nonPrecisionLength/20, -nonPrecisionLength*0.5 , nonPrecisionLength*0.5 , (unsigned int)precisionLength/10 , 0., precisionLength );
                 stereoHitmap[l][e]->SetXTitle("non-precision position (stereos) [mm]");
                 stereoHitmap[l][e]->SetYTitle("precision position (stereos) [mm]");
         
@@ -2015,7 +2015,7 @@ void analysis::investigateCRF(){
                     histname += "_eta";
                     histname += e;
                 }
-                stereoClusterCharge[l][e] = new TH2I( histname, histname, (unsigned int)nonPrecisionLength/20, -nonPrecisionLength*0.5 , nonPrecisionLength*0.5 , (unsigned int)precisionLength/10 , 0., precisionLength );
+                stereoClusterCharge[l][e] = new TH2D( histname, histname, (unsigned int)nonPrecisionLength/20, -nonPrecisionLength*0.5 , nonPrecisionLength*0.5 , (unsigned int)precisionLength/10 , 0., precisionLength );
                 stereoClusterCharge[l][e]->SetXTitle("non-precision position (stereos) [mm]");
                 stereoClusterCharge[l][e]->SetYTitle("precision position (stereos) [mm]");
                 stereoClusterCharge[l][e]->SetZTitle("cluster charge sum [ADC channel]");
