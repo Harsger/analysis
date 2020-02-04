@@ -13,6 +13,7 @@ overWriteParameter="root -l -n -x -q '"${analysisPath}'overwriter.C("'${dataPath
 
 if [ $# -gt 2 ]
 then
+    cp /project/etpdaq4/CRF_data/nswQAQC/defaultModule/parameter/parameter_SM2.txt ${dataPath}/parameter/.
     ${fillHistograms}
     ${postprocess}"coarse"
     eval ${overWriteParameter}'coarse","'${analysisPath}'",true)'"'"
