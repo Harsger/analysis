@@ -93,6 +93,10 @@ bool excludeBadChannel = false;
 double lowerEfficiencyBound = 0.5;
 double upperChargeBound = 1500.;
 
+bool useFineMaps = false;
+double center[2] = { -575. , -60. };
+double width[2] = { 1600. , 1350. };
+
 void deadNnoisy();
 void amplificationScan();
 void effiNchargeMaps();
@@ -130,6 +134,8 @@ int main(int argc, char* argv[]){
         "\n"
         " additional option for maps (-m) \n"
         " -e\texclude sector in maps \n"
+        " -x\tcenter of module along non-precision coordinate (by scintillators , default : " << center[0] << ") \n"
+        " -y\tcenter of module along precision coordinate (by MDTs , default : " << center[1] << ") \n"
         "\n"
         " -o\tdirectory, where output will be stored (default:\""<< outputDir <<"\")\n"
         "\n";
@@ -137,7 +143,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ( ( c = getopt( argc , argv , "n:d:a:m:DSEACl:q:e:o:" ) ) != -1 ){
+    while ( ( c = getopt( argc , argv , "n:d:a:m:DSEACl:q:e:o:x:y:" ) ) != -1 ){
         switch( c ){
             case 'n':
                 moduleNumber = atoi( optarg );
@@ -177,6 +183,14 @@ int main(int argc, char* argv[]){
                 break;
             case 'o':
                 outputDir = optarg;
+                break;
+            case 'x':
+                center[0] = atof( optarg );
+                useFineMaps = true;
+                break;
+            case 'y':
+                center[1] = atof( optarg );
+                useFineMaps = true;
                 break;
             case '?':
                 if( isprint( optopt ) ) fprintf( stderr , " Unknown option `-%c'.\n" , optopt );
@@ -902,7 +916,7 @@ void effiNchargeMaps(){
     gStyle->SetPadTopMargin( 0.07 );
     gStyle->SetPadRightMargin( 0.165 );
     gStyle->SetPadBottomMargin( 0.105 );
-    gStyle->SetPadLeftMargin( 0.08 );
+    gStyle->SetPadLeftMargin( 0.105 );
     double labelSize = 0.05;
     gStyle->SetLabelSize( labelSize , "x" );
     gStyle->SetTitleSize( labelSize , "x" );
@@ -910,7 +924,7 @@ void effiNchargeMaps(){
     gStyle->SetTitleSize( labelSize , "y" );
     gStyle->SetLabelSize( labelSize , "z" );
     gStyle->SetTitleSize( labelSize , "z" );
-    gStyle->SetTitleOffset( 0.8 , "y" );
+    gStyle->SetTitleOffset( 1.0 , "y" );
     gStyle->SetTitleOffset( 1.2 , "z" );
     gROOT->ForceStyle();
     
@@ -1015,17 +1029,35 @@ void effiNchargeMaps(){
             writer[nametag] = max;
             
             cout << " " << specifier << " \t mean " << mean << " \t stdv " << stdv << " \t min " << min << " \t max " << max << endl;
+        
+            if( useFineMaps ){
+            
+                if( m.second == "efficiency" ) histname = "efficiencies";
+                else histname = "clusterChargeMean";
+                histname += "_"+l.first;
+                readhist = (TH2D*)infile->Get( histname );
+                
+                if( readhist == NULL ){
+                    cout << " ERROR : can not find histogram " << histname << " => skipped " << endl;
+                    continue;
+                }
+                
+                readhist->GetXaxis()->SetRangeUser( center[0] - width[0]*0.5 , center[0] + width[0]*0.5 );
+                readhist->GetYaxis()->SetRangeUser( center[1] - width[1]*0.5 , center[1] + width[1]*0.5 );
+            
+            }
             
             if( m.second == "efficiency" ){ 
                 readhist->GetZaxis()->SetRangeUser( lowerEfficiencyBound , 1. );
 //                 readhist->GetZaxis()->SetTitle( m.second.c_str() );
                 readhist->GetZaxis()->SetTitle( "5 mm efficiency" );
-                if(useCoincidence) readhist->GetZaxis()->SetTitle( "coincidence efficiency" );
+                if( useCoincidence && !useFineMaps ) readhist->GetZaxis()->SetTitle( "coincidence efficiency" );
             }
             else{ 
 //                 readhist->GetZaxis()->SetRangeUser( 0. , max );
                 readhist->GetZaxis()->SetRangeUser( 0. , upperChargeBound );
                 readhist->GetZaxis()->SetTitle( "MPV cluster charge [ADC channel]" );
+                if( useFineMaps ) readhist->GetZaxis()->SetTitle( "mean cluster charge [ADC channel]" );
             }
             
             histname = moduleName;
