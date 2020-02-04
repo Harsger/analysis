@@ -2292,6 +2292,7 @@ void analysis::properties(){
     TH2I * inefficiencies;
     TH2D * clusterChargeSum;
     TH2I * CRFhits;
+    TH2I * nearHits;
     
     TH2I * resVSslope;
     TH2I * hits;
@@ -2350,6 +2351,13 @@ void analysis::properties(){
             title += detectornames.at(d);
         }
         inefficiencies = (TH2I*)infile->Get(title);
+        
+        title = "nearHits";
+        if(ndetectors>1){ 
+            title += "_";
+            title += detectornames.at(d);
+        }
+        nearHits = (TH2I*)infile->Get(title);
         
         title = "CRFhits";
         if(ndetectors>1){ 
@@ -2418,11 +2426,13 @@ void analysis::properties(){
                 double ineffi = inefficiencies->GetBinContent( x, y);
                 double hit = CRFhits->GetBinContent( x, y);
                 double charge = clusterChargeSum->GetBinContent( x, y);
+                double near = nearHits->GetBinContent( x, y);
                 
 //                 if(debug) cout << " x" << x << " y" << y << " ineffi" << ineffi << " hit" << hit << " charge" << charge << endl;
                 
                 if( hit - ineffi > 10. ){ 
-                    efficiencies->SetBinContent( x, y, 1.-ineffi/hit);
+//                     efficiencies->SetBinContent( x, y, 1.-ineffi/hit);
+                    efficiencies->SetBinContent( x, y, near/hit);
                     clusterChargeMean->SetBinContent( x, y, charge/(hit-ineffi));
 //                 if( ineffi > 50. ){ 
 //                     efficiencies->SetBinContent( x, y, ineffi/hit);
