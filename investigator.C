@@ -28,6 +28,46 @@ vector<int> unixtimeLimits;
 bool stripAnalysis = false;
 bool angularReconstruction = false;
 
+bool skipPartitions = false;
+bool writeCalibration = false;
+
+struct calibrationData{
+    
+    vector< vector<double> > detectorReconstruction;
+    vector< vector<double> > referenceReconstruction;
+    vector< vector<unsigned int> > numberOfReconstructions;
+    
+    void initialize( unsigned int rows , unsigned int columns ){
+        detectorReconstruction = vector< vector<double> >( rows , vector<double>( columns , 0. ) );
+        referenceReconstruction = vector< vector<double> >( rows , vector<double>( columns , 0. ) );
+        numberOfReconstructions = vector< vector<unsigned int> >( rows , vector<unsigned int>( columns , 0 ) );
+    }
+    
+    void fill( unsigned int row , unsigned int column , double detector , double reference ){
+        detectorReconstruction.at(row).at(column) += detector;
+        referenceReconstruction.at(row).at(column) += reference;
+        numberOfReconstructions.at(row).at(column)++;
+    }
+    
+    void normalize(){
+        unsigned int entries[2] = { (unsigned int)detectorReconstruction.size() , 0 } ;
+        for(unsigned int r=0; r<entries[0]; r++){
+            entries[1] = detectorReconstruction.at(r).size();
+            for(unsigned int c=0; c<entries[1]; c++){
+                if( numberOfReconstructions.at(r).at(c) > 0 ){
+                    detectorReconstruction.at(r).at(c) /= (double)numberOfReconstructions.at(r).at(c) ;
+                    referenceReconstruction.at(r).at(c) /= (double)numberOfReconstructions.at(r).at(c) ;
+                }
+                else{
+                    detectorReconstruction.at(r).at(c) = 0. ;
+                    referenceReconstruction.at(r).at(c) = 0. ;
+                }
+            }
+        }
+    }
+    
+};
+
 int main(int argc, char* argv[]){
     
     TString inname = "";
@@ -54,6 +94,8 @@ int main(int argc, char* argv[]){
         " -y\ttrack straightness    \t(default:  " << straightNess[1] << " -> switched "<< straightTracks[1] <<")\n"
         " -r\treject scattering     \t(default:  " << maximalScatter << " -> switched "<< rejectMultipeScattering <<")\n"
         " -u\tunixtime to skip      \t(default:  \"" << skipTimes << "\")\n"
+        " -C\tcalibration output    \t(default:  \"" << writeCalibration << "\")\n"
+        " -P\tskip partition histos \t(default:  \"" << skipPartitions << "\")\n"
         " -A\tangular evaluation    \t(default:  \"" << angularReconstruction << "\")\n"
         " -O\tonly cluster mode off \t(default:  \"" << only << "\")\n"
         " -L\tlarge partitions      \t(default:  \"" << largePartitions << "\")\n"
@@ -66,7 +108,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "i:d:o:p:s:e:x:y:r:u:AOLSD")) != -1) {
+    while ((c = getopt (argc, argv, "i:d:o:p:s:e:x:y:r:u:CPAOLSD")) != -1) {
         switch (c)
         {
         case 'i':
@@ -102,6 +144,12 @@ int main(int argc, char* argv[]){
         case 'u':
             skipTimes = true;
             unixtimeLimits.push_back( atoi(optarg) );
+            break;
+        case 'C':
+            writeCalibration = true;
+            break;
+        case 'P':
+            skipPartitions = true;
             break;
         case 'A':
             angularReconstruction = true;
@@ -202,6 +250,8 @@ int main(int argc, char* argv[]){
     
     invest->setAnaParams( start, end, writename, params, only, bugger);
     
+    if( skipPartitions ) invest->noPartitions = true;
+    
     if(largePartitions){
         for(unsigned int d=0; d<invest->ndetectors; d++){
             invest->divisions.at(d).at(0) = 5;
@@ -270,6 +320,19 @@ void analysis::investigateCRF(){
     }
     
     if(stripAnalysis) onlyCluster = true;
+    
+    ofstream calibrationOutput;
+    if( writeCalibration ){
+        TString calibrationName = outname;
+        calibrationName = calibrationName.ReplaceAll( "_fitNclust_inCRF.root" , "_calibration.txt" );
+        calibrationOutput.open( calibrationName.Data() );
+    }
+    vector<calibrationData> layerCalibration;
+    for(unsigned int d=0; d<ndetectors; d++){ 
+        calibrationData emptyData;
+        emptyData.initialize( divisions.at(d).at(0) , divisions.at(d).at(1) );
+        layerCalibration.push_back( emptyData );
+    }
     
     TString histname, histtitle, axetitle; 
                 
@@ -3229,6 +3292,7 @@ void analysis::investigateCRF(){
             double near = 1e5;
             double nearResidual = -1e6;
             double nearPosition = -1e6;
+            double nearCentroid = -1e6;
             int nearest = -1;
             int nearboard = -1;
             int nearFEC = -1;
@@ -3286,6 +3350,7 @@ void analysis::investigateCRF(){
                     near = abs( residual );
                     nearResidual = residual;
                     nearPosition = cposition.at(1);
+                    nearCentroid = centroid->at( c ) * detpitch;
                     nearest = c;
                     nearboard = cboard;
                     nearFEC = cfec;
@@ -3301,6 +3366,7 @@ void analysis::investigateCRF(){
             
             if( nearest > -1 ){
                 if( near < effiRange.at(d) ){ 
+                    if( writeCalibration && near < 1. ) layerCalibration.at(d).fill( xpart , ypart , nearCentroid , intersection.at(1) );
                     resNearHits[d]->Fill( intersection.at(0), intersection.at(1), near);
                     inEffiRange[d] = true;
                     effi[d][xpart][ypart]->Fill(4.);
@@ -3634,6 +3700,48 @@ void analysis::investigateCRF(){
     if(!onlyCluster) cout << " badevents " << badevents << " badcluster " << badcluster << endl;
    
     cout << " writing results ... ";
+    
+    if( writeCalibration ){
+        
+        for(unsigned int d=0; d<ndetectors; d++){
+            
+            layerCalibration.at(d).normalize();
+            
+            calibrationOutput << endl << " " << detectornames.at(d) << " response " << endl;
+            
+            for(unsigned int y=divisions.at(d).at(1)-1; y>=0; y--){
+                for(unsigned int x=0; x<divisions.at(d).at(0); x++){
+                    calibrationOutput << " " << setw(9) << fixed << setprecision(3) << layerCalibration.at(d).detectorReconstruction.at(x).at(y);
+                }
+                calibrationOutput << endl;
+                if( y == 0 ) break;
+            }
+            
+            calibrationOutput << endl << " " << detectornames.at(d) << " reference " << endl;
+            
+            for(unsigned int y=divisions.at(d).at(1)-1; y>=0; y--){
+                for(unsigned int x=0; x<divisions.at(d).at(0); x++){
+                    calibrationOutput << " " << setw(9) << fixed << setprecision(3) << layerCalibration.at(d).referenceReconstruction.at(x).at(y);
+                }
+                calibrationOutput << endl;
+                if( y == 0 ) break;
+            }
+            
+            calibrationOutput << endl << " " << detectornames.at(d) << " hits " << endl;
+            
+            for(unsigned int y=divisions.at(d).at(1)-1; y>=0; y--){
+                for(unsigned int x=0; x<divisions.at(d).at(0); x++){
+                    calibrationOutput << " " << setw(9) << fixed << setprecision(0) << layerCalibration.at(d).numberOfReconstructions.at(x).at(y);
+                }
+                calibrationOutput << endl;
+                if( y == 0 ) break;
+            }
+            
+        }
+        
+        calibrationOutput.close();
+        
+    }
     
     outfile->cd();
     
