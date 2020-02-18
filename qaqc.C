@@ -74,7 +74,7 @@ unsigned int stripsPerAPV = 128;
 unsigned int stripsPerAdapter = 512;
 unsigned int stripsPerBoard = 1024;
     
-unsigned int moduleNumber = 0;
+int moduleNumber = -1;
 TString moduleName = "";
 
 TString deadNoiseName = "";
@@ -199,6 +199,11 @@ int main(int argc, char* argv[]){
             default:
                 abort();
         }
+    }
+    
+    if( moduleNumber < 0 ){
+        cout << " ERROR : module number has to specified positive " << endl;
+        return 1;
     }
     
     outputDir += "/";
@@ -735,11 +740,17 @@ void amplificationScan(){
     TCanvas * can = new TCanvas( "can" , "can" );
 
     unsigned int plotStyle[6][2] = {
-            { 20 , 1 } ,
-            { 24 , 2 } ,
-            { 22 , 4 } ,
-            { 26 , 6 } ,
-            { 21 , 9 } ,
+//             { 20 , 1 } ,
+//             { 24 , 2 } ,
+//             { 22 , 4 } ,
+//             { 26 , 6 } ,
+//             { 21 , 9 } ,
+//             { 25 , 46 } 
+            { 20 ,  1 } ,
+            { 22 ,  4 } ,
+            { 21 ,  9 } ,
+            { 24 ,  2 } ,
+            { 26 ,  6 } ,
             { 25 , 46 } 
         };
         
