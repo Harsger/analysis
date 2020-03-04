@@ -63,11 +63,14 @@ moduleNumber="09"
 fileServer="3"
 dataPath="/project/etpdaq"${fileServer}
 
-./startCRF.sh 20000000 m${moduleNumber}${withDoublet}_raw SRU 4 CRF.config ${dataPath} standard_TDCcommonStart.MT-Online
+#OLD ./startCRF.sh 20000000 m${moduleNumber}${withDoublet}_raw SRU 4 CRF.config ${dataPath} standard_TDCcommonStart.MT-Online
+#OLD 
+#OLD #    after 2000 events in screen -r srs_dump
+#OLD 
+#OLD ./stopCRF.sh
 
-#    after 2000 events in screen -r srs_dump
-
-./stopCRF.sh
+runSpecifier=m${moduleNumber}_raw
+./moduleMeasurement ${fileServer} ${runSpecifier} raw
 
 cd ~/etpdaqsvn/zerosuppressor
 
@@ -86,7 +89,13 @@ cd ~/etpdaqsvn/CRFscripts
 moduleVoltage="580V"
 runSpecifier=m${moduleNumber}_${moduleVoltage}
 
-./startCRF.sh 20000000 ${runSpecifier} SRU 0 CRF_9FECs.config ${dataPath} standard_TDCcommonStart.MT-Online
+#OLD ./startCRF.sh 20000000 ${runSpecifier} SRU 0 CRF.config ${dataPath} standard_TDCcommonStart.MT-Online
+#OLD 
+#OLD # WAIT for measurement fo finish 
+#OLD 
+#OLD ./stopCRF
+
+./moduleMeasurement ${fileServer} ${runSpecifier} <hours>h
 
 # date is added by script to filename in format _YYYYMMDD_hhmm
 
@@ -97,8 +106,6 @@ runName=${runSpecifier}<date>
 #    one run should have at least 1M events (~3 hours) for the amplification scan
 #    for alignment longer runs of minimal 6 hours are necessary
 #    -> check in srs_dump screen if data is taken
-
-./stopCRF
 
 ##################################################################################
 # MDT tracking and datastream merging
