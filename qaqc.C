@@ -1080,7 +1080,7 @@ void effiNchargeMaps(){
             readhist->Draw("COLZ");
             gPad->Modified();
             gPad->Update();
-            gPad->WaitPrimitive();
+//             gPad->WaitPrimitive();
             
             histname = outputDir;
             histname += "/";
