@@ -11,7 +11,7 @@ fillHistograms=${analysisPath}"investigateCRF -i "${filename}".root -p "${dataPa
 postprocess=${analysisPath}"postprocessor -i "${filename}"_inCRF.root -p "${dataPath}"parameter/parameter_SM2.txt -d "${dataPath}"histograms -m "
 overWriteParameter="root -l -n -x -q '"${analysisPath}'overwriter.C("'${dataPath}'parameter/parameter_SM2.txt","'${dataPath}'parameter/'
 
-if [ $# -gt 2 ]
+if [ $# -eq 2 ]
 then
     cp /project/etpdaq4/CRF_data/nswQAQC/defaultModule/parameter/parameter_SM2.txt ${dataPath}/parameter/.
     ${fillHistograms}
