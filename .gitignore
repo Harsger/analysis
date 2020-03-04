@@ -1,0 +1,22 @@
+# executables
+fitNclust 
+investigateCRF 
+track 
+postprocessor 
+sampleEvents 
+converter 
+studyCRF 
+qaqc
+dicvecvec.o
+dicvecvec_rdict.pcm
+
+# local parameter
+parameterfiles/
+! parameterfiles/defaultSM2parameter
+! parameterfiles/parameter_MDTs_only.txt
+
+# local results
+results
+
+# local scripts
+anafiles/
