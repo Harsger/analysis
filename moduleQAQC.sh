@@ -8,11 +8,27 @@ fileWOroot=${filename%$endPhrase}
 analysisPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
 dataPath="/project/etpdaq4/CRF_data/nswQAQC/m"${moduleNumber}"/"
 
+# read module center in non-precision axis (X)
+moduleXcenter=""
+while IFS= read -r line
+do
+  
+    if [[ ${line} == *"positionX"* ]]; then
+        moduleXcenter=$(echo ${line} | awk '{print $2}')
+    fi
+    
+done < ${dataPath}"parameter/coarse"
+
 # generate amplification-scan plots
 nextCommand=${analysisPath}"qaqc "                              # program
 nextCommand+=" -n "${moduleNumber}                              # module number
 nextCommand+=" -a "${dataPath}"histograms/qaqc/properties"      # amplification-scan-directory
-nextCommand+=" -q 3000 -l 0 -C"                                 # plot options
+nextCommand+=" -q 3000 -l 0"                                    # plot options
+if [ "${moduleXcenter}" == "" ]; then                           # check whether center is found
+    nextCommand+=" -C"                                          #   not -> use coarse map
+else
+    nextCommand+=" -x "${moduleXcenter}                         #   yes -> use fine map
+fi
 ${nextCommand}                                                  # EXECUTION
 
 # prepare data for map-plots
