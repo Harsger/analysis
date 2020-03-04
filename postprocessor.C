@@ -307,17 +307,17 @@ void analysis::align(){
     
     if( specifier.Contains("difVSslope") ) startAt = 1;
     
-    ofstream parameterCorrectionFile;
-    parameterCorrectionFile.open( "align" , std::ios_base::app );
-    parameterCorrectionFile << readname << "\t" << specifier << endl;
+//     ofstream parameterCorrectionFile;
+//     parameterCorrectionFile.open( "align" , std::ios_base::app );
+//     parameterCorrectionFile << readname << "\t" << specifier << endl;
     
     TString textName = paramname( 0 , paramname.Last('/')+1 );
     textName += "align";
     ofstream outText( textName.Data() );
     
-    ofstream pitchDeviationFile;
-    pitchDeviationFile.open( "pitchDeviation.txt" , std::ios_base::app );
-    pitchDeviationFile << readname << "\t" << specifier << endl;
+//     ofstream pitchDeviationFile;
+//     pitchDeviationFile.open( "pitchDeviation.txt" , std::ios_base::app );
+//     pitchDeviationFile << readname << "\t" << specifier << endl;
     
     for(unsigned int d=startAt; d<ndetectors; d++){
         
@@ -718,17 +718,17 @@ void analysis::align(){
         vector<double> gausResults = fitDoubleGaussian( residualDistribution , debug );
         
 //         pitchDeviationFile << position.at(d).at(2) << "\t" << angle.at(d).at(2) << "\t" << stdvYvalues << "\t" << gausResults.at(2) << "\t" << gausResults.at(5) << "\t" << gausResults.at(3)/gausResults.at(0) << endl;
-        pitchDeviationFile << "{" << 
-//                                         position.at(d).at(2) << "," << 
-                                        angle.at(d).at(0) << "," << 
-                                        angle.at(d).at(1) << "," << 
-                                        angle.at(d).at(2) << "," << 
-                                        stdvYvalues << "," << 
-                                        gausResults.at(2) << "," << 
-                                        gausResults.at(8) << "," << 
-                                        gausResults.at(3)/gausResults.at(0) << "," << 
-                                        sqrt( pow( gausResults.at(9)/gausResults.at(0) , 2 ) + pow( gausResults.at(3)/pow(gausResults.at(0),2)*gausResults.at(6) , 2 ) )
-        << "}," << endl;
+//         pitchDeviationFile << "{" << 
+// //                                         position.at(d).at(2) << "," << 
+//                                         angle.at(d).at(0) << "," << 
+//                                         angle.at(d).at(1) << "," << 
+//                                         angle.at(d).at(2) << "," << 
+//                                         stdvYvalues << "," << 
+//                                         gausResults.at(2) << "," << 
+//                                         gausResults.at(8) << "," << 
+//                                         gausResults.at(3)/gausResults.at(0) << "," << 
+//                                         sqrt( pow( gausResults.at(9)/gausResults.at(0) , 2 ) + pow( gausResults.at(3)/pow(gausResults.at(0),2)*gausResults.at(6) , 2 ) )
+//         << "}," << endl;
         
         cout << fixed << setprecision(4) << " ycor \t = \t " << ycor << " \t +- " << yerr << endl;
         vecdodummy.push_back(ycor);
@@ -936,9 +936,9 @@ void analysis::align(){
         corrections.push_back(vecdodummy);
         vecdodummy.clear();  
         
-        if( specifier != "difVSslope" )
-            parameterCorrectionFile << fixed << setprecision(4) << fullSampleFit.at(d).at(0) << "\t" << fullSampleFit.at(d).at(2) 
-                            << "\t" << fixed << setprecision(6) << slopex << "\t" << slopey << "\t" << slopez << endl;
+//         if( specifier != "difVSslope" )
+//             parameterCorrectionFile << fixed << setprecision(4) << fullSampleFit.at(d).at(0) << "\t" << fullSampleFit.at(d).at(2) 
+//                             << "\t" << fixed << setprecision(6) << slopex << "\t" << slopey << "\t" << slopez << endl;
         
         for(unsigned int cy=0; cy<divisions.at(d).at(1); cy++){ 
             
@@ -1162,8 +1162,8 @@ void analysis::align(){
     
     cout << endl;
     
-    parameterCorrectionFile.close();
-    pitchDeviationFile.close();
+//     parameterCorrectionFile.close();
+//     pitchDeviationFile.close();
     
     if( specifier != "difVSslope" ){
     
@@ -3482,9 +3482,9 @@ void analysis::precision(){
     vector<double> highEdge { 0., 0.};
     vector<double> step { 0., 0.};
     
-    ofstream textfile;
-    textfile.open( "precision" , std::ios_base::app );
-    textfile << readname << endl;
+//     ofstream textfile;
+//     textfile.open( "precision" , std::ios_base::app );
+//     textfile << readname << endl;
     
     for(unsigned int d=0; d<ndetectors; d++){
         
@@ -3644,17 +3644,17 @@ void analysis::precision(){
 //             if( d==3 && b==1 ) debug = true;
             fitparameter = fitDoubleGaussian((TH1I*)residual,debug);
 //             if( d==3 && b==1 ) debug = false;
-            textfile << "{ " << 
-                                position.at(d).at(2) << " , " << 
-                                angleCor.at(d).at(b).at(2) << " , " << 
-                                fitparameter.at(2) << " , " << 
-                                fitparameter.at(8) << " , " << 
-                                fitparameter.at(5) << " , " << 
-                                fitparameter.at(11) << " , " << 
-                                fitparameter.at(3)/fitparameter.at(0) << " , " << 
-                                sqrt( pow( fitparameter.at(9)/fitparameter.at(0) , 2 ) + pow( fitparameter.at(3)/pow(fitparameter.at(0),2)*fitparameter.at(6) , 2 ) )
-            
-            << " } " << endl;
+//             textfile << "{ " << 
+//                                 position.at(d).at(2) << " , " << 
+//                                 angleCor.at(d).at(b).at(2) << " , " << 
+//                                 fitparameter.at(2) << " , " << 
+//                                 fitparameter.at(8) << " , " << 
+//                                 fitparameter.at(5) << " , " << 
+//                                 fitparameter.at(11) << " , " << 
+//                                 fitparameter.at(3)/fitparameter.at(0) << " , " << 
+//                                 sqrt( pow( fitparameter.at(9)/fitparameter.at(0) , 2 ) + pow( fitparameter.at(3)/pow(fitparameter.at(0),2)*fitparameter.at(6) , 2 ) )
+//             
+//             << " } " << endl;
             
             double lowerXlimit = position.at(d).at(0)-length.at(d).at(0)*0.5;
             double upperXlimit = position.at(d).at(0)+length.at(d).at(0)*0.5;
@@ -3712,7 +3712,7 @@ void analysis::precision(){
         
     }
     
-    textfile.close();
+//     textfile.close();
 
 }
 
