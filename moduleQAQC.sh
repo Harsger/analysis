@@ -29,12 +29,14 @@ if [ "${moduleXcenter}" == "" ]; then                           # check whether 
 else
     nextCommand+=" -x "${moduleXcenter}                         #   yes -> use fine map
 fi
+echo ${nextCommand}
 ${nextCommand}                                                  # EXECUTION
 
 # prepare data for map-plots
 nextCommand=${analysisPath}"moduleInvestigation.sh "            # program
 nextCommand+=" "${moduleNumber}                                 # module number
 nextCommand+=" "${filename}                                     # measurement file for maps at 580V
+echo ${nextCommand}
 ${nextCommand}                                                  # EXECUTION
 
 # generate efficiency and gain map-plots
@@ -43,6 +45,7 @@ nextCommand+=" -n "${moduleNumber}                              # module number
 nextCommand+=" -m "${dataPath}"histograms/"                     # file-path ->
 nextCommand+=${fileWOroot}"_inCRF_properties.root"              #              name
 nextCommand+=" -q 5000 -l 0 -C"                                 # plot options
+echo ${nextCommand}
 ${nextCommand}                                                  # EXECUTION
 
 # prepare data for dead and noisy evaluation
@@ -52,6 +55,7 @@ nextCommand+=" -p "${dataPath}"parameter/parameter_SM2.txt "    # parameter
 nextCommand+=" -d "${dataPath}"fitteddata "                     # data-directory
 nextCommand+=" -o "${dataPath}"histograms/qaqc/deadNnoisy "     # output-directory
 nextCommand+=" -O -P"                                           # analysis-options (single strip analysis and no partitons)
+echo ${nextCommand}
 ${nextCommand}                                                  # EXECUTION
 
 # fill dead and noisy channels to database
@@ -59,4 +63,5 @@ nextCommand=${analysisPath}"qaqc "                              # program
 nextCommand+=" -n "${moduleNumber}" "                           # module number
 nextCommand+=" -d "${dataPath}"histograms/qaqc/deadNnoisy/"     # file-path ->
 nextCommand+=${fileWOroot}"_inCRF.root"                         #              name
+echo ${nextCommand}
 ${nextCommand}                                                  # EXECUTION
