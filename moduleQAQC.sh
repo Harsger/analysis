@@ -23,12 +23,7 @@ done < ${dataPath}"parameter/coarse"
 nextCommand=${analysisPath}"qaqc "                              # program
 nextCommand+=" -n "${moduleNumber}                              # module number
 nextCommand+=" -a "${dataPath}"histograms/qaqc/properties"      # amplification-scan-directory
-nextCommand+=" -q 3000 -l 0"                                    # plot options
-if [ "${moduleXcenter}" == "" ]; then                           # check whether center is found
-    nextCommand+=" -C"                                          #   not -> use coarse map
-else
-    nextCommand+=" -x "${moduleXcenter}                         #   yes -> use fine map
-fi
+nextCommand+=" -q 3000 -l 0 -C"                                 # plot options
 echo ${nextCommand}
 ${nextCommand}                                                  # EXECUTION
 
@@ -44,7 +39,12 @@ nextCommand=${analysisPath}"qaqc "                              # program
 nextCommand+=" -n "${moduleNumber}                              # module number
 nextCommand+=" -m "${dataPath}"histograms/"                     # file-path ->
 nextCommand+=${fileWOroot}"_inCRF_properties.root"              #              name
-nextCommand+=" -q 5000 -l 0 -C"                                 # plot options
+nextCommand+=" -q 5000 -l 0"                                    # plot options
+if [ "${moduleXcenter}" == "" ]; then                           # check whether center is found
+    nextCommand+=" -C"                                          #   not -> use coarse map
+else
+    nextCommand+=" -x "${moduleXcenter}                         #   yes -> use fine map
+fi
 echo ${nextCommand}
 ${nextCommand}                                                  # EXECUTION
 
