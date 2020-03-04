@@ -4,7 +4,7 @@
 #
 ## Slurm parameters
 #SBATCH --job-name=SM2inCRF
-#SBATCH --partition=lsschaile
+#SBATCH --partition=ls-schaile
 #SBATCH --export=NONE  # do not export current environemnt to job(recommended)
 #SBATCH --get-user-env
 #SBATCH --mem=3000mb
