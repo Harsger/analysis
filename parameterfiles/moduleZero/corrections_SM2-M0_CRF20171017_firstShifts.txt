@@ -1,5 +1,0 @@
-FEC 0 triggerOffset 581.3 FEC 1 triggerOffset 612.2 FEC 2 triggerOffset 620.9 FEC 3 triggerOffset 610.6 FEC 4 triggerOffset 208.1 FEC 5 triggerOffset 205.3 
-eta_out FEC 4 shift 0.200 FEC 5 shift 0.200 FECnAPV 5 12 shift -0.425 FECnAPV 5 13 shift -0.425
-eta_in FEC 4 shift 0.160 FEC 5 shift 0.160 FEC 2 shift 0.425
-stereo_in FEC 4 shift 0.295 FEC 5 shift 0.295
-stereo_out FEC 4 shift 0.425 FEC 5 shift 0.425

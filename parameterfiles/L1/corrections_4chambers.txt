@@ -1,8 +1,0 @@
-unix start 1472565600 end 1473170400
-
-FEC 0 triggerOffset -57.6 FEC 1 triggerOffset -57.6
-
-L1 FECnAPV 0 8 shift -0.28 FECnAPV 0 9 shift -0.28 FECnAPV 0 10 shift -0.28 FECnAPV 0 11 shift -0.28 FECnAPV 0 12 shift -0.28 FECnAPV 0 13 shift -0.28 FECnAPV 0 14 shift -0.28 FECnAPV 0 15 shift -0.28
-L1 FECnAPV 0 0 pitch 0.45003 FECnAPV 0 1 pitch 0.45003 FECnAPV 0 2 pitch 0.45003 FECnAPV 0 3 pitch 0.45003 FECnAPV 0 4 pitch 0.45003 FECnAPV 0 5 pitch 0.45003 FECnAPV 0 6 pitch 0.45003 FECnAPV 0 7 pitch 0.45003
-L1 FECnAPV 0 8 pitch 0.45008 FECnAPV 0 9 pitch 0.45008 FECnAPV 0 10 pitch 0.45008 FECnAPV 0 11 pitch 0.45008 FECnAPV 0 12 pitch 0.45008 FECnAPV 0 13 pitch 0.45008 FECnAPV 0 14 pitch 0.45008 FECnAPV 0 15 pitch 0.45008
-L1 board 1 angle 2 -0.00047

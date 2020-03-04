@@ -1,9 +1,0 @@
-properties_SM2.txt
-fecmap_SM2.txt
-corrections_SM2.txt
-boardmap_SM2.txt
-detectorname    #xstrips    #ystrips   pitch   xlength    ylength   #divisionsX   #divisionsY    positionX    positionY  positionZ    angleX    angleY    angleZ    layer   flip    uTPCtime   CCCfactor   driftVelocity  cluTime
-eta_out            0          3072     0.425    1600       1305.6        16           24          -691.       -50.631      9.300     -0.0024    0.0062   -0.01257    3       0         0.         0.         0.047        0.
-eta_in             0          3072     0.425    1600       1305.6        16           24          -691.       -50.631     25.982     -0.0024    0.0062   -0.01257    2       0         0.         0.         0.047        0.
-stereo_in          0          3072     0.42485  1600       1305.6        16           24          -691.       -50.631     42.127     -0.0024    0.0062   -0.038756   100     0         0.         0.         0.047        0.
-stereo_out         0          3072     0.42485  1600       1305.6        16           24          -691.       -50.631     59.275     -0.0024    0.0062    0.013616  -100     0         0.         0.         0.047        0.

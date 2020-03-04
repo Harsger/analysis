@@ -1,7 +1,0 @@
-properties_SM2-M3_cosmics20181029.txt
-corrections_SM2-M3_cosmics20181029.txt
-detectorname    #xstrips    #ystrips   pitch   xlength    ylength   #divisionsX   #divisionsY    positionX    positionY  positionZ    angleX    angleY    angleZ    layer   flip    uTPCtime   CCCfactor   driftVelocity  cluTime
-eta_out           1024           0     0.425     250       1600        25            160          -108.8         0.     -17.31          0.       0.       0.       -3       0         0.        -0.3        0.047        0.
-eta_in            1024           0     0.425     250       1600        25            160          -108.8         0.      -0.63          0.       0.       0.        2       0         0.         0.3        0.047        0.
-stereo_in         1024           0     0.42485   250       1600        25            160          -108.8         0.      16.03          0.       0.       0.02619   100     0         0.        -0.3        0.047        0.
-stereo_out        1024           0     0.42485   250       1600        25            160          -108.8         0.      32.65          0.       0.      -0.02619  -100     0         0.         0.3        0.047        0.

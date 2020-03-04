@@ -1,7 +1,0 @@
-properties_eta3_CRF20181206.txt
-fecmap_eta3_CRF20181206.txt
-corrections_eta3_CRF20181606.txt
-boardmap_eta3_CRF20181206.txt
-detectorname    #xstrips    #ystrips   pitch   xlength    ylength   #divisionsX   #divisionsY    positionX    positionY  positionZ    angleX    angleY    angleZ    layer   flip    uTPCtime   CCCfactor   driftVelocity  cluTime
-etaBot             0          3072     0.425    1600       1305.6        16           24         -580.        -282.      -20.74      -0.00299   0.0061     0.00462    4       0         0.        -0.3        0.047        0.
-etaTop             0          3072     0.425    1600       1305.6        16           24         -580.        -282.       -4.14      -0.00299   0.0061     0.00462    5       0         0.         0.3        0.047        0.

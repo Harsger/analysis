@@ -1,9 +1,0 @@
-properties_M6_CRF20181206.txt
-fecmap_M6_CRF20181206.txt
-corrections_M6_CRF20181606.txt
-boardmap_M6_CRF20181206.txt
-detectorname    #xstrips    #ystrips   pitch   xlength    ylength   #divisionsX   #divisionsY    positionX    positionY  positionZ    angleX    angleY    angleZ    layer   flip    uTPCtime   CCCfactor   driftVelocity  cluTime
-eta_out            0          3072     0.425    1600       1305.6        16           24         -580.        -279.1     125.79      -0.0108    0.0123     0.00707    3       0         0.        -0.3        0.047        0.
-eta_in             0          3072     0.425    1600       1305.6        16           24         -580.        -279.1     142.25      -0.0108    0.0123     0.00707    2       0         0.         0.3        0.047        0.
-stereo_in          0          3072     0.42485  1600       1305.6        16           24         -580.        -279.1     158.59      -0.0108    0.0123    -0.019116   100     0         0.        -0.3        0.047        0.
-stereo_out         0          3072     0.42485  1600       1305.6        16           24         -580.        -279.1     175.92      -0.0108    0.0123     0.033256  -100     0         0.         0.3        0.047        0.

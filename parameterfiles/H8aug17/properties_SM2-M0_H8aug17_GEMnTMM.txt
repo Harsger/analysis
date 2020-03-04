@@ -1,9 +1,0 @@
-detectorname  minCharge  maxCharge  stripGap  stripChi2reject  minSize  maxSize  minClusterCharge  ntimebins   resolutionX  resolutionY
-eta_out         10        3000         2         1000             1       20         100              24          100           0.4
-eta_in          10        3000         2         1000             1       20         100              24          100           0.4
-stereo_in       10        3000         2         1000             1       20         100              24          100           0.4
-stereo_out      10        3000         2         1000             1       20         100              24          100           0.4
-GEM1            10        3000         2         1000             1       20         100              24          0.2           0.2
-GEM3            10        3000         2         1000             1       20         100              24          0.2           0.2
-TMM1           200        4000         2         1000             1       20         100              24          0.2           0.2
-TMM2           200        4000         2         1000             1       20         100              24          0.2           0.2

@@ -1,6 +1,0 @@
-eta_out eta_out eta_out eta_out eta_in eta_in eta_in eta_in stereo_in stereo_in stereo_in stereo_in stereo_out stereo_out stereo_out stereo_out 
-eta_out eta_out eta_out eta_out eta_in eta_in eta_in eta_in stereo_in stereo_in stereo_in stereo_in stereo_out stereo_out stereo_out stereo_out 
-eta_out eta_out eta_out eta_out eta_in eta_in eta_in eta_in stereo_in stereo_in stereo_in stereo_in stereo_out stereo_out stereo_out stereo_out 
-eta_out eta_out eta_out eta_out eta_in eta_in eta_in eta_in stereo_in stereo_in stereo_in stereo_in stereo_out stereo_out stereo_out stereo_out 
-eta_out eta_out eta_out eta_out eta_in eta_in eta_in eta_in stereo_in stereo_in stereo_in stereo_in stereo_out stereo_out stereo_out stereo_out 
-eta_out eta_out eta_out eta_out eta_in eta_in eta_in eta_in stereo_in stereo_in stereo_in stereo_in stereo_out stereo_out stereo_out stereo_out 

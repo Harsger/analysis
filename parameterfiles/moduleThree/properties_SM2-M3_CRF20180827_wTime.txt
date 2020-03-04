@@ -1,5 +1,0 @@
-detectorname minCharge maxCharge stripGap stripChi2reject  minSize  maxSize  minClusterCharge ntimebins resolutionX  resolutionY  signalVariation  firstTime   lastTime    meanTime
-eta_out        10        3000         2       1000             1      20           100            24       1e6            0.4          5.0            8.          12.        9.979
-eta_in         10        3000         2       1000             1      20           100            24       1e6            0.4          5.0            8.          12.       10.045
-stereo_in      10        3000         2       1000             1      20           100            24       1e6            0.4          5.0            8.          12.        9.945
-stereo_out     10        3000         2       1000             1      20           100            24       1e6            0.4          5.0            8.          12.       10.062

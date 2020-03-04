@@ -1,9 +1,0 @@
-properties_4chambers.txt
-stripmask_4chambers.txt
-fecmap_4chambers.txt
-corrections_4chambers.txt
-detectorname  #xstrips  #ystrips  pitch  xlength    ylength    #divisionsX  #divisionsY  positionX  positionY  positionZ  angleX    angleY    angleZ    layer  flip  uTPCtime  CCCfactor  driftVelocity
-L1              0         2048    0.45    1000      921.6          10          16        -1170.      -18.112    -15.28    0.00034  -0.00005  0.00203      1      0    4.837        0.         0.047
-Tmm1            384       384     0.25      96       96             8           9        -1213.      -29.374   -104.46       0.     0.003    0.0020       3      0    4.820        0.         0.047
-Tmm2            384       384     0.25      96       96             8           9        -1208.      -10.90      49.17       0.     0.0013   0.0141       4      0    5.060        0.         0.047
-T3              0         256     0.4      100      102.4           2          10        -1209.      -13.988      7.8        0.        0.       0.        2      0    4.013        0.         0.047

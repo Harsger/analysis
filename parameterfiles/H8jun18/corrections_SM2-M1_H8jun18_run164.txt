@@ -1,5 +1,0 @@
-
-unix start 1530208800 end 1532542800
-
-comment Tmm2 flipCluster
-comment Tmm4 flipCluster
