@@ -33,7 +33,8 @@ void quadruplot(
     unsigned int showNsave = 1 ,
     bool logScale = false ,
     bool oneDimensional = false ,
-    int transfer = 0
+    int transfer = 0 ,
+    bool withStatBox = true
 ){
     
     vector<TString> detectornames = {
@@ -57,6 +58,9 @@ void quadruplot(
     TH2D * read2D;
     TH1D * read1D;
     TString histname;
+    
+    if( withStatBox ) gStyle->SetOptStat(111110);
+    else gStyle->SetOptStat(0);
     
     for(unsigned int d=0; d<detectornames.size(); d++){
         
@@ -88,6 +92,7 @@ void quadruplot(
         if( oneDimensional ){
             
             if( logScale ) gPad->SetLogy();
+            read1D->GetYaxis()->SetRangeUser( lowZ , highZ );
             read1D->Draw();
             
         }
