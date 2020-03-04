@@ -28,8 +28,7 @@
 #    mapping file (with eta doublet) : /project/etpdaq2/SM2_data/mappings/SM2_etaDoublet_CRF.config
 #    mapping file (without  doublet) : /project/etpdaq2/SM2_data/mappings/SM2_M1_CRF.config
 
-mapfilename="/project/etpdaq2/SM2_data/mappings/SM2_etaDoublet_CRF.config"
-withDoublet="_eta3"
+mapfilename="/project/etpdaq2/SM2_data/mappings/SM2-M1_CRF.config"
 
 #
 #    *****************************************************************************************
@@ -39,7 +38,7 @@ withDoublet="_eta3"
 #    *one layer has only four numbers of APV from different FECs (e.g. stereo_out APV0,1,2,3)*
 #    *****************************************************************************************
 #
-#    schemes for cabeling : TO-BE-ADDED (drawn on papers on Ferrari in front of CRF)
+#    schemes for cabeling : TO-BE-ADDED (drawn on papers hanged at the upper MDT chamber of the CRF)
 #
 ##############################################################################
 # make readout ready : (as etpdaq)
@@ -47,54 +46,45 @@ withDoublet="_eta3"
 #    switch SRU and FECs on
 # => on gar-ex-etp04atl (fast connection via sshe6->ssha4 [in .bashrc of etpdaq] ):
 
-cd ~/etpdaqsvn/SRS_tools_trunk
-./config_SRS_v10 CRF_9FECs.config ALL
+cdsrs       # = cd ~/etpdaqsvn/SRS_tools_trunk
 
-# => check if all APVs are "OK"
+./moduleConfig.sh
 
-lm www
-gwenview www/<newest folder>
-
+# gwenview window will popup with all APV pedestal data shown
 # => debug APV problems with this
 #
 # redo this with HV on -> CAENGECO2020 (on gar-ex-etp04atl)
 ##############################################################################
-# pedestal data taking:
-# => comment in ~/etpdaqsvn/CRFscripts/startCRF.sh passage with startMMreadout.sh (afterwards needed)
-# => on gar-ex-etp04atl :
-#    change passage  in ~/etpdaqsvn/CRFscripts/startSRUdump.sh from "parse" to "raw" (three rows for both)
+# pedestal data taking on gar-ex-etp04atl:
 
 cd ~/etpdaqsvn/CRFscripts
-moduleNumber="m9"
-dataPath="/project/etpdaq4"
-./startCRF.sh 20000000 ${moduleNumber}${withDoublet}_raw SRU 0 CRF_9FECs.config ${dataPath} standard_TDCcommonStart.MT-Online
 
-#    after 10000 events in screen -r srs_dump
+moduleNumber="09"
+fileServer="3"
+dataPath="/project/etpdaq"${fileServer}
+
+./startCRF.sh 20000000 m${moduleNumber}${withDoublet}_raw SRU 4 CRF.config ${dataPath} standard_TDCcommonStart.MT-Online
+
+#    after 2000 events in screen -r srs_dump
 
 ./stopCRF.sh
 
-#    on fast machine (e.g. gar-ws-etp02)
+cd ~/etpdaqsvn/zerosuppressor
 
-mlm
-./parser -i ${moduleNumber}${withDoublet}_raw_<date>.dat -d ${dataPath}/CRF_data/MM_data -m ${mapfilename} -o ${moduleNumber}${withDoublet}_raw_<date>_parsed.root -p /project/etpdaq3/CRF_data/pedestals -W
+./pedestalParse.sh ${fileServer} ${runName}.dat
 
-#    look at sigma distributions with copy of /project/etp3/mherrmann/parser/plotPedestal.C (needs writing permission in current directory)
-
-root -q -x 'plotPedestal.C("/project/etpdaq3/CRF_data/pedestals/'${moduleNumber}${withDoublet}'_raw_<date>_parsed.root","'${mapfilename}'")'
-
-#    new root file created in current directory with <inname>"PED.root"
-#    adjust grounding if required
-#    afterwards change ~/etpdaqsvn/CRFscripts/startCRF.sh and gar-ex-etp04atl:~/etpdaqsvn/CRFscripts/startSRUdump.sh back
+#    adjust grounding if required and repeat
 ################################################################################
 # data taking
-# => check on gar-ex-etp04atl if 4 screens are active with names
+# => check on gar-ex-etp04atl if 4 screens are active (deatched) with names
 #    srs_dump , MMreadout , SRS_config , monitoring
 #    -> monitoring screen with four tabs to log HV and switch on tripped channels
+# => check on garsc05 ( as etpdaq shortcut "sshs5" ) if one screens is active (deatched) with name MT-Online
 
 cd ~/etpdaqsvn/CRFscripts
 
-doubletAdd="_620V_8515"
-runSpecifier=${moduleNumber}${moduleVoltage}${withDoublet}${doubletAdd}
+moduleVoltage="580V"
+runSpecifier=m${moduleNumber}_${moduleVoltage}
 
 ./startCRF.sh 20000000 ${runSpecifier} SRU 0 CRF_9FECs.config ${dataPath} standard_TDCcommonStart.MT-Online
 
@@ -103,9 +93,10 @@ runSpecifier=${moduleNumber}${moduleVoltage}${withDoublet}${doubletAdd}
 runName=${runSpecifier}<date>
 
 #    runName can be found in MM_data directory -> add to logfile
-#    -> /project/etpdaq3/CRF_data/CRFlogbook.ods
-#    one run should have at least 2M events (~6 hours)
-#    -> check in srs_dump screen
+#    -> Nextcloud CRF/CRFlogbook.ods
+#    one run should have at least 1M events (~3 hours) for the amplification scan
+#    for alignment longer runs of minimal 6 hours are necessary
+#    -> check in srs_dump screen if data is taken
 
 ./stopCRF
 
@@ -116,122 +107,53 @@ runName=${runSpecifier}<date>
 
 cd ~/etpdaqsvn/CRFscripts
 
-./startCRFanalysis.sh ~/etpdaqsvn/CRFscripts/mts ${dataPath}/tracksMDT/${runName} ${dataPath}/CRF_data/MDT_data ${runName} ~/etpdaqsvn/CRFscripts/.ts_analysis/mm_combined_setup_wTrigtag_woADC.mt_setup ${dataPath}/CRF_data/MM_data ${dataPath}/CRF_data/TDC_data ${dataPath}/CRF_data/merged_data
+./combineCRFnMM.sh ${fileServer} ${runName}
 
 #    should produce in merged_data directory files named ${runName}_mergedAll_<number>.root
 
 ###################################################################################
-# the code for the following analysis can be found at
-git clone https://github.com/Harsger/analysis.git
+# the code for the following analysis can be found online 
+# git clone https://github.com/Harsger/analysis.git
+# each of the following scripts need root loaded :
+#                                                   mlm
+# execution in the analysis directory : 
+#                                                   cd /project/etpdaq4/CRF_data/nswQAQC/analysis
 ##################################################################################
-# fitting and tracking
-# => generate two files (after hadd) per run , one with trees , other with basic histogramms
-#    needs new parameterfiles for each module (or after alignment is changed)
+# fitting and clustering
 #    -> as etpdaq in screen on reliable machine
+#       currently adding the files takes the most time (done after fitting)
 
-cd /project/etp4/etpdaq/CRFmicromegas
+./moduleFit.sh ${fileServer} ${moduleNumber} ${runName}
 
-#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
-cp -r /project/etp3/mherrmann/analysis/parameterfiles/defaultParaSM2nDoublet ${moduleNumber} 
-parameterfile="/project/etp4/etpdaq/CRFmicromegas/${moduleNumber}/parameter_SM2nDoublet.txt"
-# => this file has to be adjusted later on
-#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
-
-mlm
-mlo slurm
-
-python executor.py -c '/project/etp3/mherrmann/analysis/fitNclust -o /project/etpdaq3/mherrmann/fitteddata -p ${parameterfile}' -i ${dataPath}/CRF_data/merged_data/${runName}_mergedAll -t raw_merged -e 3000
-
-#    this will run for each mergedALL-file two jobs
-#    each job takes about 20 min (for quadruplett with doublet data)
-#    after all jobs are finished (see with squeue) add them in screen
-
-mlm
-
-cd /project/etpdaq3/mherrmann/fitteddata
-
-./basicsNtrees ${runName}_mergedAll ${runName}
-#    this can take up to half an hour
-
-#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
-cd /project/etp4/mherrmann/fitteddata
-mkdir ${moduleNumber}
-#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
-
-mv ${runName}* ${moduleNumber}
+# => generate two files per run , one with trees , other with basic histogramms
+#    if no module folder in /project/etpdaq4/CRF_data/nswQAQC is found new folder will be generated
+#    module folder consists of three subfolders : 
+#                                                   parameter (only textfiles with alignemnt parameter)
+#                                                   fitteddata (root-files with trees of signals fits, cluster and CRF tracks)
+#                                                   histogramms (root-files with evaluation , subfolder qaqc will contain database results)
 
 #################################################################################
 # alignment
-# => parameters X , Y , Z , angleX , angleY , angleZ have to determined
-#    after each adjustment step the investigateCRF analysis have to be run again
+#   only once for each module (each call will change the parameterfiles)
+#   the analysis will run 4 times over the datasample (about 10 to 20 minutes)
+#   in between several windows will pop-up wihtout need for further intervention
 
-#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
-cd /project/etp4/mherrmann/analysis/results/CRF
-mkdir ${moduleNumber}
-#### only once for each module (or alignment) !!!!!!!!!!!!!!!!!!!
-
-mlm
-
-/project/etp3/mherrmann/analysis/investigateCRF -o /project/etp4/mherrmann/analysis/results/CRF/${moduleNumber} -p ${parameterfile} -d /project/etp4/mherrmann/fitteddata/${moduleNumber} -i ${runName}_fitNclust.root
-
-#   this should take about 2 to 5 minutes
-# => first step is coarse alignment of X , Y , Z , angleZ
-
-/project/etp3/mherrmann/analysis/postprocessor -m coarse -p ${parameterfile} -d /project/etp4/mherrmann/analysis/results/CRF/${moduleNumber} -i ${runName}_fitNclust_inCRF.root
-
-#   interactive ! -> check if fit works
-#   -> plug in X      values (+) in ${parameterfile} for all layers as STEREO
-#   -> plug in Y      values (-) in ${parameterfile} for all layer as eta_out (for doublet all layer as etaBot)
-#   -> plug in Z      values (+) in ${parameterfile} for all layers individual
-#   -> plug in angleZ values (-) in ${parameterfile} for all layers as eta_out (for doublet all layer as etaBot)
-#                                                        -> stere_in  -0.026186
-#                                                        -> stere_out +0.026186
-
-# redo investigateCRF
-
-/project/etp3/mherrmann/analysis/investigateCRF -o /project/etp4/mherrmann/analysis/results/CRF/${moduleNumber} -p ${parameterfile} -d /project/etp4/mherrmann/fitteddata/${moduleNumber} -i ${runName}_fitNclust.root
-
-# => finer alignment
-
-/project/etp3/mherrmann/analysis/postprocessor -m fine -p ${parameterfile} -d /project/etp4/mherrmann/analysis/results/CRF/${moduleNumber} -i ${runName}_fitNclust_inCRF.root
-
-#   interactive ! -> check if fit works
-#   -> subtracte Y      values in ${parameterfile} for all layer as eta_out (for doublet layer as etaBot)
-#   -> add       Z      values in ${parameterfile} for all layers individual
-#   -> subtracte angleZ values in ${parameterfile} for all layers as eta_out (for doublet layer as etaBot)
-#                                                        -> stere_in  -0.026186
-#                                                        -> stere_out +0.026186
-
-# => redo this until angleZ in order of 1e-5 (below 1e-4)
-
-####################################
-# further alignemnt could be skipped => only described shortly
-# sign conventions found in /project/etp3/mherrmann/analysis/HOWTOAlign.txt
-# after each step redo ...investigateCRF...
-# then ...postprocessor... with -m align for the resulting "_inCRF.root" file
-# => alignemnt parameter found in console output
-# => fits and alignment plots can be found in "_align.root" file
+./moduleAlignment.sh ${moduleNumber} ${runName}_fitNclust.root
 
 #####################################################################################
-# efficiency
-# same command as during alignment with ...postprocessor... except with "properties" [instead of align or fine] (behind -m)
-# in the resulting "_properties.root" file look at the "nearEfficiency" (5mm efficiency) and the "coincidenceEffi" (5mm efficiency with required coincidence hit in other layer) plots
-# for debugging also "efficiencies" is usefull => this is "hardware efficiency"
+# amplification scan for database
+#   for each voltage point
+#                           -> 525V , 540V , 560V , 570V , 580V
+#   the measurement has to be 
+#                               combined ("MDT tracking and datastream merging") and 
+#                               fitted ("fitting and clustering") 
+#   beforehand , after this the tree-root-files are found in the fitteddata subdirectory of the module (with extension "_fitNclust.root")
+
+./moduleProperties.sh ${moduleNumber} ${runName}_fitNclust.root
 
 ####################################################################################
 # QAQC
+#   as measurement choose the longest available without gas-flow or voltage drops
+#   each voltage point has to be evaluated ("amplification scan for database") beforehand
 
-mlm
-
-/project/etp3/mherrmann/analysis/qaqc
-
-# => offers three analysis modes
-# => will produce in /project/etpdaq/NSW_QAQC/QC_App/cosmics a directory and a json file in this directory for the database with the module number specified after the -n option 
-#    !!! be aware old results can be overwritten, so do not use old module numbers !!!
-# -d option requires a "_inCRF.root" file (full path) produced with ...investigateCRF... with -O option (this takes longer because of iteration over all strips) => hists called dead_<layer> and noisy_<layer>
-# -a requires a directory with "_properties.root" files for different amplification voltages specified as _<voltage>V_ in the beginning
-#    these files have to be run ...investigateCRF... as well as ...postprocessor... (with -m properties) with 5 #divisionsX and 7 #divisionsY in the parameterfile (for all layers)
-# -m optin requires a "_properties.root" file for gain and efficiency maps -> 570V run
-#    for the average of the maps sectors can be excluded with the -e option (can be use multiple times -e ... -e ... -e ...)
-#    sectors are specified: <layer><board><side>
-#                     e.g.: eta_inB7R , stereo_outB8L
+./moduleQAQC.sh ${moduleNumber} ${runName}_fitNclust.root
