@@ -22,7 +22,7 @@ def fillInputFiles (dirPath,inputfile,specific,exclude):
                         infiles[filename]={}
                         infiles[filename]["name"]=filename
                         infiles[filename]["path"]=dirPath+"/"+filename
-                        print " "+str(infiles[filename]["name"])
+                        print( " "+str(infiles[filename]["name"]) )
 
 
 
@@ -47,15 +47,15 @@ def main(argv):
         try:
                 opts, args = getopt.getopt(argv,"hc:i:d:t:s:n:e:WLD",["command=","inputfile=","datapath=","treename=","specifier=","notuse=","eventsPerJob=","wholeFiles","localMode","defaultMode"])
         except getopt.GetoptError:
-                print usage
+                print( str(usage) )
                 sys.exit(2)
         if len(argv) < 1:
-                print " arguments required "
-                print str(usage)
+                print( " arguments required " )
+                print( str(usage) )
                 sys.exit(2)
         for opt, arg in opts:
                 if opt in ("-h", "--help"):
-                        print usage
+                        print( str(usage) )
                         sys.exit()
                 elif opt in ("-c", "--command"):
                         commandMain = arg
@@ -75,14 +75,14 @@ def main(argv):
                         wholeFile = True
                 elif opt in ("-L", "--localMode"):
                         localAna = True
-                        print " running jobs local "
+                        print( " running jobs local " )
                 elif opt in ("-D", "--defaultMode"):
                         defaultAna = True
-                        print " using default values"
+                        print( " using default values" )
                         
         if defaultAna:
             
-                print " default mode    : enabled"
+                print( " default mode    : enabled" )
             
                 ########### default input
                 
@@ -94,19 +94,19 @@ def main(argv):
                 datapath = inputfile[0:indexLastSlash]
                 inputfile = inputfile[indexLastSlash+1:charsINstr]
                         
-        print " command         : "+str(commandMain)
-        print " inputfiles      : "+str(inputfile)
-        print " datapath        : "+str(datapath)
-        print " specifier       : "+str(specifier)
-        print " notuse          : "+str(notuse)
-        if wholeFile : print " whole file mode : enabled"
+        print( " command         : "+str(commandMain) )
+        print( " inputfiles      : "+str(inputfile)   )
+        print( " datapath        : "+str(datapath)    )
+        print( " specifier       : "+str(specifier)   )
+        print( " notuse          : "+str(notuse)      )
+        if wholeFile : print( " whole file mode : enabled" )
         else : 
-                print " treename        : "+str(treename)
-                print " events per job  : "+str(eventsPerJob)
-        if localAna : print " local mode      : enabled"
+                print( " treename        : "+str(treename) )
+                print( " events per job  : "+str(eventsPerJob) )
+        if localAna : print( " local mode      : enabled" )
              
         if inputfile == '' or commandMain == '':
-                print usage
+                print( str(usage) )
                 sys.exit(2)
   
         fillInputFiles( datapath, inputfile, specifier, notuse)
@@ -147,7 +147,7 @@ def main(argv):
         countFileJobs = 0
         numberOfFiles = len(infiles)
         
-        print " # found files : "+str(numberOfFiles)
+        print( " # found files : "+str(numberOfFiles) )
         
         for filename in infiles:
                 readname = str(datapath)+"/"+str(filename)
@@ -156,13 +156,13 @@ def main(argv):
                 if not wholeFile:
                     file = ROOT.TFile.Open(readname)
                     if file.GetNkeys() < 1 :
-                        print " WARNING : file "+readname+" has no keys => skipped "
+                        print( " WARNING : file "+str(readname)+" has no keys => skipped " )
                         continue
                     tree = file.Get(treename)
                     nevents = tree.GetEntries()
                     file.Close
                     neededJobs = int(nevents)/int(eventsPerJob)+1
-                    print " file : "+filename+" \t # events : "+str(nevents)+" \t => jobs "+str(neededJobs)
+                    print( " file : "+str(filename)+" \t # events : "+str(nevents)+" \t => jobs "+str(neededJobs) )
                     for step in range(0,neededJobs):
                             count += 1
                             countFileJobs += 1
@@ -176,13 +176,13 @@ def main(argv):
                                 time.sleep(1)
                                 wasWaiting = True
                             if wasWaiting:
-                                print " "
+                                print( " " )
                             anaCommand = str(commandMain)+" -i "+str(infiles[filename]["name"])+" -s "+str(jobstart)+" -e "+str(jobend)
                             if datapath != '' : anaCommand += " -d "+str(datapath)
                             sbatchCommand = str(commandPrefix)+str(anaCommand)
-                            print " file "+str(countFiles)+" / "+str(numberOfFiles)+" \t job "+str(countFileJobs)+" / "+str(neededJobs)+" \t : "+str(anaCommand)
-                            #print " \n file "+str(countFiles)+" / "+str(numberOfFiles)+" \t job "+str(countFileJobs)+" / "+str(neededJobs)+" \t : "
-                            #print " \t "+str(sbatchCommand)
+                            print( " file "+str(countFiles)+" / "+str(numberOfFiles)+" \t job "+str(countFileJobs)+" / "+str(neededJobs)+" \t : "+str(anaCommand) )
+                            #print( " \n file "+str(countFiles)+" / "+str(numberOfFiles)+" \t job "+str(countFileJobs)+" / "+str(neededJobs)+" \t : " )
+                            #print( " \t "+str(sbatchCommand) )
                             if localAna:
                                 os.system(anaCommand)
                             else:
@@ -195,13 +195,13 @@ def main(argv):
                     time.sleep(1)
                     wasWaiting = True
                 if wasWaiting:
-                    print " "
+                    print( " " )
                 anaCommand = str(commandMain)+" -i "+str(infiles[filename]["name"])
                 if datapath != '' : anaCommand += " -d "+str(datapath)
                 sbatchCommand = str(commandPrefix)+str(anaCommand)
-                print " job "+str(count)+" / "+str(numberOfFiles)+" : "+str(anaCommand)
-                #print " \n job "+str(count)+" / "+str(numberOfFiles)+" : "
-                #print " \t "+str(sbatchCommand)
+                print( " job "+str(count)+" / "+str(numberOfFiles)+" : "+str(anaCommand) )
+                #print( " \n job "+str(count)+" / "+str(numberOfFiles)+" : " )
+                #print( " \t "+str(sbatchCommand) )
                 if localAna:
                     os.system(anaCommand)
                 else:
@@ -214,7 +214,7 @@ def main(argv):
                 time.sleep(1)
                 wasWaiting = True
             if wasWaiting:
-                print " "
+                print( " " )
                 
 def getJobCount(limit,jobname):
     USER = os.environ['USER']

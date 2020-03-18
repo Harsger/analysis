@@ -20,7 +20,7 @@ def fillInputFiles (dirPath,inputfile,specific,exclude):
         if filename.startswith(str(inputfile)) and filename.find(str(specific)) != -1 and filename.find(str(exclude)) == -1:
             infiles[filename] = filename 
             #count += 1
-            print " "+str(filename)
+            print( " "+str(filename) )
 
 def main(argv):
     #global count
@@ -38,17 +38,17 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv,"c:e:i:d:s:n:",["commandStart=","endCommand","inputfile=","datapath=","specifier=","notuse="])
     except getopt.GetoptError:
-        print usage
+        print( str(usage) )
         sys.exit(2)
             
     if len(argv) < 1:
-        print " arguments required "
-        print str(usage)
+        print( " arguments required " )
+        print( str(usage) )
         sys.exit(2)
             
     for opt, arg in opts:
         if opt in ("-h", "--help"):
-            print usage
+            print( str(usage) )
             sys.exit()
         elif opt in ("-c", "--commandStart"):
             commandStart = arg
@@ -69,23 +69,23 @@ def main(argv):
         datapath = inputfile[0:indexLastSlash]
         inputfile = inputfile[indexLastSlash+1:charsINstr]
                     
-    print " commandStart    : "+str(commandStart)
-    print " endCommand      : "+str(endCommand)
-    print " inputfiles      : "+str(inputfile)
-    print " datapath        : "+str(datapath)
-    print " specifier       : "+str(specifier)
-    print " notuse          : "+str(notuse)
-            
+    print( " commandStart    : "+str(commandStart) )
+    print( " endCommand      : "+str(endCommand)   )
+    print( " inputfiles      : "+str(inputfile)    )
+    print( " datapath        : "+str(datapath)     )
+    print( " specifier       : "+str(specifier)    )
+    print( " notuse          : "+str(notuse)       )
+                                                   
     if commandStart == '':     
     #if inputfile == '' or commandStart == '':
-        print usage
+        print( str(usage) )
         sys.exit(2)
 
     fillInputFiles( datapath, inputfile, specifier, notuse )
 
     numberOfFiles = len(infiles)
     
-    print " # found files : "+str(numberOfFiles)
+    print( " # found files : "+str(numberOfFiles) )
     
     count = 0
     
@@ -102,7 +102,7 @@ def main(argv):
         #fullcommand = str(commandStart) + str(measurementTag) + ".txt -i " + str(readname)
         
         count += 1
-        print " job "+str(count)+" / "+str(numberOfFiles)+" : "+str(fullcommand)
+        print( " job "+str(count)+" / "+str(numberOfFiles)+" : "+str(fullcommand) )
         
         os.system(fullcommand)
 
