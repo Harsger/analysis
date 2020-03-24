@@ -86,7 +86,8 @@ void overwriter(
     TString parameterFile,
     TString correctionFile,
     TString analysisDirectory,
-    bool firstIteration = false
+    bool firstIteration = false ,
+    bool upsideDown = false
 ){
     
     vector< vector<string> > corrections = getInput( correctionFile.Data() );
@@ -110,7 +111,13 @@ void overwriter(
         for( auto d : moduleDesign ){
             
             double toAdd = 0.;
-            if( firstIteration && con->first == "positionZ" ) toAdd = d.second.at(0);
+            if( 
+                firstIteration && 
+                con->first == "positionZ" 
+            ){ 
+                toAdd = d.second.at(0);
+                if( upsideDown ) toAdd = -toAdd;
+            }
 //             if( firstIteration && con->first == "angleZ" ) toAdd = d.second.at(1);
             
             double number = atof( c.at(1).c_str() ) + toAdd;

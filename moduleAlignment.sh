@@ -17,6 +17,12 @@ then
     ${fillHistograms}
     ${postprocess}"coarse"
     eval ${overWriteParameter}'coarse","'${analysisPath}'",true)'"'"
+elif [ "$3" == "invert" ]
+then
+    cp /project/etpdaq4/CRF_data/nswQAQC/defaultModule/parameter/parameter_SM2_invert.txt ${dataPath}/parameter/parameter_SM2.txt
+    ${fillHistograms}
+    ${postprocess}"coarse"
+    eval ${overWriteParameter}'coarse","'${analysisPath}'",true,true)'"'"
 fi
 
 ${fillHistograms}
