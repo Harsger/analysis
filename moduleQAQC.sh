@@ -8,13 +8,23 @@ fileWOroot=${filename%$endPhrase}
 analysisPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/"
 dataPath="/project/etpdaq4/CRF_data/nswQAQC/m"${moduleNumber}"/"
 
-# read module center in non-precision axis (X)
+# read module center
 moduleXcenter=""
+moduleYcenter=""
 while IFS= read -r line
 do
   
     if [[ ${line} == *"positionX"* ]]; then
         moduleXcenter=$(echo ${line} | awk '{print $2}')
+    fi
+
+    if [[ ${line} == *"positionY"* ]]; then
+        moduleYcenter=$(echo ${line} | awk '{print $2}')
+        if [[ ${moduleYcenter} == *"-"* ]]; then
+                moduleYcenter="${moduleYcenter//-}"
+        else
+                moduleYcenter="-"${moduleYcenter}
+        fi
     fi
     
 done < ${dataPath}"parameter/coarse"
@@ -39,11 +49,12 @@ nextCommand=${analysisPath}"qaqc "                              # program
 nextCommand+=" -n "${moduleNumber}                              # module number
 nextCommand+=" -m "${dataPath}"histograms/"                     # file-path ->
 nextCommand+=${fileWOroot}"_inCRF_properties.root"              #              name
-nextCommand+=" -q 5000 -l 0"                                    # plot options
-if [ "${moduleXcenter}" == "" ]; then                           # check whether center is found
-    nextCommand+=" -C"                                          #   not -> use coarse map
-else
-    nextCommand+=" -x "${moduleXcenter}                         #   yes -> use fine map
+nextCommand+=" -q 5000 -l 0 -C"                                 # plot options
+if [ "${moduleXcenter}" != "" ]; then                           # check whether X center is found
+    nextCommand+=" -x "${moduleXcenter}
+fi
+if [ "${moduleYcenter}" != "" ]; then                           # check whether Y center is found
+    nextCommand+=" -y "${moduleYcenter} 
 fi
 echo ${nextCommand}
 ${nextCommand}                                                  # EXECUTION
