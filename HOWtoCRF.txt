@@ -63,7 +63,7 @@ moduleNumber="09"
 fileServer="3"
 dataPath="/project/etpdaq"${fileServer}
 
-#OLD ./startCRF.sh 20000000 m${moduleNumber}${withDoublet}_raw SRU 4 CRF.config ${dataPath} standard_TDCcommonStart.MT-Online
+#OLD ./startCRF.sh 20000000 m${moduleNumber}_raw SRU 4 CRF.config ${dataPath} standard_TDCcommonStart.MT-Online
 #OLD 
 #OLD #    after 2000 events in screen -r srs_dump
 #OLD 
