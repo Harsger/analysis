@@ -262,6 +262,7 @@ int main(int argc, char* argv[]){
     }
     
     TApplication app("app", &argc, argv);
+    gROOT->SetBatch(kTRUE);
     
 //     cout << writer << endl;
     
