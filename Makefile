@@ -21,7 +21,7 @@ converter: converter.C dicvecvec.o
 
 dicvecvec.o: headvecvec.h analysis.h
 	rootcint -f dicvecvec.cxx -c headvecvec.h
-	g++ -std=c++11 -c dicvecvec.cxx
+	g++ -std=c++11 `root-config --glibs --cflags` -c dicvecvec.cxx
 
 studyCRF: studyCRF.C
 	g++ -std=c++11 -Ofast studyCRF.C -o studyCRF `root-config --glibs --cflags`
