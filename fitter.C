@@ -887,8 +887,8 @@ void analysis::fitNclust(){
                 variation->push_back(-1.);
                 chargeMean.push_back(-1.);
                 timeFitError.push_back(1e6);
-                chargeOffset.push_back(0.);
-                chargeBase.push_back(0.);
+                chargeOffset.push_back( -1e6 );
+                chargeBase.push_back( -1e6 );
                 riseError.push_back(-1.);
                 
                 continue;
@@ -933,8 +933,8 @@ void analysis::fitNclust(){
                     risetime->push_back( -1000 );
                     chi2ndf->push_back( -1000 );
                     timeFitError.push_back( 1e6 );
-                    chargeOffset.push_back(0.);
-                    chargeBase.push_back(0.);
+                    chargeOffset.push_back( -1e6 );
+                    chargeBase.push_back( -1e6 );
                     riseError.push_back(-1.);
                     
                     sortOut.push_back(true);
@@ -949,9 +949,18 @@ void analysis::fitNclust(){
             inverseFermi->SetParameters( maxQ, maxtime-1, 0.8, 0.);
 //             inverseFermi->FixParameter(0, maxQ);
             pulseheight->Fit("inverseFermi","RQ0B");
-            pulseheight->Delete();
             
-            if(debug && verbose) cout << " \t turntime " << inverseFermi->GetParameter(1) << " \t risetime " << inverseFermi->GetParameter(2) << " \t chi2ndf " << inverseFermi->GetChisquare()/inverseFermi->GetNDF() << endl;
+            if(debug && verbose){ 
+                cout << " \t turntime " << inverseFermi->GetParameter(1) << 
+                        " \t risetime " << inverseFermi->GetParameter(2) << 
+                        " \t chi2ndf " << inverseFermi->GetChisquare()/inverseFermi->GetNDF() << endl;
+//                     pulseheight->Draw();
+//                     gPad->Modified();
+//                     gPad->Update();
+//                     gPad->WaitPrimitive();
+            }
+                        
+            pulseheight->Delete();
             
             if(withJitter) turntime->push_back( inverseFermi->GetParameter(1) - ( triggerOffset.at( cfec ) - time_correction_ns->at( TDCorder[ cfec ] ) ) * 0.04 );
             else if(withTrigCor) turntime->push_back( inverseFermi->GetParameter(1) - ( trigger_correction_time - triggerOffset.at( cfec ) ) * 0.04 );
@@ -966,7 +975,7 @@ void analysis::fitNclust(){
             );
 //             timeFitError.push_back( inverseFermi->GetParError(1) );
             riseError.push_back(inverseFermi->GetParError(2));
-            chargeOffset.push_back( inverseFermi->GetParError(3) );
+            chargeOffset.push_back( inverseFermi->GetParameter(3) );
             
             inverseFermi->Delete();
             
@@ -1018,12 +1027,18 @@ void analysis::fitNclust(){
 //                 TF1 * skewGaus = new TF1( "skewGaus", "[0] * exp( -1 * pow( ( pow( x , 0.9 * tanh([3]) + 1 ) - [1] ) / ( 2 * tanh([2]) + 2 ) , 2 ) )", 0, maxtime + 3);
 //                 skewGaus->FixParameter(0, maxQ);
 //                 pulseheight->Fit("skewGaus","RQ0B");
-                pulseheight->Delete();
                 
-                if(debug && verbose) 
+                if(debug && verbose){
                     cout << " \t turntime " << inverseFermi->GetParameter(1) << 
-                    " \t risetime " << inverseFermi->GetParameter(2) << 
-                    " \t chi2ndf " << inverseFermi->GetChisquare()/inverseFermi->GetNDF() << endl;
+                            " \t risetime " << inverseFermi->GetParameter(2) << 
+                            " \t chi2ndf " << inverseFermi->GetChisquare()/inverseFermi->GetNDF() << endl;
+//                     pulseheight->Draw();
+//                     gPad->Modified();
+//                     gPad->Update();
+//                     gPad->WaitPrimitive();
+                }
+                    
+                pulseheight->Delete();
             
                 if(withJitter) turntime->at( stripindex ) = inverseFermi->GetParameter(1) - ( triggerOffset.at( fec->at( stripindex ) ) - time_correction_ns->at( TDCorder[ fec->at( stripindex ) ] ) ) * 0.04 ;
                 else if(withTrigCor) turntime->at( stripindex ) = inverseFermi->GetParameter(1) - ( trigger_correction_time - triggerOffset.at( fec->at( stripindex ) ) ) * 0.04 ;
@@ -1040,7 +1055,7 @@ void analysis::fitNclust(){
                 );
 //                 timeFitError.at( stripindex) = inverseFermi->GetParError(1);
                 riseError.at(stripindex) = inverseFermi->GetParError(2);
-                chargeOffset.at( stripindex) = inverseFermi->GetParError(3);
+                chargeOffset.at( stripindex) = inverseFermi->GetParameter(3);
                 
                 inverseFermi->Delete();
                 
