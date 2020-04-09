@@ -25,6 +25,7 @@ bool overwriteCorrection = false;
 double correctionFactor = 0.;
 bool overwriteExtrapolation = false;
 double extrapolator = 0.;
+double timeCorrectionSign = -1.;
 
 int main(int argc, char* argv[]){
     
@@ -50,19 +51,19 @@ int main(int argc, char* argv[]){
         " -e\tend event number      \t(default:  \"" << end << "\"->whole file)\n"
         " -c\tCCC-factor overwrite  \t(default:  \"" << overwriteCorrection << "\" -> " << correctionFactor << ")\n"
         " -t\ttiming extrapolation  \t(default:  \"" << overwriteExtrapolation << "\" -> " << extrapolator << ")\n"
-        " -J\tnot use jitter-cor.   \t(default:  \"" << noJitterCorrection << "->jitter will be corrected\n"
+        " -j\tjitter-cor. sign      \t(default:  \"" << timeCorrectionSign << " ->jitter will be subtracted)\n"
         " -O\tonly cluster mode off \t(default:  \"" << only << "\")\n"
         " -F\tfit noise signals     \t(default:  \"" << fitNoise << "\")\n"
         " -S\tsave signal samples   \t(default:  \"" << sample << "\")\n"
         " -D\tdebugging mode        \t(default:  \"" << bugger << "\")\n"
         "\n"
-        "output files are named : <inputname>_fitNclust_ana<start>to<end>.root\n"
+        "output files are named : <inputname>_fitNclust<start>to<end>.root\n"
         "\n";
         return 0;
     }
     
     char c;
-    while ((c = getopt (argc, argv, "i:d:o:p:s:e:c:t:JOFSD")) != -1) {
+    while ((c = getopt (argc, argv, "i:d:o:p:s:e:c:t:j:OFSD")) != -1) {
         switch (c)
         {
         case 'i':
@@ -91,8 +92,9 @@ int main(int argc, char* argv[]){
             extrapolator = atof(optarg);
             overwriteExtrapolation = true;
             break;
-        case 'J':
-            noJitterCorrection = true;
+        case 'j':
+            timeCorrectionSign = atof(optarg);
+            if( timeCorrectionSign == 0. ) noJitterCorrection = true;
             break;
         case 'O':
             only = true;
@@ -962,8 +964,8 @@ void analysis::fitNclust(){
                         
             pulseheight->Delete();
             
-            if(withJitter) turntime->push_back( inverseFermi->GetParameter(1) - ( triggerOffset.at( cfec ) - time_correction_ns->at( TDCorder[ cfec ] ) ) * 0.04 );
-            else if(withTrigCor) turntime->push_back( inverseFermi->GetParameter(1) - ( trigger_correction_time - triggerOffset.at( cfec ) ) * 0.04 );
+            if(withJitter) turntime->push_back( inverseFermi->GetParameter(1) + timeCorrectionSign * ( triggerOffset.at( cfec ) - time_correction_ns->at( TDCorder[ cfec ] ) ) * 0.04 );
+            else if(withTrigCor) turntime->push_back( inverseFermi->GetParameter(1) + timeCorrectionSign * ( trigger_correction_time - triggerOffset.at( cfec ) ) * 0.04 );
             else turntime->push_back( inverseFermi->GetParameter(1) );
             risetime->push_back( inverseFermi->GetParameter(2) );
             chi2ndf->push_back( inverseFermi->GetChisquare()/inverseFermi->GetNDF() );
@@ -1040,8 +1042,8 @@ void analysis::fitNclust(){
                     
                 pulseheight->Delete();
             
-                if(withJitter) turntime->at( stripindex ) = inverseFermi->GetParameter(1) - ( triggerOffset.at( fec->at( stripindex ) ) - time_correction_ns->at( TDCorder[ fec->at( stripindex ) ] ) ) * 0.04 ;
-                else if(withTrigCor) turntime->at( stripindex ) = inverseFermi->GetParameter(1) - ( trigger_correction_time - triggerOffset.at( fec->at( stripindex ) ) ) * 0.04 ;
+                if(withJitter) turntime->at( stripindex ) = inverseFermi->GetParameter(1) + timeCorrectionSign * ( triggerOffset.at( fec->at( stripindex ) ) - time_correction_ns->at( TDCorder[ fec->at( stripindex ) ] ) ) * 0.04 ;
+                else if(withTrigCor) turntime->at( stripindex ) = inverseFermi->GetParameter(1) + timeCorrectionSign * ( trigger_correction_time - triggerOffset.at( fec->at( stripindex ) ) ) * 0.04 ;
                 else turntime->at( stripindex ) = inverseFermi->GetParameter(1);
 //                 double skewGausTime = pow( skewGaus->GetParameter(1) , 1. / ( 0.9 * ( skewGaus->GetParameter(3) ) + 1. ) );
 //                 if(withJitter) turntime->at( stripindex ) = skewGausTime - ( triggerOffset.at( fec->at( stripindex ) ) - time_correction_ns->at( TDCorder[ fec->at( stripindex ) ] ) ) * 0.04 ;
