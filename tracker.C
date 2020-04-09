@@ -185,18 +185,91 @@ void analysis::tracking(){
    
     outfile = new TFile(outname,"RECREATE");
     
-    double stereoPrecision = 0.5 / cos( angle.at(3).at(2) );
+    double stereoPrecision    = 0.5 / cos( angle.at(3).at(2) );
+    double stereoNonPrecision = 0.5 / sin( angle.at(3).at(2) );
+    
     double stereoCenter = 0.5 * ( position.at(2).at(2) + position.at(3).at(2) );
     double centerDifference = stereoCenter - position.at(0).at(2);
+    
+    double interpolateStereos = ( position.at(1).at(2) - position.at(0).at(2) ) / centerDifference;
+    double interpolateEta     = (         stereoCenter - position.at(1).at(2) ) / centerDifference;
     
     TH2I * residualVStrackSlope = new TH2I( "residualVStrackSlope" , "residualVStrackSlope" , 2000 , -100. , 100. , 2000 , -3000. , 3000. );
     TH2I * minResVStrackSlope = new TH2I( "minResVStrackSlope" , "minResVStrackSlope" , 2000 , -100. , 100. , 2000 , -100. , 100. );
     
-//     map< string , vector<int> > clusterProperties = { 
-//         { "multiplicity" , {  30 ,  0. ,  30. } } , 
-//         { "charge"       , { 500 ,  0. , 1e5  } } ,
-//         { "time"         , {  24 ,  0. ,  24. } } ,
-//         { "uTPCslope"    , { 600 , -3. ,   3. } } 
+    TH2I * hitMap = new TH2I( "hitMap" , "hitMap" , (unsigned int)(length.at(0).at(0)*0.1) , -0.5*length.at(0).at(0) , 0.5*length.at(0).at(0) , (unsigned int)(length.at(0).at(1)*0.1) , 0. , length.at(0).at(1) );
+    
+    TH2I **** timeVSposition = new TH2I***[ndetectors];
+    
+    TString histname;
+
+    vector<TString> modeNames = {
+        "first" ,
+        "average" ,
+        "last" ,
+        "diffsame" ,
+        "diffother"
+    };
+
+    unsigned int nModes = 5;
+    
+    short detectorCombinations[4][2] = {
+        { 2 , 1 } ,
+        { 3 , 2 } ,
+        { 0 , 3 } ,
+        { 1 , 0 } 
+    };
+    
+    double timeBinnings[2][3] = {
+        { 250 , -1. , 24. } , 
+        { 200 , -10. , 10. }
+    };
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+        
+        timeVSposition[d] = new TH2I**[nfec];
+        
+        for(unsigned int f=0; f<nfec; f++){
+            
+            timeVSposition[d][f] = new TH2I*[nModes];
+            
+            for(unsigned int t=0; t<5; t++){
+             
+                histname = "timeVSposition_";
+                histname += detectornames.at(d);
+                histname += "_FEC";
+                histname += f;
+                histname += "_";
+                histname += modeNames.at(t);
+                
+                unsigned int bin = 0;
+                if( modeNames.at(t).Contains("diff") ) bin = 1;
+                
+                timeVSposition[d][f][t] = new TH2I( 
+                                                    histname , histname , 
+                                                    (unsigned int)(length.at(0).at(0)*0.1) , 
+                                                    -0.5*length.at(0).at(0) , 
+                                                    0.5*length.at(0).at(0) , 
+                                                    timeBinnings[bin][0] ,  
+                                                    timeBinnings[bin][1] , 
+                                                    timeBinnings[bin][2]
+                                                  );
+                
+            }
+            
+        }
+        
+        
+    }
+    
+//     map< string , vector<double> > variablesNbinning = { 
+//         { "residual"     , { 2000 ,  -10.  ,   10.  } } , 
+//         { "slope"        , {  200 ,   -1.  ,    1.  } } , 
+//         { "position"     , {  307 ,    0.5 , 3072.5 } } , 
+//         { "multiplicity" , {   30 ,    0.  ,   30.  } } , 
+//         { "charge"       , {  500 ,    0.  ,  1e5   } } ,
+//         { "time"         , {   24 ,    0.  ,   24.  } } ,
+//         { "uTPCslope"    , {  600 ,   -3.  ,    3.  } } 
 //     };
     
 //     TH2I **** clusterPropertiesVSresidual = new TH2I***[ndetectors];
@@ -243,7 +316,8 @@ void analysis::tracking(){
 
     for (Long64_t entry=toStart; entry<toEnd; entry++) {
     
-        if( entry % moduloFactor == 0 || debug ) cout << "--------------event_" << entry << "_" << endl;
+        if( entry % moduloFactor == 0 ) cout << "*";
+        if( debug ) cout << "--------------event_" << entry << "_" << endl;
         
         if(debug /*&& entry%10==0*/) verbose = true;
         else verbose = false;
@@ -254,6 +328,7 @@ void analysis::tracking(){
         double smallest = 1e9;
         int combination[4] = {-1,-1,-1,-1};
         double best[2] = { 0. , 0. };
+        double stereoHit[2] = { 0. , 0. };
         
         unsigned int nCluster = size->size();
             
@@ -267,20 +342,21 @@ void analysis::tracking(){
                 
                 double stereosCombined = ( centroid->at(v) + centroid->at(u) ) * stereoPrecision; 
                 
+                
                 for(unsigned int a=0; a<nCluster; a++){
                     
                     if( DETECTOR->at(a) != 0 ) continue;
                     
+                    double slope = ( stereosCombined - centroid->at(a) ) / centerDifference;
                     double interpolation = 
-                                              stereosCombined * ( position.at(1).at(2) - position.at(0).at(2) ) / centerDifference 
-                                            + centroid->at(a) * ( stereoCenter - position.at(1).at(2) ) / centerDifference ;
+                                              stereosCombined * interpolateStereos 
+                                            + centroid->at(a) * interpolateEta ;
                     
                     for(unsigned int b=0; b<nCluster; b++){
                         
                         if( DETECTOR->at(b) != 1 ) continue;
                         
                         double residual = centroid->at(b) - interpolation;
-                        double slope = ( stereosCombined - centroid->at(a) ) / centerDifference;
                         
                         residualVStrackSlope->Fill( slope , residual );
                         
@@ -292,6 +368,8 @@ void analysis::tracking(){
                             combination[1] = b;
                             combination[2] = u;
                             combination[3] = v;
+                            stereoHit[0] = ( centroid->at(v) - centroid->at(u) ) * stereoNonPrecision * pitch.at(2);
+                            stereoHit[1] = stereosCombined * pitch.at(2);
                         }
                         
                     }
@@ -302,9 +380,29 @@ void analysis::tracking(){
             
         }
         
-        if( smallest < 1e8 ) minResVStrackSlope->Fill( best[1] , best[0] );
+        if( smallest < 1e8 ){ 
+            
+            minResVStrackSlope->Fill( best[1] , best[0] );
+            hitMap->Fill( stereoHit[0] , stereoHit[1] );
+            
+            for( unsigned int d=0; d<ndetectors; d++ ){
+                
+                short clusterIndex = combination[d];
+                short cfec = FEC->at( clusterIndex );
+                
+                timeVSposition[d][ cfec ][0]->Fill( stereoHit[0] ,    earliest->at(clusterIndex) );
+                timeVSposition[d][ cfec ][1]->Fill( stereoHit[0] , averagetime->at(clusterIndex) );
+                timeVSposition[d][ cfec ][2]->Fill( stereoHit[0] ,      latest->at(clusterIndex) );
+                timeVSposition[d][ cfec ][3]->Fill( stereoHit[0] ,    earliest->at(clusterIndex) - earliest->at(combination[detectorCombinations[d][0]]) );
+                timeVSposition[d][ cfec ][4]->Fill( stereoHit[0] ,    earliest->at(clusterIndex) - earliest->at(combination[detectorCombinations[d][1]]) );
+                
+            }
+            
+        }
         
     }   
+    
+    cout << endl << " writing " << endl;
     
     outfile->cd();
     
