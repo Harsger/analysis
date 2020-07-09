@@ -3994,7 +3994,11 @@ void comparer(
 //                             }
                         }
                         else if( v.second == "nStripsVSslope" ){
-                            name = v.second + "_" + b + "_" + d;
+                            name = v.second;
+			    name += "_";
+			    name += b;
+			    name += "_";
+			    name += d;
                             name = name.ReplaceAll( "VSslope" , "inclinedTracks" );
                             projection = readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( -0.5 ) , readhist->GetXaxis()->FindBin( -0.45 ) );
                             name += "_up";
@@ -4003,7 +4007,11 @@ void comparer(
                             double inclinedMeanError = projection->GetMeanError();
                             double inclinedStdv = projection->GetStdDev();
                             double inclinedStdvError = projection->GetStdDevError();
-                            name = v.second + "_" + b + "_" + d;
+                            name = v.second;
+			    name += "_";
+			    name += b;
+			    name += "_";
+			    name += d;
                             name = name.ReplaceAll( "VSslope" , "straightTracks" );
                             projection = readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( -0.02 ) , readhist->GetXaxis()->FindBin( 0.02 ) );
                             double straightMean = projection->GetMean();
@@ -4051,7 +4059,11 @@ void comparer(
                             correlation = new TGraphErrors*[2];
                             for(unsigned int p=0; p<2; p++) correlation[p] = new TGraphErrors();
                             for(unsigned int n=3; n<8; n++){
-                                name = v.second + "_" + b + "_" + d;
+                                name = v.second;
+				name += "_";
+				name += b;
+				name += "_";
+				name += d;
                                 title = "_nStrips";
                                 title += n;
                                 name = name.ReplaceAll( "vsNstrips_near" , title );
@@ -4264,7 +4276,11 @@ void comparer(
 //                         else if( v.second == "firstTimeDifVSslope" ){
                         else if( v.second == "stripTimeVSslope" ){
                             double gausRange = 3.;
-                            name = v.second + "_" + b + "_" + d;
+                            name = v.second;
+			    name += "_";
+			    name += b;
+			    name += "_";
+			    name += d;
                             name = name.ReplaceAll( "VSslope" , "inclinedTracks" );
                             projection = readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( -0.55 ) , readhist->GetXaxis()->FindBin( -0.35 ) );
                             maximum = projection->GetMaximum();
@@ -4283,7 +4299,11 @@ void comparer(
 //                             gPad->Modified();
 //                             gPad->Update();
 //                             gPad->WaitPrimitive();
-                            name = v.second + "_" + b + "_" + d;
+                            name = v.second;
+			    name += "_";
+			    name += b;
+			    name += "_";
+			    name += d;
                             name = name.ReplaceAll( "VSslope" , "straightTracks" );
                             projection = readhist->ProjectionY( name , readhist->GetXaxis()->FindBin( -0.1 ) , readhist->GetXaxis()->FindBin( 0.1 ) );
                             maxPos = projection->GetBinCenter( projection->GetMaximumBin() );
@@ -5088,7 +5108,9 @@ void summary(){
 void luminosity(){
     
 //     TFile * infile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/luminosity/summary.root" , "READ" );
-    TFile * infile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/luminosity/everything.root" , "READ" );
+//    TFile * infile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/luminosity/everything.root" , "READ" );
+
+	TFile * infile = new TFile( "/project/etpdaq4/CRF_data/nswQAQC/integrated/integratedCRFseriesMeasurements.root" , "READ" );
         
     if( infile->IsZombie() ){
         cout << " ERROR : can not open infile " << endl;
@@ -5103,7 +5125,8 @@ void luminosity(){
     TH1D * projection;
     TString name;
         
-    TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/luminosity/integrated.root" , "RECREATE" );
+//    TFile * outfile = new TFile( "/project/etp4/mherrmann/analysis/results/CRF/luminosity/integrated.root" , "RECREATE" );
+	TFile * outfile = new TFile( "/project/etpdaq4/CRF_data/nswQAQC/integrated/integratedCRFseriesMeasurements_summarized.root" , "RECREATE" );
     TH1I * writehist;
          
     for(unsigned int h=0; h<nHists; h++){
@@ -5174,13 +5197,13 @@ void tester(
 //     overlayer();
 //     comparer();
 //     gasStudyParameterVariation();
-    driftStudyParameterVariation();
+//     driftStudyParameterVariation();
 //     stacker();
 //     overwriter();
 //     driftScanIterator();
 //     graphDifference();
 //     widthEvaluation( filename , histname );
 //     summary();
-//     luminosity();
+     luminosity();
 }
 
