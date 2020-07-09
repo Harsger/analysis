@@ -60,8 +60,10 @@ public:
     int endevent = -1;
     
     unsigned int divisions[3] = { 40, 20, 20};
-    unsigned int binning[3] = { 40, 200, 200};
+    unsigned int binning[3] = { 80, 200, 200};
     double range[3][2] = { {-2000, 2000.}, { -1000., 1000.}, { -1000., 1000.}};
+    double center[3] = { -600. , -60. , -20 };
+    double length[3] = { 1600. , 1305.6 , 100. };
     
     // ------------ methods -------------
     
@@ -93,8 +95,6 @@ analysis::analysis(TTree * tree, bool rawTree) : CRF(0)
 }
 
 void analysis::setBranches(){
-    
-    if(debug) cout << " setBranches " << endl;
     
     if( raw ){
         CRF->SetBranchAddress("_mx[3]", &_mx, &b__mx);
@@ -146,25 +146,40 @@ vector< vector<string> > analysis::getInput(string filename){
 
 void analysis::readParameter(){
     
-    if(debug) cout << " readParameter " << endl;
+//     if(debug) cout << " readParameter " << endl;
         
     vector< vector<string> > input = getInput( paramname.Data());
     
-    if(debug){
-        cout << " rows : " << input.size() << endl;
-        for(unsigned int r=0; r<input.size(); r++){
-            cout << " columns : " << input.at(r).size() << " \t ";
-            for(unsigned int c=0; c<input.at(r).size(); c++){
-                cout << input.at(r).at(c) << " ";
+//     if(debug){
+//         cout << " rows : " << input.size() << endl;
+//         for(unsigned int r=0; r<input.size(); r++){
+//             cout << " columns : " << input.at(r).size() << " \t ";
+//             for(unsigned int c=0; c<input.at(r).size(); c++){
+//                 cout << input.at(r).at(c) << " ";
+//             }
+//             cout << endl;
+//         }
+//     }
+    
+    for(unsigned int r=0; r<input.size(); r++){
+        if( 
+            input.at(r).size() > 1 && 
+            input.at(r).at(0) == "detectorname" &&
+            input.size() > r+1
+        ){
+            for(unsigned int c=1; c<input.at(r).size(); c++){
+                if( input.at(r).at(c) == "xlength" ) length[0] = atof( input.at(r+1).at(c).c_str() );
+                else if( input.at(r).at(c) == "ylength" ) length[1] = atof( input.at(r+1).at(c).c_str() ) + 100.;
+                else if( input.at(r).at(c) == "positionX" ) center[0] = atof( input.at(r+1).at(c).c_str() );
+                else if( input.at(r).at(c) == "positionY" ) center[1] = atof( input.at(r+1).at(c).c_str() );
+                else if( input.at(r).at(c) == "positionZ" ) center[2] = atof( input.at(r+1).at(c).c_str() );
             }
-            cout << endl;
         }
     }
+    
 }
 
 void analysis::study(){
-    
-    if(debug) cout << " investigateCRF " << endl;
     
     if( CRF == 0 ){
         cout << " ERROR : tree empty " << endl;
@@ -304,8 +319,40 @@ void analysis::study(){
         
     }   
     
+    map< string , TH2D ** > individualLayer;
+    map< string, pair<double,double> > layerRange = {
+        { "module" , {  -33. ,  48. } } ,
+        { "onTop"  , {   48. , 150. } } ,
+        { "below"  , { -150. , -33. } } 
+    };
+    
+    for( auto l : layerRange ){
+        
+        individualLayer[l.first] = new TH2D*[3];
+        
+        for(unsigned int c=0; c<3; c++){
+            
+            histname = l.first;
+            if( c == 1 ) histname += "_weighted";
+            else if( c == 2 ) histname += "_cut";
+            else histname += "_bare";
+            individualLayer[l.first][c] = new TH2D( histname , histname , binning[0] , range[0][0] , range[0][1] , binning[1] , range[1][0] , range[1][1] );
+            
+        }
+        
+    }
+    
     double binWidth[3];
     for(unsigned int c=0; c<3; c++) binWidth[c] = ( range[c][1] - range[c][0] ) / (double)binning[c];
+    
+    double activeArea[3][2];
+//     for(unsigned int c=0; c<3; c++){
+    for(unsigned int c=0; c<2; c++){
+        activeArea[c][0] = center[c] - 0.5*length[c];
+        activeArea[c][1] = center[c] + 0.5*length[c];
+    }
+    activeArea[2][0] = center[2] - 0.75*length[2];
+    activeArea[2][1] = center[2] + 0.25*length[2];
    
     unsigned int toStart;
     unsigned int toEnd;
@@ -319,16 +366,19 @@ void analysis::study(){
 //         toEnd = toStart + 2;
         cout << " ... debugging ... " << endl;
     }
+    
+    unsigned int moduloFactor = ( toEnd - toStart ) / 100;
+    if( toEnd - toStart < 100 ) moduloFactor = 1;
    
     if(debug) cout << " start : " << startevent << " \t end : " << endevent << endl;
     
     double ix, sx, iy[2], sy[2];
-    unsigned int outputevents = 100000;
-    if(raw) outputevents = 1000;
 
     for (Long64_t entry=toStart; entry<toEnd; entry++) {
     
-        if(entry%outputevents==0 || debug) cout << "--------------event_" << entry << "_" << endl;
+        if( entry % moduloFactor == 0 ) cout << ( entry / moduloFactor ) % 10;
+    
+        if(debug) cout << "--------------event_" << entry << "_" << endl;
         
         CRF->GetEntry(entry);
         
@@ -349,7 +399,13 @@ void analysis::study(){
             sy[1] = slopeY[1];
         }
         
-        if(debug) cout << " interceptX " << ix << " \t slopeX " << sx << " \t interceptY " << iy[0] << " " << iy[1] << " \t slopeY " << sy[0] << " " << sy[1] << endl;
+        if(debug) 
+            cout 
+                << " interceptX " << ix << 
+                " \t slopeX "     << sx << 
+                " \t interceptY " << iy[0] << " " << iy[1] << 
+                " \t slopeY "     << sy[0] << " " << sy[1] << 
+            endl;
         
 //         double track[2][2];
 //         
@@ -385,6 +441,17 @@ void analysis::study(){
             }
         }
         if(outOFrange) continue;
+    
+        for( auto l : layerRange ){
+            
+            if( hit[2] < l.second.first || hit[2] > l.second.second ) continue;
+            
+            individualLayer[l.first][0]->Fill( hit[0] , hit[1] );
+            individualLayer[l.first][1]->Fill( hit[0] , hit[1] , slopeDif );
+            if( slopeDif > 0.05 ) individualLayer[l.first][2]->Fill( hit[0] , hit[1] );
+            
+            
+        }
         
         intersect->Fill( hit[0] , hit[1] , hit[2] );
         intersectWeight->Fill( hit[0] , hit[1] , hit[2] , slopeDif );
@@ -416,12 +483,12 @@ void analysis::study(){
         
         int outORin = -1;
         
-        if( ix > 500. ) outORin = 0;
+        if( ix > 1260. ) outORin = 0;
         else if(
-            ix            <  -100. &&
-            ix            > -1100. &&
-            meanIntercept <   300. &&
-            meanIntercept >  -900.
+            ix            < activeArea[0][0] &&
+            ix            > activeArea[0][1] &&
+            meanIntercept < activeArea[1][0] &&
+            meanIntercept > activeArea[1][1]
         ) outORin = 1;
         else continue;
         
@@ -433,9 +500,19 @@ void analysis::study(){
         
     }
    
-    cout << " writing results ... ";
+    cout << endl << " writing results ... ";
     
     outfile->cd();
+    
+    for( auto l : layerRange ){
+        
+        for(unsigned int c=0; c<3; c++){
+            
+            individualLayer[l.first][c]->Write();
+            
+        }
+        
+    }
         
     hitDistribution->Write();
     slopeVSslope->Write();
@@ -461,7 +538,8 @@ void analysis::study(){
     
     for(unsigned int x=0; x<divisions[0]; x++){
         for(unsigned int y=0; y<divisions[1]; y++){
-            slopeDifVSslope[x][y]->Write();
+//             slopeDifVSslope[x][y]->Write();
+            slopeDifVSslope[x][y]->Delete();
         }
     }
     
@@ -469,7 +547,8 @@ void analysis::study(){
         
         for(unsigned int y=0; y<divisions[1]; y++){
             
-            resVSslope[x][y]->Write();  
+//             resVSslope[x][y]->Write();  
+            resVSslope[x][y]->Delete();  
             
         }
         
@@ -568,15 +647,26 @@ int main(int argc, char* argv[]){
     infile->GetObject("CRF",CRFtree);
   
     bool rawTree = false;
+    TString treeName = "CRF";
     
     if(CRFtree==NULL){
         infile->GetObject("raw_merged",CRFtree);
+        treeName = "raw_merged";
         if(CRFtree==NULL){
-            cerr << " ERROR: no CRF tree found in file \"" << readname << "\"" << endl;
-            exit(EXIT_FAILURE);
+            infile->GetObject("data_tree",CRFtree);
+            treeName = "data_tree";
+            if(CRFtree==NULL){
+                cerr << " ERROR: no CRF tree found in file \"" << readname << "\"" << endl;
+                exit(EXIT_FAILURE);
+            }
         }
         rawTree = true;
     }
+    
+    cout << " tree name : " << treeName << " => ";
+    if(rawTree) cout << " RAW ";
+    else cout << " processed ";
+    cout << endl;
     
     TString writename = outdirectory;
     if(outdirectory!=""){
