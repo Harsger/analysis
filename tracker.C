@@ -196,10 +196,13 @@ void analysis::tracking(){
     
     TH2I * residualVStrackSlope = new TH2I( "residualVStrackSlope" , "residualVStrackSlope" , 2000 , -100. , 100. , 2000 , -3000. , 3000. );
     TH2I * minResVStrackSlope = new TH2I( "minResVStrackSlope" , "minResVStrackSlope" , 2000 , -100. , 100. , 2000 , -100. , 100. );
+    TH2I * minResVSposition = new TH2I( "minResVSposition" , "minResVSposition" , (unsigned int)(length.at(0).at(1)*0.1) , 0. , length.at(0).at(1) , 2000 , -100. , 100. );
     
-    TH2I * hitMap = new TH2I( "hitMap" , "hitMap" , (unsigned int)(length.at(0).at(0)*0.1) , -0.5*length.at(0).at(0) , 0.5*length.at(0).at(0) , (unsigned int)(length.at(0).at(1)*0.1) , 0. , length.at(0).at(1) );
+    TH2D * hitMap = new TH2D( "hitMap" , "hitMap" , (unsigned int)(length.at(0).at(0)*0.1) , -0.5*length.at(0).at(0) , 0.5*length.at(0).at(0) , (unsigned int)(length.at(0).at(1)*0.1) , 0. , length.at(0).at(1) );
+    TH2D * referenceMap = new TH2D( "referenceMap" , "referenceMap" , (unsigned int)(length.at(0).at(0)*0.1) , -0.5*length.at(0).at(0) , 0.5*length.at(0).at(0) , (unsigned int)(length.at(0).at(1)*0.1) , 0. , length.at(0).at(1) );
+    TH2D * coincidenceMap = new TH2D( "coincidenceMap" , "coincidenceMap" , (unsigned int)(length.at(0).at(0)*0.1) , -0.5*length.at(0).at(0) , 0.5*length.at(0).at(0) , (unsigned int)(length.at(0).at(1)*0.1) , 0. , length.at(0).at(1) );
     
-    TH2I **** timeVSposition = new TH2I***[ndetectors];
+//     TH2I **** timeVSposition = new TH2I***[ndetectors];
     
     TString histname;
 
@@ -225,42 +228,42 @@ void analysis::tracking(){
         { 200 , -10. , 10. }
     };
     
-    for(unsigned int d=0; d<ndetectors; d++){
-        
-        timeVSposition[d] = new TH2I**[nfec];
-        
-        for(unsigned int f=0; f<nfec; f++){
-            
-            timeVSposition[d][f] = new TH2I*[nModes];
-            
-            for(unsigned int t=0; t<5; t++){
-             
-                histname = "timeVSposition_";
-                histname += detectornames.at(d);
-                histname += "_FEC";
-                histname += f;
-                histname += "_";
-                histname += modeNames.at(t);
-                
-                unsigned int bin = 0;
-                if( modeNames.at(t).Contains("diff") ) bin = 1;
-                
-                timeVSposition[d][f][t] = new TH2I( 
-                                                    histname , histname , 
-                                                    (unsigned int)(length.at(0).at(0)*0.1) , 
-                                                    -0.5*length.at(0).at(0) , 
-                                                    0.5*length.at(0).at(0) , 
-                                                    timeBinnings[bin][0] ,  
-                                                    timeBinnings[bin][1] , 
-                                                    timeBinnings[bin][2]
-                                                  );
-                
-            }
-            
-        }
-        
-        
-    }
+//     for(unsigned int d=0; d<ndetectors; d++){
+//         
+//         timeVSposition[d] = new TH2I**[nfec];
+//         
+//         for(unsigned int f=0; f<nfec; f++){
+//             
+//             timeVSposition[d][f] = new TH2I*[nModes];
+//             
+//             for(unsigned int t=0; t<5; t++){
+//              
+//                 histname = "timeVSposition_";
+//                 histname += detectornames.at(d);
+//                 histname += "_FEC";
+//                 histname += f;
+//                 histname += "_";
+//                 histname += modeNames.at(t);
+//                 
+//                 unsigned int bin = 0;
+//                 if( modeNames.at(t).Contains("diff") ) bin = 1;
+//                 
+//                 timeVSposition[d][f][t] = new TH2I( 
+//                                                     histname , histname , 
+//                                                     (unsigned int)(length.at(0).at(0)*0.1) , 
+//                                                     -0.5*length.at(0).at(0) , 
+//                                                     0.5*length.at(0).at(0) , 
+//                                                     timeBinnings[bin][0] ,  
+//                                                     timeBinnings[bin][1] , 
+//                                                     timeBinnings[bin][2]
+//                                                   );
+//                 
+//             }
+//             
+//         }
+//         
+//         
+//     }
     
 //     map< string , vector<double> > variablesNbinning = { 
 //         { "residual"     , { 2000 ,  -10.  ,   10.  } } , 
@@ -351,6 +354,11 @@ void analysis::tracking(){
                     double interpolation = 
                                               stereosCombined * interpolateStereos 
                                             + centroid->at(a) * interpolateEta ;
+                                            
+                    if( abs( ( stereosCombined - centroid->at(a) ) / centerDifference ) > 0.3 ) continue;
+                    
+                    stereoHit[0] = ( centroid->at(v) - centroid->at(u) ) * stereoNonPrecision * pitch.at(2);
+                    stereoHit[1] = stereosCombined * pitch.at(2);
                     
                     for(unsigned int b=0; b<nCluster; b++){
                         
@@ -368,8 +376,8 @@ void analysis::tracking(){
                             combination[1] = b;
                             combination[2] = u;
                             combination[3] = v;
-                            stereoHit[0] = ( centroid->at(v) - centroid->at(u) ) * stereoNonPrecision * pitch.at(2);
-                            stereoHit[1] = stereosCombined * pitch.at(2);
+//                             stereoHit[0] = ( centroid->at(v) - centroid->at(u) ) * stereoNonPrecision * pitch.at(2);
+//                             stereoHit[1] = stereosCombined * pitch.at(2);
                         }
                         
                     }
@@ -380,23 +388,32 @@ void analysis::tracking(){
             
         }
         
+        if( stereoHit[1] != 0. ){
+        
+            referenceMap->Fill( stereoHit[0] , stereoHit[1] );
+            minResVSposition->Fill( stereoHit[1] , best[0] );
+            
+            if( smallest < 5. ) coincidenceMap->Fill( stereoHit[0] , stereoHit[1] );
+        
+        }
+        
         if( smallest < 1e8 ){ 
             
             minResVStrackSlope->Fill( best[1] , best[0] );
             hitMap->Fill( stereoHit[0] , stereoHit[1] );
             
-            for( unsigned int d=0; d<ndetectors; d++ ){
-                
-                short clusterIndex = combination[d];
-                short cfec = FEC->at( clusterIndex );
-                
-                timeVSposition[d][ cfec ][0]->Fill( stereoHit[0] ,    earliest->at(clusterIndex) );
-                timeVSposition[d][ cfec ][1]->Fill( stereoHit[0] , averagetime->at(clusterIndex) );
-                timeVSposition[d][ cfec ][2]->Fill( stereoHit[0] ,      latest->at(clusterIndex) );
-                timeVSposition[d][ cfec ][3]->Fill( stereoHit[0] ,    earliest->at(clusterIndex) - earliest->at(combination[detectorCombinations[d][0]]) );
-                timeVSposition[d][ cfec ][4]->Fill( stereoHit[0] ,    earliest->at(clusterIndex) - earliest->at(combination[detectorCombinations[d][1]]) );
-                
-            }
+//             for( unsigned int d=0; d<ndetectors; d++ ){
+//                 
+//                 short clusterIndex = combination[d];
+//                 short cfec = FEC->at( clusterIndex );
+//                 
+//                 timeVSposition[d][ cfec ][0]->Fill( stereoHit[0] ,    earliest->at(clusterIndex) );
+//                 timeVSposition[d][ cfec ][1]->Fill( stereoHit[0] , averagetime->at(clusterIndex) );
+//                 timeVSposition[d][ cfec ][2]->Fill( stereoHit[0] ,      latest->at(clusterIndex) );
+//                 timeVSposition[d][ cfec ][3]->Fill( stereoHit[0] ,    earliest->at(clusterIndex) - earliest->at(combination[detectorCombinations[d][0]]) );
+//                 timeVSposition[d][ cfec ][4]->Fill( stereoHit[0] ,    earliest->at(clusterIndex) - earliest->at(combination[detectorCombinations[d][1]]) );
+//                 
+//             }
             
         }
         
