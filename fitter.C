@@ -26,6 +26,7 @@ double correctionFactor = 0.;
 bool overwriteExtrapolation = false;
 double extrapolator = 0.;
 double timeCorrectionSign = -1.;
+bool skewGausFit = false;
 
 int main(int argc, char* argv[]){
     
@@ -54,6 +55,7 @@ int main(int argc, char* argv[]){
         " -j\tjitter-cor. sign      \t(default:  \"" << timeCorrectionSign << " ->jitter will be subtracted)\n"
         " -O\tonly cluster mode off \t(default:  \"" << only << "\")\n"
         " -F\tfit noise signals     \t(default:  \"" << fitNoise << "\")\n"
+        " -G\tfit add. skew gaus    \t(default:  \"" << skewGausFit << "\")\n"
         " -S\tsave signal samples   \t(default:  \"" << sample << "\")\n"
         " -D\tdebugging mode        \t(default:  \"" << bugger << "\")\n"
         "\n"
@@ -63,7 +65,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "i:d:o:p:s:e:c:t:j:OFSD")) != -1) {
+    while ((c = getopt (argc, argv, "i:d:o:p:s:e:c:t:j:OFGSD")) != -1) {
         switch (c)
         {
         case 'i':
@@ -101,6 +103,8 @@ int main(int argc, char* argv[]){
             break;
         case 'F':
             fitNoise = true;
+        case 'G':
+            skewGausFit = true;
             break;
         case 'S':
             sample = true;
@@ -948,9 +952,9 @@ void analysis::fitNclust(){
             }
 
             TF1 * inverseFermi = new TF1( "inverseFermi", "[0] / ( 1 + exp( ( [1] - x ) / [2] ) ) + [3]", 0, maxtime + 1);
-            inverseFermi->SetParameters( maxQ, maxtime-1, 0.8, 0.);
+//             inverseFermi->SetParameters( maxQ, maxtime-1, 0.8, 0.);
 //             inverseFermi->FixParameter(0, maxQ);
-            pulseheight->Fit("inverseFermi","RQ0B");
+            pulseheight->Fit("inverseFermi","RQB");
             
             if(debug && verbose){ 
                 cout << " \t turntime " << inverseFermi->GetParameter(1) << 
@@ -961,12 +965,11 @@ void analysis::fitNclust(){
 //                     gPad->Update();
 //                     gPad->WaitPrimitive();
             }
-                        
-            pulseheight->Delete();
             
-            if(withJitter) turntime->push_back( inverseFermi->GetParameter(1) + timeCorrectionSign * ( triggerOffset.at( cfec ) - time_correction_ns->at( TDCorder[ cfec ] ) ) * 0.04 );
-            else if(withTrigCor) turntime->push_back( inverseFermi->GetParameter(1) + timeCorrectionSign * ( trigger_correction_time - triggerOffset.at( cfec ) ) * 0.04 );
-            else turntime->push_back( inverseFermi->GetParameter(1) );
+//             if(withJitter) turntime->push_back( inverseFermi->GetParameter(1) + timeCorrectionSign * ( triggerOffset.at( cfec ) - time_correction_ns->at( TDCorder[ cfec ] ) ) * 0.04 );
+//             else if(withTrigCor) turntime->push_back( inverseFermi->GetParameter(1) + timeCorrectionSign * ( trigger_correction_time - triggerOffset.at( cfec ) ) * 0.04 );
+//             else turntime->push_back( inverseFermi->GetParameter(1) );
+            
             risetime->push_back( inverseFermi->GetParameter(2) );
             chi2ndf->push_back( inverseFermi->GetChisquare()/inverseFermi->GetNDF() );
             timeFitError.push_back( 
@@ -979,7 +982,45 @@ void analysis::fitNclust(){
             riseError.push_back(inverseFermi->GetParError(2));
             chargeOffset.push_back( inverseFermi->GetParameter(3) );
             
-            inverseFermi->Delete();
+            if( skewGausFit ){
+            
+                inverseFermi->Delete();
+            
+                inverseFermi = new TF1( "inverseFermi", "[0] * exp( -1 * pow( ( pow( x , 0.9 * tanh([3]) + 1 ) - [1] ) / ( 2 * tanh([2]) + 2 ) , 2 ) ) + [4]", 0, ntimebins);
+                inverseFermi->SetParameters( maxQ, maxtime-1, 0.8, 0.);
+                pulseheight->Fit(inverseFermi,"RQB");
+                if( inverseFermi->GetChisquare()/inverseFermi->GetNDF() > 100. )
+                    pulseheight->Fit(inverseFermi,"RQB");
+                
+                inverseFermi->SetParameter( 3 , 0.9 * tanh( inverseFermi->GetParameter(3) ) + 1. );
+                inverseFermi->SetParameter( 
+                                            1 , 
+                                            pow( 
+                                                    inverseFermi->GetParameter(1) , 
+                                                    1. / inverseFermi->GetParameter(3)
+                                                ) 
+                                            );
+                inverseFermi->SetParameter( 2 , 2. * inverseFermi->GetParameter(2) + 2. );
+                
+                if(debug && verbose){ 
+                    cout << " \t peak " << inverseFermi->GetParameter(1) << 
+                            " \t risetime " << inverseFermi->GetParameter(2) << 
+                            " \t skewness " << inverseFermi->GetParameter(3) << 
+                            " \t chi2ndf " << inverseFermi->GetChisquare()/inverseFermi->GetNDF() << endl;
+                        pulseheight->Draw();
+                        gPad->Modified();
+                        gPad->Update();
+                        gPad->WaitPrimitive();
+                }
+            }
+                
+            if(withJitter) turntime->push_back( inverseFermi->GetParameter(1) + timeCorrectionSign * ( triggerOffset.at( cfec ) - time_correction_ns->at( TDCorder[ cfec ] ) ) * 0.04 );
+            else if(withTrigCor) turntime->push_back( inverseFermi->GetParameter(1) + timeCorrectionSign * ( trigger_correction_time - triggerOffset.at( cfec ) ) * 0.04 );
+            else turntime->push_back( inverseFermi->GetParameter(1) );
+            
+            if( skewGausFit ) inverseFermi->Delete();
+            
+            pulseheight->Delete();
             
             if( toBeSortedOut ) sortOut.push_back(true);
             else sortOut.push_back(false);
