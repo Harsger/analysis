@@ -41,9 +41,10 @@ void getWidthNratio(
 );
 vector<double> twoGaus( TH1I * hist, bool bugger , double fitrange = 3. , double fitcenter = 0.);
 
+TString mode = "";
+    
 int main(int argc, char* argv[]){
     
-    TString mode = "";
     TString inname = "";
     TString indirectory = "";
     TString outdirectory = "";
@@ -314,6 +315,16 @@ void analysis::align(){
     TString textName = paramname( 0 , paramname.Last('/')+1 );
     textName += "align";
     ofstream outText( textName.Data() );
+    
+    vector<ofstream> layerOutput;
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+        textName = paramname( 0 , paramname.Last('/')+1 );
+        textName += mode;
+        textName += "_";
+        textName += detectornames.at(d);
+        layerOutput.push_back( ofstream( textName.Data() ) );
+    }
     
 //     ofstream pitchDeviationFile;
 //     pitchDeviationFile.open( "pitchDeviation.txt" , std::ios_base::app );
@@ -703,8 +714,13 @@ void analysis::align(){
         zcor /= sumZweights;
         zerr = sqrt( zerr / (double)sumEntries );
         
-        if(d==0) outText << "positionY " << ycor << endl;
-        if(d==0) outText << "positionZ " << zcor << endl;
+        if(d==0){ 
+            outText << "positionY " << ycor << endl;
+            outText << "positionZ " << zcor << endl;
+        }
+        
+        layerOutput.at(d) << "positionY " << ycor << endl;
+        layerOutput.at(d) << "positionZ " << zcor << endl;
         
         double stdvYvalues = 0;
         double weightYvalues = 0;
@@ -817,6 +833,7 @@ void analysis::align(){
         double slopex_err = fitresults.at(3);
         
         if(d==0) outText << "angleX " << slopex << endl;
+        layerOutput.at(d) << "angleX " << slopex << endl;
         
         cout << fixed << setprecision(6) << " slopex \t = \t " << slopex << " \t +- " << slopex_err << " \t => anglex = " << atan(slopex) << endl; 
         vecdodummy.push_back(slopex);
@@ -873,6 +890,7 @@ void analysis::align(){
         double slopey_err = fitresults.at(3);
         
         if(d==0) outText << "angleY " << slopey << endl;
+        layerOutput.at(d) << "angleY " << slopey << endl;
         
         cout << fixed << setprecision(6) << " slopey \t = \t " << slopey << " \t +- " << slopey_err << " \t => angley = " << atan(slopey) << endl; 
         vecdodummy.push_back(slopey);
@@ -921,14 +939,26 @@ void analysis::align(){
 //         double anglez = linfit2->GetParameter(1);
 //         double anglez_err = linfit2->GetParError(1);
 
+        
         deltaYvsX->RemovePoint( deltaYvsX->GetN()-1 );
         deltaYvsX->RemovePoint( 0 );
+        if( 
+            abs( detlayer.at(d) ) > 99. 
+            &&
+            divisions.at(d).at(0) > 10
+        ){
+            deltaYvsX->RemovePoint( deltaYvsX->GetN()-1 );
+            deltaYvsX->RemovePoint( 0 );
+            deltaYvsX->RemovePoint( deltaYvsX->GetN()-1 );
+            deltaYvsX->RemovePoint( 0 );
+        }
         
         fitresults = fitPol1( deltaYvsX, debug);
         double slopez = fitresults.at(1);
         double slopez_err = fitresults.at(3);
         
         if(d==0) outText << "angleZ " << slopez << endl;
+        layerOutput.at(d) << "angleZ " << slopez << endl;
         
         cout << fixed << setprecision(6) << " slopez \t = \t " << slopez << " \t +- " << slopez_err << " \t => anglez = " << atan(slopez) << endl;
         vecdodummy.push_back(slopez);
@@ -1197,6 +1227,10 @@ void analysis::align(){
     }
     
     outText.close();
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+        layerOutput.at(d).close();
+    }
     
 }
 
@@ -3739,6 +3773,16 @@ void analysis::coarse(){
             
     ofstream outText( textName.Data() );
     
+    vector<ofstream> layerOutput;
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+        textName = paramname( 0 , paramname.Last('/')+1 );
+        textName += mode;
+        textName += "_";
+        textName += detectornames.at(d);
+        layerOutput.push_back( ofstream( textName.Data() ) );
+    }
+    
     cout << " \t \t  -Y \t \t  +Z \t \t  -angleZ " << endl;
     
     for(unsigned int d=0; d<ndetectors; d++){
@@ -3762,6 +3806,7 @@ void analysis::coarse(){
         double meanPosition = readhist->GetMean(2);
         
         if(d==0) outText << "positionY " << meanPosition << endl;
+        layerOutput.at(d) << "positionY " << meanPosition << endl;
         
         cout << " " << meanPosition << " \t ";
         
@@ -3779,6 +3824,7 @@ void analysis::coarse(){
         double meanHeight = fitfunction->GetParameter(1);
         
         if(d==0) outText << "positionZ " << meanHeight << endl;
+        layerOutput.at(d) << "positionZ " << meanHeight << endl;
         
         cout << " " << meanHeight << " \t ";
         
@@ -3818,7 +3864,10 @@ void analysis::coarse(){
         
         double averageRotation = fitfunction->GetParameter(1);
         
-        if( d==0 && specifier.Contains("area") ) outText << "angleZ " << averageRotation << endl;
+        if( specifier.Contains("area") ){
+            if( d==0 ) outText << "angleZ " << averageRotation << endl;
+            layerOutput.at(d) << "angleZ " << averageRotation << endl;
+        }
         
         cout << " " << averageRotation << endl;
         
@@ -3875,6 +3924,10 @@ void analysis::coarse(){
                 cout << " " << stereoCenter << endl;
         
                 if(s==0) outText << "positionX " << stereoCenter << endl;
+                
+                for(unsigned int d=0; d<ndetectors; d++){
+                    layerOutput.at(d) << "positionX " << stereoCenter << endl;
+                }
             
 //                 profile->Draw();
 //                 gPad->Modified();
@@ -4006,6 +4059,10 @@ void analysis::coarse(){
     }
     
     outText.close();
+    
+    for(unsigned int d=0; d<ndetectors; d++){
+        layerOutput.at(d).close();
+    }
     
 }
 
