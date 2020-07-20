@@ -3762,6 +3762,8 @@ void analysis::coarse(){
     double slopeRange = 0.4;
     double moduleHalfLength = 500.;
     
+    unsigned int nstereo = stereoLayer.size()/2;
+    
     if( specifier.Contains("area") ){
         defaultResidualWidth = 10.;
         slopeRange = 0.45;
@@ -3875,10 +3877,156 @@ void analysis::coarse(){
 //         gPad->Modified();
 //         gPad->Update();
 //         gPad->WaitPrimitive();
+    
+        if(
+            mode == "coarse"
+            &&
+            (
+                nstereo < 1 
+                ||
+                (
+                    detectornames.at(d) != "eta_out"
+                    &&
+                    detectornames.at(d) != "eta_in"
+                    &&
+                    detectornames.at(d) != "stereo_in"
+                    &&
+                    detectornames.at(d) != "stereo_out"
+                )
+            )
+        ){
+        
+            title = "CRFhits";
+            if(ndetectors>1){ 
+                title += "_";
+                title += detectornames.at(d);
+            }
+            TH2D * CRFhits = (TH2D*)infile->Get(title);
+        
+            title = "inefficiencies";
+            if(ndetectors>1){ 
+                title += "_";
+                title += detectornames.at(d);
+            }
+            TH2D * inefficiencies = (TH2D*)infile->Get(title);
+            
+            inefficiencies->Add( CRFhits , inefficiencies , 1. , -1. );
+            
+//             inefficiencies->Divide( CRFhits );
+            
+            TH1D * effiProjection = inefficiencies->ProjectionX();
+            TH1D * referenceProjection = CRFhits->ProjectionX();
+            
+            effiProjection->Divide( referenceProjection );
+            
+            unsigned int maxBin = effiProjection->GetMaximumBin();
+            double maxXhits = effiProjection->GetBinLowEdge( maxBin ) + 0.5 * effiProjection->GetBinWidth( maxBin ) ;
+            
+            
+            fitfunction = new TF1( 
+                                    "xcenter" , 
+                                    "gaus" , 
+                                    maxXhits - length.at(d).at(0) ,  
+                                    maxXhits + length.at(d).at(0)
+                                 ); 
+            fitfunction->SetParameters(
+                                        1. ,
+//                                         1. ,
+//                                         1.
+                                        maxXhits ,
+                                        length.at(d).at(0) * 0.3
+                                    );
+//             fitfunction->FixParameter( 0 , effiProjection->GetMaximum() );
+//             fitfunction->FixParameter( 1 , maxXhits );
+//             fitfunction->FixParameter( 2 , length.at(d).at(0)*0.5 );
+            
+            effiProjection->Fit( fitfunction , "RQB" );
+            maxXhits = fitfunction->GetParameter(1);
+            
+//             effiProjection->Draw();
+//             gPad->Modified();
+//             gPad->Update();
+//             gPad->WaitPrimitive();
+            
+            fitfunction = new TF1( 
+                                    "left" , 
+                                    "[0] / ( 1 + exp( ( [1] - x ) / [2] ) ) + [3]" , 
+                                    maxXhits - length.at(d).at(0) ,  
+                                    maxXhits - 0.2 * length.at(d).at(0)
+                                 ); 
+            fitfunction->SetParameters(
+                                        effiProjection->GetMaximum() ,
+                                        maxXhits - 0.5 * length.at(d).at(0) ,
+                                        1. ,
+                                        0.01
+                                    );
+            fitfunction->FixParameter( 0 , effiProjection->GetMaximum() );
+            
+            effiProjection->Fit( fitfunction , "RQB" );
+            
+            double chiSquare = fitfunction->GetChisquare() / fitfunction->GetNDF() ;
+            double lowEdge = fitfunction->GetParameter(1);
+            unsigned int counter = 1;
+            
+            while(
+                counter < 10 
+                &&
+                (
+                    chiSquare > 0.01
+                    || 
+                    lowEdge < -2000.
+                    || 
+                    lowEdge > 2000.-length.at(d).at(0)
+                )
+            ){
+                fitfunction->ReleaseParameter( 0 );
+//                 if( counter%4 == 0 ){
+//                     fitfunction->SetParameters(
+//                                                 effiProjection->GetMaximum() ,
+//                                                 maxXhits - 0.5 * length.at(d).at(0) ,
+//                                                 1. ,
+//                                                 0.
+//                                             );
+//                 }
+                effiProjection->Fit( fitfunction , "RQB" );
+                chiSquare = fitfunction->GetChisquare() / fitfunction->GetNDF() ;
+                lowEdge = fitfunction->GetParameter(1) ;
+                counter++;
+            }
+            
+//             cout << " left " << lowEdge << " \t quality " << chiSquare << " \t after " << counter << endl;
+            
+//             effiProjection->Draw();
+//             gPad->Modified();
+//             gPad->Update();
+//             gPad->WaitPrimitive();
+            
+            fitfunction = new TF1( 
+                                    "right" , 
+                                    "[0] / ( 1 + exp( ( x - [1] ) / [2] ) ) + [3]" , 
+                                    maxXhits + 0.2 * length.at(d).at(0) ,  
+                                    maxXhits + length.at(d).at(0)   
+                                 ); 
+            
+            effiProjection->Fit( fitfunction , "RQB" );
+            
+            double highEdge = fitfunction->GetParameter(1);
+            chiSquare = fitfunction->GetChisquare() / fitfunction->GetNDF() ;
+            
+//             cout << " right " << highEdge << " \t quality " << chiSquare << endl;
+            
+//             cout << " positionX " << 0.5 * ( lowEdge + highEdge ) << endl;
+            layerOutput.at(d) << "positionX " << 0.5 * ( lowEdge + highEdge ) << endl;
+            
+//             effiProjection->Draw();
+//             gPad->Modified();
+//             gPad->Update();
+//             gPad->WaitPrimitive();
+            
+        }
         
     }
     
-    unsigned int nstereo = stereoLayer.size()/2;
     double stereoRange = 60.;
     
     cout << " spec " << specifier << endl;
