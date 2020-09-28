@@ -1,5 +1,5 @@
 .PHONY : all
-all:fitNclust investigateCRF track postprocessor sampleEvents converter studyCRF qaqc
+all:fitNclust investigateCRF track postprocessor sampleEvents converter studyCRF qaqc moduleRawTracker
 
 fitNclust: fitter.C analysis.h dicvecvec.o 
 	g++ -std=c++11 -Ofast fitter.C dicvecvec.o -o fitNclust `pkg-config opencv --cflags` `pkg-config opencv --libs` `root-config --glibs --cflags`
@@ -29,5 +29,8 @@ studyCRF: studyCRF.C
 qaqc: qaqc.C
 	g++ -std=c++11 -Ofast qaqc.C -o qaqc `root-config --glibs --cflags`
 
+moduleRawTracker: moduleRawTracker.C dicvecvec.o
+	g++ -std=c++11 -Ofast moduleRawTracker.C dicvecvec.o -o moduleRawTracker `root-config --glibs --cflags`
+
 clean:
-	rm fitNclust investigateCRF track postprocessor sampleEvents converter dicvecvec.cxx dicvecvec.o studyCRF qaqc
+	rm fitNclust investigateCRF track postprocessor sampleEvents converter dicvecvec.cxx dicvecvec.o studyCRF qaqc moduleRawTracker
