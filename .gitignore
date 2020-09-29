@@ -9,6 +9,7 @@ studyCRF
 qaqc
 dicvecvec.o
 dicvecvec_rdict.pcm
+moduleRawTracker
 
 # local parameter
 parameterfiles/
