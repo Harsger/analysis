@@ -988,6 +988,20 @@ void effiNchargeMaps(){
                 last[1] -= 1;
             }
             
+            if( 
+                nbins[0] == 5 
+                && 
+                nbins[1] == 7 
+            ){
+                
+                first[0] += 1;
+                last[0] -= 1;
+                
+                first[1] += 1;
+                last[1] -= 1;
+                
+            }
+            
             unsigned int counts = 0;
             double mean = 0.;
             double stdv = 0.;
