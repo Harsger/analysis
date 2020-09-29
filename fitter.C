@@ -27,6 +27,7 @@ bool overwriteExtrapolation = false;
 double extrapolator = 0.;
 double timeCorrectionSign = -1.;
 bool skewGausFit = false;
+bool overwriteFit = false;
 
 int main(int argc, char* argv[]){
     
@@ -56,6 +57,7 @@ int main(int argc, char* argv[]){
         " -O\tonly cluster mode off \t(default:  \"" << only << "\")\n"
         " -F\tfit noise signals     \t(default:  \"" << fitNoise << "\")\n"
         " -G\tfit add. skew gaus    \t(default:  \"" << skewGausFit << "\")\n"
+        " -X\toverwrite signal fit  \t(default:  \"" << overwriteFit << "\")\n"
         " -S\tsave signal samples   \t(default:  \"" << sample << "\")\n"
         " -D\tdebugging mode        \t(default:  \"" << bugger << "\")\n"
         "\n"
@@ -65,7 +67,7 @@ int main(int argc, char* argv[]){
     }
     
     char c;
-    while ((c = getopt (argc, argv, "i:d:o:p:s:e:c:t:j:OFGSD")) != -1) {
+    while ((c = getopt (argc, argv, "i:d:o:p:s:e:c:t:j:OFGXSD")) != -1) {
         switch (c)
         {
         case 'i':
@@ -105,6 +107,9 @@ int main(int argc, char* argv[]){
             fitNoise = true;
         case 'G':
             skewGausFit = true;
+            break;
+        case 'X':
+            overwriteFit = true;
             break;
         case 'S':
             sample = true;
@@ -902,11 +907,11 @@ void analysis::fitNclust(){
             
             bool emptySignal = true;
 
-            unsigned int ntimebins = apv_q->at(s).size(); 
+            unsigned int ntb = apv_q->at(s).size(); 
 
-            TH1I * pulseheight = new TH1I("pulseheight","pulseheight",ntimebins,0,ntimebins);
+            TH1I * pulseheight = new TH1I("pulseheight","pulseheight",ntb,0,ntb);
 
-            for(unsigned int t = 0; t < ntimebins; t++){
+            for(unsigned int t = 0; t < ntb; t++){
                 short charge = apv_q->at(s).at(t);
                 pulseheight->SetBinContent( t+1, charge);
                 if(charge != 0) emptySignal = false;
@@ -914,6 +919,8 @@ void analysis::fitNclust(){
             
             variation->push_back(pulseheight->GetRMS());
             chargeMean.push_back(pulseheight->GetMean());
+            
+            if( overwriteFit ) variation->at(s) = 0.1 * signalVariation.at(cdet) ;
             
             short maxtime = pulseheight->GetMaximumBin();
             maxtimebin->push_back( maxtime );
@@ -986,7 +993,7 @@ void analysis::fitNclust(){
             
                 inverseFermi->Delete();
             
-                inverseFermi = new TF1( "inverseFermi", "[0] * exp( -1 * pow( ( pow( x , 0.9 * tanh([3]) + 1 ) - [1] ) / ( 2 * tanh([2]) + 2 ) , 2 ) ) + [4]", 0, ntimebins);
+                inverseFermi = new TF1( "inverseFermi", "[0] * exp( -1 * pow( ( pow( x , 0.9 * tanh([3]) + 1 ) - [1] ) / ( 2 * tanh([2]) + 2 ) , 2 ) ) + [4]", 0, ntb);
                 inverseFermi->SetParameters( maxQ, maxtime-1, 0.8, 0.);
                 pulseheight->Fit(inverseFermi,"RQB");
                 if( inverseFermi->GetChisquare()/inverseFermi->GetNDF() > 100. )
@@ -1024,6 +1031,14 @@ void analysis::fitNclust(){
             
             if( toBeSortedOut ) sortOut.push_back(true);
             else sortOut.push_back(false);
+            
+            if( overwriteFit ){
+                turntime->at(s) = maxtimebin->at(s) ;
+                risetime->at(s) = minRisetime.at( cdet ) * 10. ;
+                chi2ndf->at(s) = stripChi2reject.at( cdet ) * 0.9 ;
+                timeFitError.at(s) = ntimebins.at( cdet ) * 100. ;
+                riseError.at(s) = ntimebins.at( cdet ) * 100. ;
+            }
     
         }
         
@@ -1053,11 +1068,11 @@ void analysis::fitNclust(){
                     continue;
                 }
 
-                unsigned int ntimebins = correctedSignal.at(s).size(); 
+                unsigned int ntb = correctedSignal.at(s).size(); 
 
-                TH1I * pulseheight = new TH1I("pulseheight","pulseheight",ntimebins,0,ntimebins);
+                TH1I * pulseheight = new TH1I("pulseheight","pulseheight",ntb,0,ntb);
 
-                for(unsigned int t = 0; t < ntimebins; t++) pulseheight->SetBinContent( t+1, correctedSignal.at(s).at(t));
+                for(unsigned int t = 0; t < ntb; t++) pulseheight->SetBinContent( t+1, correctedSignal.at(s).at(t));
                 
                 short maxtime = pulseheight->GetMaximumBin();
                 short maxQ = pulseheight->GetBinContent( maxtime );
@@ -1101,6 +1116,14 @@ void analysis::fitNclust(){
                 chargeOffset.at( stripindex) = inverseFermi->GetParameter(3);
                 
                 inverseFermi->Delete();
+            
+                if( overwriteFit ){
+                    turntime->at(stripindex) = maxtimebin->at(stripindex) ;
+                    risetime->at(stripindex) = minRisetime.at( detector->at(stripindex) ) * 10. ;
+                    chi2ndf->at(stripindex) = stripChi2reject.at( detector->at(stripindex) ) * 0.9 ;
+                    timeFitError.at(stripindex) = ntimebins.at( detector->at(stripindex) ) * 100. ;
+                    riseError.at(stripindex) = ntimebins.at( detector->at(stripindex) ) * 100. ;
+                }
                 
             }
             
@@ -1522,7 +1545,7 @@ void analysis::fitNclust(){
                     
                 }
                 
-                for(int t=0; t<ntimebins.at(cdet); t++) eventdisplay[filledSamples]->SetBinContent( stripNumber , t+1 , apv_q->at(stripindex).at(t) );
+                for(int t=0; t<apv_q->at(stripindex).size(); t++) eventdisplay[filledSamples]->SetBinContent( stripNumber , t+1 , apv_q->at(stripindex).at(t) );
                 
             }
             
