@@ -952,7 +952,7 @@ void analysis::fitNclust(){
             }
 
             TF1 * inverseFermi = new TF1( "inverseFermi", "[0] / ( 1 + exp( ( [1] - x ) / [2] ) ) + [3]", 0, maxtime + 1);
-//             inverseFermi->SetParameters( maxQ, maxtime-1, 0.8, 0.);
+            inverseFermi->SetParameters( maxQ, maxtime-1, 0.8, 0.);
 //             inverseFermi->FixParameter(0, maxQ);
             pulseheight->Fit("inverseFermi","RQB");
             
