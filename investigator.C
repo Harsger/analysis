@@ -285,6 +285,16 @@ void analysis::investigateCRF(){
     Long64_t entries = cluster->GetEntriesFast();
     Long64_t CRFentries = CRF->GetEntriesFast();
     
+    unsigned int firstUnixtime = 2147483647 ;
+    unsigned int lastUnixtime = 0 ;
+    
+    for(unsigned int e=0; e<entries; e++){
+        cluster->GetEntry(e);
+        if( unixtime == 0 ) continue ;
+        if( unixtime < firstUnixtime ) firstUnixtime = unixtime ;
+        if( unixtime > lastUnixtime ) lastUnixtime = unixtime ;
+    }
+    
     bool trackAna = false;
     if( ndetectors > 1 ) trackAna = true;
     
@@ -294,6 +304,14 @@ void analysis::investigateCRF(){
     
     unsigned int periodStart = 1506808800;
     unsigned int periodEnd = 1640991600;
+    
+    if( firstUnixtime < 2147483647 && lastUnixtime > 0 ){
+        if( lastUnixtime < periodStart || firstUnixtime > periodEnd ){
+            periodStart = firstUnixtime ;
+            periodEnd = lastUnixtime ;
+        }
+    }
+    
     unsigned int periodHours = ( periodEnd - periodStart ) / 3600;
     
     unsigned int mdtSlopeDivision = 30;
@@ -1798,6 +1816,21 @@ void analysis::investigateCRF(){
         
         Int_t starttime = unixstart;
         Int_t endtime = unixend;
+    
+        if( firstUnixtime < 2147483647 && lastUnixtime > 0 ){
+            if( 
+                firstUnixtime > endtime 
+                ||
+                firstUnixtime < starttime 
+                ||
+                lastUnixtime < starttime 
+                || 
+                lastUnixtime > endtime 
+            ){
+                starttime = firstUnixtime ;
+                endtime = lastUnixtime ;
+            }
+        }
         
         Int_t timedifference = endtime - starttime;
         Int_t binwidth = 3600;
