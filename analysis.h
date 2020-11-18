@@ -2434,6 +2434,8 @@ vector< vector<double> > analysis::getHoughLines(vector< vector<double> > points
 //         destroyWindow("fitted");
     }
     
+    binary.release() ;
+    
     return houghLines;
     
 }
