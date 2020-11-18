@@ -1019,13 +1019,14 @@ void analysis::fitNclust(){
                         gPad->Update();
                         gPad->WaitPrimitive();
                 }
+                
             }
                 
             if(withJitter) turntime->push_back( inverseFermi->GetParameter(1) + timeCorrectionSign * ( triggerOffset.at( cfec ) - time_correction_ns->at( TDCorder[ cfec ] ) ) * 0.04 );
             else if(withTrigCor) turntime->push_back( inverseFermi->GetParameter(1) + timeCorrectionSign * ( trigger_correction_time - triggerOffset.at( cfec ) ) * 0.04 );
             else turntime->push_back( inverseFermi->GetParameter(1) );
             
-            if( skewGausFit ) inverseFermi->Delete();
+            inverseFermi->Delete();
             
             pulseheight->Delete();
             
