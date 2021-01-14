@@ -7,6 +7,7 @@ sampleEvents
 converter 
 studyCRF 
 qaqc
+dicvecvec.cxx
 dicvecvec.o
 dicvecvec_rdict.pcm
 moduleRawTracker

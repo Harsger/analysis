@@ -917,7 +917,8 @@ void analysis::fitNclust(){
                 if(charge != 0) emptySignal = false;
             }
             
-            variation->push_back(pulseheight->GetRMS());
+//             variation->push_back(pulseheight->GetRMS());
+            variation->push_back(pulseheight->GetStdDev());
             chargeMean.push_back(pulseheight->GetMean());
             
             if( overwriteFit ) variation->at(s) = 0.1 * signalVariation.at(cdet) ;
