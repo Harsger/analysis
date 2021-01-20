@@ -376,7 +376,7 @@ void analysis::study(){
 
     for (Long64_t entry=toStart; entry<toEnd; entry++) {
     
-        if( entry % moduloFactor == 0 ) cout << ( entry / moduloFactor ) % 10;
+        if( entry % moduloFactor == 0 ) cout << ( entry / moduloFactor ) % 10 << flush;
     
         if(debug) cout << "--------------event_" << entry << "_" << endl;
         
@@ -485,10 +485,10 @@ void analysis::study(){
         
         if( ix > 1260. ) outORin = 0;
         else if(
-            ix            < activeArea[0][0] &&
-            ix            > activeArea[0][1] &&
-            meanIntercept < activeArea[1][0] &&
-            meanIntercept > activeArea[1][1]
+            ix            > activeArea[0][0] &&
+            ix            < activeArea[0][1] &&
+            meanIntercept > activeArea[1][0] &&
+            meanIntercept < activeArea[1][1]
         ) outORin = 1;
         else continue;
         
