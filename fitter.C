@@ -624,7 +624,7 @@ void analysis::fitNclust(){
 
     for (Long64_t entry=toStart; entry<toEnd; entry++) {
     
-        if( entry % moduloFactor == 0 ) cout << "*";
+        if( entry % moduloFactor == 0 ) cout << "*" << flush;
         
         if( debug ) cout << "--------------event_" << entry << "_" << endl;
 

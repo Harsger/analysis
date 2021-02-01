@@ -2286,6 +2286,9 @@ void analysis::investigateCRF(){
     else toStart = startevent;
     if( endevent>entries || endevent<0 ) toEnd = entries;
     else toEnd = endevent;
+    
+    unsigned int moduloFactor = ( toEnd - toStart ) / 100;
+    if( toEnd - toStart < 100 ) moduloFactor = 1;
 
     if(debug){ 
 //         toEnd = toStart + 2;
@@ -2315,7 +2318,9 @@ void analysis::investigateCRF(){
         
         bugCounter = 0;
     
-        if( entry%100000 == 0 || debug ) cout << "--------------event_" << entry << "_" << endl;
+        if( entry % moduloFactor == 0 ) cout << "*" << flush;
+    
+        if( debug ) cout << "--------------event_" << entry << "_" << endl;
 
         if(debug /*&& entry%10==0*/) verbose = true;
         else verbose = false;
