@@ -1202,13 +1202,18 @@ void analysis::align(){
         if( specifier.Contains("uTPCresVSuTPCslope_pp") )  cout << " \t uTPC -> t0" << endl;
         else cout << " \t -Y \t \t +Z " << endl;
         
+        unsigned int onlyXdetector = 0 ;
         for(unsigned int d=0; d<ndetectors; d++){
             cout << " " << detectornames.at(d);
+            if(detstrips.at(d).at(1) < 1 ){ 
+                onlyXdetector++;
+                continue;
+            }
             if( specifier.Contains("uTPCresVSuTPCslope_pp") ) 
-                cout << " \t " << -fullSampleFit.at(d).at(2)/pitch.at(d) << " +/- " << fullSampleFit.at(d).at(3)/pitch.at(d);
+                cout << " \t " << -fullSampleFit.at(d+onlyXdetector).at(2)/pitch.at(d) << " +/- " << fullSampleFit.at(d+onlyXdetector).at(3)/pitch.at(d);
             else{ 
                 for(unsigned int p=0; p<fullSampleFit.at(d).size(); p+=2){
-                    cout << " \t " << fullSampleFit.at(d).at(p) << " +/- " << fullSampleFit.at(d).at(p+1);
+                    cout << " \t " << fullSampleFit.at(d+onlyXdetector).at(p) << " +/- " << fullSampleFit.at(d+onlyXdetector).at(p+1);
                 }
             }
             cout << endl;
