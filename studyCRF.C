@@ -319,11 +319,20 @@ void analysis::study(){
         
     }   
     
+    double activeArea[3][2];
+//     for(unsigned int c=0; c<3; c++){
+    for(unsigned int c=0; c<2; c++){
+        activeArea[c][0] = center[c] - 0.5*length[c];
+        activeArea[c][1] = center[c] + 0.5*length[c];
+    }
+    activeArea[2][0] = center[2] - 0.75*length[2];
+    activeArea[2][1] = center[2] + 0.25*length[2];
+    
     map< string , TH2D ** > individualLayer;
     map< string, pair<double,double> > layerRange = {
-        { "module" , {  -33. ,  48. } } ,
-        { "onTop"  , {   48. , 150. } } ,
-        { "below"  , { -150. , -33. } } 
+        { "module" , {  activeArea[2][0] , activeArea[2][1] } } ,
+        { "onTop"  , {  activeArea[2][1] ,             300. } } , 
+        { "below"  , {             -300. , activeArea[2][0] } } 
     };
     
     for( auto l : layerRange ){
@@ -344,15 +353,6 @@ void analysis::study(){
     
     double binWidth[3];
     for(unsigned int c=0; c<3; c++) binWidth[c] = ( range[c][1] - range[c][0] ) / (double)binning[c];
-    
-    double activeArea[3][2];
-//     for(unsigned int c=0; c<3; c++){
-    for(unsigned int c=0; c<2; c++){
-        activeArea[c][0] = center[c] - 0.5*length[c];
-        activeArea[c][1] = center[c] + 0.5*length[c];
-    }
-    activeArea[2][0] = center[2] - 0.75*length[2];
-    activeArea[2][1] = center[2] + 0.25*length[2];
    
     unsigned int toStart;
     unsigned int toEnd;
