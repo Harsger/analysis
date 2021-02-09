@@ -2436,8 +2436,8 @@ void analysis::investigateCRF(){
             
             if( size->at(c) >= minClusterSize.at(det) ){
                 if( noiseCluster.at(det)  ){
-                    unsigned int strip = (unsigned int)centroid->at(c);
-                    if( noisyStrip.at(det).at(dir).at(strip) ) continue;
+                    unsigned int stripNum = (unsigned int)centroid->at(c)-1;
+                    if( noisyStrip.at(det).at(dir).at(stripNum) ) continue;
                     if( averagetime->at(c) > lastTime.at(det) || averagetime->at(c) < firstTime.at(det) ) continue;
                 }
                 usedCluster[det][dir]++;
