@@ -1,10 +1,11 @@
 # instruction for measurements and analysis of data with SM2 modules in CRF
 # 
+############################## PREPARATION ##########################################
 #####################################################################################
 # make SM2 quadruplett ready 
 # => grounding screws (small at tapared boarders and large with batch at parallel boarders)
 # => compression bars (alternating orientation!) -> check for patches on cathode HV plugs
-# => HV cable (banana to module) for cathodes (easier now for central ones)
+# => HV cable (banana to module) for cathodes (easier early for central ones)
 # => APV-adapter-boards (to be found and returned to aluminum box in front of CRF): 
 #    paper with aceton for footprints , 
 #    gloves with isopropanol for zebra-connectors , 
@@ -38,7 +39,7 @@ mapfilename="/project/etpdaq2/SM2_data/mappings/SM2-M1_CRF.config"
 #    *one layer has only four numbers of APV from different FECs (e.g. stereo_out APV0,1,2,3)*
 #    *****************************************************************************************
 #
-#    schemes for cabeling : TO-BE-ADDED (drawn on papers hanged at the upper MDT chamber of the CRF)
+#    schemes for cabeling : drawn on papers at the upper MDT chamber of the CRF
 #
 ##############################################################################
 # make readout ready : (as etpdaq)
@@ -54,6 +55,16 @@ cdsrs       # = cd ~/etpdaqsvn/SRS_tools_trunk
 # => debug APV problems with this
 #
 # redo this with HV on -> CAENGECO2020 (on gar-ex-etp04atl)
+
+######################## MEASUREMENT #########################################
+##############################################################################
+# before measurments:
+# => check on gar-ex-etp04atl if 3 screens are active (deatched) with names
+#    srs_dump  
+#    MMreadout  
+#    SRS_config
+# => check on garsc05 ( as etpdaq shortcut "sshs5" ) if 1 screens is active (deatched) with name 
+#    MT-Online
 ##############################################################################
 # pedestal data taking on gar-ex-etp04atl:
 
@@ -79,10 +90,6 @@ cd ~/etpdaqsvn/zerosuppressor
 #    adjust grounding if required and repeat
 ################################################################################
 # data taking
-# => check on gar-ex-etp04atl if 4 screens are active (deatched) with names
-#    srs_dump , MMreadout , SRS_config , monitoring
-#    -> monitoring screen with four tabs to log HV and switch on tripped channels
-# => check on garsc05 ( as etpdaq shortcut "sshs5" ) if one screens is active (deatched) with name MT-Online
 
 cd ~/etpdaqsvn/CRFscripts
 
@@ -95,7 +102,7 @@ runSpecifier=m${moduleNumber}_${moduleVoltage}
 #OLD 
 #OLD ./stopCRF
 
-./moduleMeasurement ${fileServer} ${runSpecifier} <hours>h
+./moduleSTART.sh ${fileServer} ${runSpecifier}
 
 # date is added by script to filename in format _YYYYMMDD_hhmm
 
@@ -107,10 +114,18 @@ runName=${runSpecifier}<date>
 #    for alignment longer runs of minimal 6 hours are necessary
 #    -> check in srs_dump screen if data is taken
 
+# after successful datataking stop the measurement using
+
+./moduleSTOP.sh
+
+
+########################## EVALUATION ############################################
 ##################################################################################
 # MDT tracking and datastream merging
-# => in screen on fast machine (e.g. gar-ws-etp02)
-#    second screen dispatched required -> named "merging"
+# => start in screen on fast machine (e.g. gar-ws-etp02)
+#    MDT evaluation and merging takes probably more than one hour
+#    second screen before start required (dispatched) with name 
+#    merging
 
 cd ~/etpdaqsvn/CRFscripts
 
@@ -124,7 +139,9 @@ cd ~/etpdaqsvn/CRFscripts
 # each of the following scripts need root loaded :
 #                                                   mlm
 # execution in the analysis directory : 
-#                                                   cd /project/etpdaq4/CRF_data/nswQAQC/analysis
+
+cd /project/etpdaq4/CRF_data/nswQAQC/analysis
+
 ##################################################################################
 # fitting and clustering
 #    -> as etpdaq in screen on reliable machine
